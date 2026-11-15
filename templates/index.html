@@ -3,179 +3,266 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Digital Board — LPP RRI Mamuju</title>
+  <title>RRI Mamuju — Landing Page &amp; Digital Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F1F5F9; color: #0F172A; }
-    .tab-btn.active { background-color: #0F2942; color: #FFFFFF; box-shadow: 0 2px 6px rgba(15, 41, 66, 0.2); }
-    .filter-pill.active { background-color: #0369A1; color: #FFFFFF; border-color: #0369A1; }
-    .scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
-    .scrollbar-thin::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F8FAFC;
+      color: #0F172A;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    /* Clean Horizontal Alternating Timeline */
+    .htl-scroll {
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: #94A3B8 #F1F5F9;
+    }
+    .htl-scroll::-webkit-scrollbar {
+      height: 8px;
+    }
+    .htl-scroll::-webkit-scrollbar-track {
+      background: #F1F5F9;
+      border-radius: 9999px;
+    }
+    .htl-scroll::-webkit-scrollbar-thumb {
+      background-color: #94A3B8;
+      border-radius: 9999px;
+    }
+    .htl-card {
+      background: #FFFFFF;
+      border: 1.5px solid #93C5FD;
+      border-radius: 12px;
+      padding: 12px 16px;
+      width: 215px;
+      min-height: 76px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .htl-card:hover {
+      transform: translateY(-2px);
+      border-color: #1D4ED8;
+      box-shadow: 0 6px 16px rgba(29, 78, 216, 0.10);
+    }
+    .filter-pill.active {
+      background-color: #0F2942;
+      color: #FFFFFF;
+      border-color: #0F2942;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-  <header class="bg-[#0F2942] text-white shadow-md sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="bg-white text-[#0F2942] font-extrabold px-3 py-1.5 rounded-lg tracking-tight text-sm flex items-center gap-1.5 shadow-sm">
-          <span class="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse"></span>
-          RRI MAMUJU
+  <!-- ========================================================= -->
+  <!-- CLEAN NAVBAR (Logo Left • Anchor Links Center • Login Right) -->
+  <!-- ========================================================= -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <!-- Brand -->
+      <a href="#" class="flex items-center gap-2.5 shrink-0">
+        <div class="w-9 h-9 rounded-lg bg-[#0F2942] text-white font-extrabold flex items-center justify-center text-sm shadow-xs">
+          RRI
         </div>
-        <div>
-          <h1 class="text-base sm:text-lg font-bold leading-tight">Digital Board &amp; Portal Operasional</h1>
-          <p class="text-xs text-slate-300" id="syncStatusText">Memuat sinkronisasi data...</p>
+        <div class="leading-tight">
+          <span class="font-extrabold text-base text-slate-900 tracking-tight block">RRI MAMUJU</span>
+          <span class="text-[11px] text-slate-500 hidden sm:block">Digital Board &amp; Portal</span>
         </div>
-      </div>
+      </a>
 
-      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+      <!-- Ordinary Clean Landing Page Navigation Links -->
+      <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
+        <a href="#hero-timeline" class="hover:text-[#0F2942] transition">Timeline</a>
+        <a href="#agenda-dialog" class="hover:text-[#0F2942] transition">Agenda Dialog</a>
+        <a href="#arsip-ppid" class="hover:text-[#0F2942] transition">Arsip &amp; PPID</a>
+        {% if user %}
+        <a href="#workspace-pegawai" class="text-sky-700 hover:text-sky-900 transition">Dashboard Pegawai</a>
+        {% endif %}
+      </nav>
+
+      <!-- Top-Right Actions: Live Stream + Search + Login Button -->
+      <div class="flex items-center gap-2.5">
+        <!-- Live Pro 1 Stream Button -->
         <button onclick="toggleAudio()" id="audioBtn"
-          class="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
-          <span id="audioIcon">▶</span>
-          <span>Pro 1 (96.0 FM)</span>
+          class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition">
+          <span id="audioIcon" class="text-sky-700">▶</span>
+          <span class="hidden sm:inline">Pro 1 96.0 FM</span>
         </button>
         <audio id="pro1Audio" preload="none" src="{{ station.streams.pro1.url }}"></audio>
 
-        <button onclick="refreshBoard()" title="Sinkronisasi Ulang Google Sheet"
-          class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3 py-2 rounded-lg border border-slate-700 transition">
-          ↻ Sync
+        <!-- Refresh Sync -->
+        <button onclick="refreshBoard()" title="Sinkronisasi Google Sheets"
+          class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition">
+          ↻
         </button>
 
-        {% if user and user.role == 'Admin' %}
-        <button onclick="setupSheets()" title="Buat tab baru (Planner, Siaran, Arsip, Info_Pegawai, Users) tanpa mengubah Sheet1 &amp; Agenda Setting"
-          class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
-          ⚙ Init Tab Baru
-        </button>
-        {% endif %}
-
-        <div id="authControls">
-          {% if user %}
-          <div class="flex items-center gap-2 bg-emerald-900/60 border border-emerald-500/40 px-3 py-1.5 rounded-lg">
-            <div class="text-xs">
-              <span class="font-bold text-emerald-300">{{ user.nama }}</span>
-              <span class="text-slate-300 hidden sm:inline">({{ user.divisi }})</span>
-            </div>
-            <button onclick="logoutUser()" class="text-xs bg-red-600 hover:bg-red-500 px-2 py-1 rounded font-semibold">Keluar</button>
-          </div>
-          {% else %}
-          <button onclick="openLoginModal()"
-            class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-3.5 py-2 rounded-lg shadow transition">
-            🔒 Login Pegawai
+        <!-- Top-Right Login / Account Controls -->
+        {% if user %}
+        <div class="flex items-center gap-2">
+          {% if user.role == 'Admin' %}
+          <button onclick="setupSheets()" title="Inisialisasi tab baru di Google Sheet"
+            class="hidden sm:inline-flex items-center text-xs font-semibold px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition">
+            ⚙ Init Tab
           </button>
           {% endif %}
+          <span class="hidden lg:inline-block text-xs font-bold text-slate-700 bg-slate-100 px-3 py-2 rounded-lg">
+            👤 {{ user.divisi }}
+          </span>
+          <button onclick="logoutUser()"
+            class="text-xs font-bold px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition">
+            Logout
+          </button>
         </div>
-      </div>
-    </div>
-
-    <div class="bg-[#091B2C] border-t border-slate-800">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-2 overflow-x-auto scrollbar-thin text-xs">
-        <span class="text-slate-400 font-semibold shrink-0">Kanal Resmi:</span>
-        {% for p in station.portals %}
-        <a href="{{ p.url }}" target="_blank" rel="noopener"
-          class="shrink-0 bg-slate-800/80 hover:bg-sky-700 text-slate-200 px-2.5 py-1 rounded-md transition">
-          {{ p.label }} ↗
-        </a>
-        {% endfor %}
+        {% else %}
+        <button onclick="openLoginModal()"
+          class="text-xs sm:text-sm font-bold px-4 py-2 rounded-lg bg-[#0F2942] hover:bg-slate-800 text-white shadow-xs transition">
+          Login Pegawai
+        </button>
+        {% endif %}
       </div>
     </div>
   </header>
 
-  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex-1 space-y-6">
-
-    <!-- KPI CARDS -->
-    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs font-semibold text-slate-500 uppercase">Tahapan Timeline</p>
-        <p class="text-2xl font-extrabold text-[#0F2942] mt-1" id="statEvents">0</p>
-        <p class="text-xs text-slate-500 mt-1">Bintang Radio, RRI Fest, Hari Radio</p>
-      </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs font-semibold text-slate-500 uppercase">Agenda Setting / Dialog</p>
-        <p class="text-2xl font-extrabold text-sky-700 mt-1" id="statDialogs">0</p>
-        <p class="text-xs text-slate-500 mt-1">Jadwal narasumber &amp; program</p>
-      </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs font-semibold text-slate-500 uppercase">Arsip Digital &amp; PPID</p>
-        <p class="text-2xl font-extrabold text-indigo-700 mt-1" id="statArchive">0</p>
-        <p class="text-xs text-slate-500 mt-1">Dokumen, video &amp; berkala</p>
-      </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs font-semibold text-slate-500 uppercase">Mode Akses</p>
-        <p class="text-lg font-extrabold mt-1" id="statAccess">Publik</p>
-        <p class="text-xs text-slate-500 mt-1" id="statAccessSub">Login untuk Planner &amp; Piket</p>
-      </div>
-    </section>
-
-    <!-- TABS & GLOBAL SEARCH -->
-    <section class="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-      <div class="flex flex-wrap gap-1.5" id="tabBar">
-        <button onclick="switchTab('timeline')" data-tab="timeline" class="tab-btn active px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition">
-          📅 Timeline Kegiatan
-        </button>
-        <button onclick="switchTab('dialog')" data-tab="dialog" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">
-          🎙️ Agenda Setting (Dialog)
-        </button>
-        <button onclick="switchTab('archive')" data-tab="archive" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">
-          🗂️ Arsip &amp; PPID
-        </button>
-        <button onclick="switchTab('planner')" data-tab="planner" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">
-          📱 Content Planner <span class="lock-badge text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-1">Pegawai</span>
-        </button>
-        <button onclick="switchTab('siaran')" data-tab="siaran" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">
-          🎧 Jadwal Siaran <span class="lock-badge text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-1">Pegawai</span>
-        </button>
-        <button onclick="switchTab('pegawai')" data-tab="pegawai" class="tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">
-          📢 Info Pegawai <span class="lock-badge text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded ml-1">Pegawai</span>
-        </button>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <input type="text" id="globalSearch" oninput="renderCurrentTab()" placeholder="Cari kegiatan, narasumber, topik..."
-          class="w-full md:w-64 text-xs sm:text-sm px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        <button onclick="openAddModal()" id="addRecordBtn" class="hidden bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold px-3.5 py-2 rounded-lg shrink-0">
-          + Tambah
-        </button>
-      </div>
-    </section>
-
-    <!-- PANEL 1: TIMELINE (MATCHES Sheet1: Kegiatan, Tahapan, Start Date, End Date, Keterangan, Tanggal) -->
-    <section id="panel-timeline" class="tab-panel space-y-4">
-      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 class="text-base sm:text-lg font-bold text-[#0F2942]">Timeline Kegiatan RRI Mamuju 2026</h2>
-            <p class="text-xs text-slate-500">Filter berdasarkan nama kegiatan atau geser lini masa ke samping</p>
-          </div>
-          <!-- Dynamic Event Category Pills -->
-          <div id="timelinePills" class="flex flex-wrap gap-1.5"></div>
+  <!-- ========================================================= -->
+  <!-- HERO SECTION: TIMELINE RRI MAMUJU 2026                    -->
+  <!-- ========================================================= -->
+  <section id="hero-timeline" class="bg-gradient-to-b from-[#0F2942] via-[#163859] to-[#F8FAFC] pt-10 pb-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 space-y-6">
+      <!-- Hero Headline -->
+      <div class="text-center text-white max-w-2xl mx-auto space-y-2">
+        <div class="inline-flex items-center gap-2 bg-white/10 border border-white/15 px-3 py-1 rounded-full text-xs font-medium text-sky-200">
+          <span id="liveDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="syncStatusText">Memuat sinkronisasi data...</span>
         </div>
-        <div id="timelineTrack" class="flex gap-4 overflow-x-auto pb-4 pt-2 scrollbar-thin"></div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight">Timeline RRI Mamuju 2026</h1>
+        <p class="text-xs sm:text-sm text-slate-200">
+          Jadwal kegiatan utama, roadshow, dan tahapan acara LPP RRI Mamuju secara real-time
+        </p>
       </div>
-    </section>
 
-    <!-- PANEL 2: AGENDA SETTING (MATCHES Agenda Setting: Tanggal, Program, Topik/ Isu, Narasumber, Jabatan/ Instansi, KET. Kehadiran, PIC Narasumber, Flyer, Keterlaksanaan, Kendala) -->
-    <section id="panel-dialog" class="tab-panel hidden">
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 class="text-base sm:text-lg font-bold text-[#0F2942]">Agenda Setting — Dialog &amp; Narasumber</h2>
-            <p class="text-xs text-slate-500">Sinkronisasi langsung dengan sheet <code>Agenda Setting</code> (otomatis membaca sel tanggal yang digabung)</p>
+      <!-- Hero Scrollable Timeline Card -->
+      <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6 space-y-4">
+        <!-- Filter Pills & Add Button -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div id="categoryChips" class="flex flex-wrap items-center gap-1.5"></div>
+
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <input type="text" id="globalSearch" oninput="renderAllSections()" placeholder="Cari agenda, topik, narasumber..."
+              class="w-full sm:w-60 text-xs px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F2942]" />
+            {% if user %}
+            <button onclick="openAddModal('Timeline')"
+              class="shrink-0 text-xs font-bold px-3 py-2 rounded-lg bg-[#0F2942] hover:bg-slate-800 text-white transition">
+              + Timeline
+            </button>
+            {% endif %}
           </div>
         </div>
+
+        <!-- Horizontal Scrollable Alternating Timeline -->
+        <div class="bg-[#F8FAFC] rounded-xl border border-slate-200/80 px-2 py-3">
+          <div id="horizontalTimelineScroll" class="htl-scroll pb-2">
+            <div id="horizontalTimelineTrack" class="inline-flex items-center min-w-full px-6 py-3"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] text-slate-400">
+          <span id="timelineCountLabel">0 tahapan kegiatan</span>
+          <span>← Geser ke samping untuk melihat seluruh jadwal →</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= -->
+  <!-- LANDING PAGE BODY SECTIONS                                -->
+  <!-- ========================================================= -->
+  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 flex-1 space-y-12">
+
+    <!-- EMPLOYEE WORKSPACE (Automatically appears at top of body when logged in!) -->
+    {% if user %}
+    <section id="workspace-pegawai" class="space-y-6 bg-sky-50/70 border border-sky-200 rounded-2xl p-5 sm:p-7">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-sky-200/80 pb-4">
+        <div>
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-700">Workspace Internal Pegawai</span>
+          <h2 class="text-xl font-extrabold text-slate-900">Halo, {{ user.nama }} ({{ user.divisi }})</h2>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          {% for sys in station.office_systems %}
+          <a href="{{ sys.url }}" target="_blank" class="text-xs font-semibold bg-white hover:bg-[#0F2942] hover:text-white text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition">
+            {{ sys.label }} ↗
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Employee Sub-Tabs -->
+      <div class="grid lg:grid-cols-3 gap-6">
+        <!-- Col 1: Content Planner -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <h3 class="font-extrabold text-sm text-slate-900">📱 Content Planner</h3>
+            <button onclick="openAddModal('Planner')" class="text-xs font-bold text-sky-700 hover:underline">+ Tambah</button>
+          </div>
+          <div id="plannerList" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Col 2: Jadwal Siaran -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <h3 class="font-extrabold text-sm text-slate-900">🎧 Jadwal Siaran &amp; Piket</h3>
+            <button onclick="openAddModal('Siaran')" class="text-xs font-bold text-sky-700 hover:underline">+ Tambah</button>
+          </div>
+          <div id="siaranList" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Col 3: Info Pegawai -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between">
+            <h3 class="font-extrabold text-sm text-slate-900">📢 Pengumuman Pegawai</h3>
+            <button onclick="openAddModal('Info_Pegawai')" class="text-xs font-bold text-sky-700 hover:underline">+ Tambah</button>
+          </div>
+          <div id="pegawaiList" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- SECTION 2: AGENDA SETTING (SHOWS & DIALOGUES TRACKER) -->
+    <section id="agenda-dialog" class="space-y-4">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Agenda Setting &amp; Dialog Siaran</h2>
+          <p class="text-xs sm:text-sm text-slate-500">Jadwal program dialog, narasumber, kehadiran, dan keterlaksanaan siaran</p>
+        </div>
+        {% if user %}
+        <button onclick="openAddModal('Agenda_Setting')"
+          class="text-xs font-bold px-3.5 py-2 rounded-lg bg-[#0F2942] hover:bg-slate-800 text-white transition">
+          + Tambah Agenda Dialog
+        </button>
+        {% endif %}
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs sm:text-sm">
-            <thead class="bg-[#0F2942] text-white font-semibold">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
               <tr>
-                <th class="px-4 py-3">Tanggal</th>
-                <th class="px-4 py-3">Program</th>
-                <th class="px-4 py-3">Topik / Isu</th>
-                <th class="px-4 py-3">Narasumber &amp; Instansi</th>
-                <th class="px-4 py-3">Kehadiran</th>
-                <th class="px-4 py-3">PIC</th>
-                <th class="px-4 py-3">Keterlaksanaan</th>
-                <th class="px-4 py-3">Flyer / Kendala</th>
+                <th class="px-4 py-3.5">Tanggal</th>
+                <th class="px-4 py-3.5">Program</th>
+                <th class="px-4 py-3.5">Topik / Isu</th>
+                <th class="px-4 py-3.5">Narasumber &amp; Instansi</th>
+                <th class="px-4 py-3.5">Kehadiran</th>
+                <th class="px-4 py-3.5">Status</th>
+                <th class="px-4 py-3.5">Flyer</th>
               </tr>
             </thead>
             <tbody id="dialogTableBody" class="divide-y divide-slate-100"></tbody>
@@ -184,153 +271,219 @@
       </div>
     </section>
 
-    <!-- PANEL 3: ARCHIVE -->
-    <section id="panel-archive" class="tab-panel hidden">
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-5 border-b border-slate-200">
-          <h2 class="text-base sm:text-lg font-bold text-[#0F2942]">Arsip Siaran, PPID &amp; Dokumentasi Kegiatan</h2>
-          <p class="text-xs text-slate-500">Indeks terpadu dokumentasi publik dan berkala LPP RRI Mamuju</p>
+    <!-- SECTION 3: ARSIP DIGITAL & PPID -->
+    <section id="arsip-ppid" class="space-y-4">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Arsip Digital &amp; Layanan PPID</h2>
+          <p class="text-xs sm:text-sm text-slate-500">Dokumentasi acara siaran berkala, rekaman YouTube, dan berkas publik</p>
         </div>
-        <div id="archiveGrid" class="p-5 grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        {% if user %}
+        <button onclick="openAddModal('Arsip')"
+          class="text-xs font-bold px-3.5 py-2 rounded-lg bg-[#0F2942] hover:bg-slate-800 text-white transition">
+          + Tambah Arsip
+        </button>
+        {% endif %}
       </div>
+
+      <div id="archiveGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </section>
 
-    <!-- PANEL 4: CONTENT PLANNER (LOGIN REQUIRED) -->
-    <section id="panel-planner" class="tab-panel hidden">
-      <div id="plannerLocked" class="bg-white p-8 rounded-xl border border-slate-200 text-center space-y-3">
-        <p class="text-3xl">🔒</p>
-        <h3 class="text-base font-bold text-slate-800">Area Khusus Pegawai RRI Mamuju</h3>
-        <p class="text-xs text-slate-500 max-w-md mx-auto">Silakan masuk menggunakan akun pegawai untuk melihat dan mengelola jadwal publikasi media sosial (@rri_mamuju, @pro2_mamuju, YouTube, dan rri.co.id).</p>
-        <button onclick="openLoginModal()" class="bg-[#0F2942] text-white text-xs font-bold px-4 py-2 rounded-lg">Login Pegawai</button>
+    <!-- EMPLOYEE CTA BANNER (Shown to public visitors at bottom of landing page) -->
+    {% if not user %}
+    <section class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+      <div class="space-y-1 text-center sm:text-left">
+        <h3 class="text-base sm:text-lg font-extrabold text-slate-900">Pegawai LPP RRI Mamuju?</h3>
+        <p class="text-xs sm:text-sm text-slate-500">Masuk untuk mengakses Content Planner, Jadwal Siaran Penyiar/Operator, Info Pegawai, dan input data langsung ke Google Sheets.</p>
       </div>
-      <div id="plannerContent" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-5 border-b border-slate-200">
-          <h2 class="text-base sm:text-lg font-bold text-[#0F2942]">Social Media &amp; Digital Content Planner</h2>
-          <p class="text-xs text-slate-500">Koordinasi konten lintas bidang (KMB, Pemberitaan, LPU, Siaran)</p>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs sm:text-sm">
-            <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-              <tr>
-                <th class="px-4 py-3">Tgl Tayang</th>
-                <th class="px-4 py-3">Platform / Akun</th>
-                <th class="px-4 py-3">Judul Konten &amp; Jenis</th>
-                <th class="px-4 py-3">Divisi / PIC</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3">Aset</th>
-              </tr>
-            </thead>
-            <tbody id="plannerTableBody" class="divide-y divide-slate-100"></tbody>
-          </table>
-        </div>
-      </div>
+      <button onclick="openLoginModal()"
+        class="shrink-0 text-xs sm:text-sm font-bold px-5 py-2.5 rounded-lg bg-[#0F2942] hover:bg-slate-800 text-white transition">
+        Login Pegawai →
+      </button>
     </section>
-
-    <!-- PANEL 5: JADWAL SIARAN (LOGIN REQUIRED) -->
-    <section id="panel-siaran" class="tab-panel hidden">
-      <div id="siaranLocked" class="bg-white p-8 rounded-xl border border-slate-200 text-center space-y-3">
-        <p class="text-3xl">🎧</p>
-        <h3 class="text-base font-bold text-slate-800">Jadwal Piket Penyiar &amp; Operator</h3>
-        <p class="text-xs text-slate-500 max-w-md mx-auto">Login pegawai diperlukan untuk mengakses jadwal shift studio Pro 1 &amp; Pro 2.</p>
-        <button onclick="openLoginModal()" class="bg-[#0F2942] text-white text-xs font-bold px-4 py-2 rounded-lg">Login Pegawai</button>
-      </div>
-      <div id="siaranContent" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-5 border-b border-slate-200">
-          <h2 class="text-base sm:text-lg font-bold text-[#0F2942]">Jadwal Tugas Penyiar &amp; Operator Studio</h2>
-          <p class="text-xs text-slate-500">Pembagian shift harian Programa 1 &amp; Programa 2</p>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs sm:text-sm">
-            <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-              <tr>
-                <th class="px-4 py-3">Tanggal</th>
-                <th class="px-4 py-3">Programa</th>
-                <th class="px-4 py-3">Shift</th>
-                <th class="px-4 py-3">Penyiar</th>
-                <th class="px-4 py-3">Operator</th>
-                <th class="px-4 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody id="siaranTableBody" class="divide-y divide-slate-100"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- PANEL 6: INFO PEGAWAI (LOGIN REQUIRED) -->
-    <section id="panel-pegawai" class="tab-panel hidden">
-      <div id="pegawaiLocked" class="bg-white p-8 rounded-xl border border-slate-200 text-center space-y-3">
-        <p class="text-3xl">📢</p>
-        <h3 class="text-base font-bold text-slate-800">Papan Pengumuman Internal Pegawai</h3>
-        <p class="text-xs text-slate-500 max-w-md mx-auto">Login untuk membaca nota dinas, pengumuman tata usaha, dan tautan aplikasi internal.</p>
-        <button onclick="openLoginModal()" class="bg-[#0F2942] text-white text-xs font-bold px-4 py-2 rounded-lg">Login Pegawai</button>
-      </div>
-      <div id="pegawaiContent" class="hidden space-y-4">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="text-base sm:text-lg font-bold text-[#0F2942]">Informasi Internal &amp; Nota Dinas Pegawai</h2>
-            <p class="text-xs text-slate-500">Pengumuman resmi lintas bidang LPP RRI Mamuju</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            {% for sys in station.office_systems %}
-            <a href="{{ sys.url }}" target="_blank" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-3 py-1.5 rounded-lg border border-slate-300">
-              {{ sys.label }} ↗
-            </a>
-            {% endfor %}
-          </div>
-        </div>
-        <div id="pegawaiCards" class="grid md:grid-cols-2 gap-4"></div>
-      </div>
-    </section>
+    {% endif %}
 
   </main>
 
-  <footer class="bg-white border-t border-slate-200 mt-10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-      <div>
-        <strong class="text-slate-700">{{ station.name }}</strong> — {{ station.address }}
+  <!-- ========================================================= -->
+  <!-- STANDARD LANDING PAGE FOOTER                              -->
+  <!-- ========================================================= -->
+  <footer class="bg-[#E8EAED] text-slate-700 mt-14 border-t border-slate-300/70">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-8">
+
+      <!-- Centered Circular Black Social Icons -->
+      <div class="flex items-center justify-center gap-3.5 mb-10">
+        <!-- Facebook -->
+        <a href="https://www.facebook.com/rrimamujuku" target="_blank" rel="noopener" aria-label="Facebook"
+          class="w-10 h-10 rounded-full bg-black hover:bg-slate-800 text-white flex items-center justify-center transition">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M14 13.5h2.5l1-4H14v-2c0-1.03 0-2 2-2h1.5V2.14c-.326-.043-1.557-.14-2.857-.14C11.928 2 10 3.657 10 6.7v2.8H7v4h3V22h4v-8.5z"/>
+          </svg>
+        </a>
+        <!-- YouTube -->
+        <a href="https://www.youtube.com/@LPPRRIMamuju" target="_blank" rel="noopener" aria-label="YouTube"
+          class="w-10 h-10 rounded-full bg-black hover:bg-slate-800 text-white flex items-center justify-center transition">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+          </svg>
+        </a>
+        <!-- Instagram -->
+        <a href="https://www.instagram.com/rri_mamuju/" target="_blank" rel="noopener" aria-label="Instagram"
+          class="w-10 h-10 rounded-full bg-black hover:bg-slate-800 text-white flex items-center justify-center transition">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+          </svg>
+        </a>
+        <!-- TikTok -->
+        <a href="https://www.tiktok.com/@pro2.mamuju" target="_blank" rel="noopener" aria-label="TikTok"
+          class="w-10 h-10 rounded-full bg-black hover:bg-slate-800 text-white flex items-center justify-center transition">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+          </svg>
+        </a>
+        <!-- Website / Globe -->
+        <a href="https://rri.co.id/mamuju" target="_blank" rel="noopener" aria-label="Website RRI Mamuju"
+          class="w-10 h-10 rounded-full bg-black hover:bg-slate-800 text-white flex items-center justify-center transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M3.6 9h16.8M3.6 15h16.8M12 3a14.5 14.5 0 0 1 0 18M12 3a14.5 14.5 0 0 0 0 18"></path>
+          </svg>
+        </a>
       </div>
-      <div>
-        Telp: {{ station.phone }} • Email: {{ station.email }}
+
+      <!-- 4-Column Content Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+
+        <!-- Col 1: Embedded Google Map -->
+        <div class="md:col-span-4">
+          <div class="w-full h-44 rounded-sm overflow-hidden border border-slate-300 bg-white shadow-xs">
+            <iframe
+              title="Lokasi LPP RRI Mamuju"
+              src="https://maps.google.com/maps?q=RRI%20Mamuju%20Jl.%20R.E.%20Martadinata%20Mamuju&t=&z=16&ie=UTF8&iwloc=&output=embed"
+              class="w-full h-full border-0"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+          </div>
+        </div>
+
+        <!-- Col 2: Address & Contact -->
+        <div class="md:col-span-4 space-y-4 text-xs sm:text-[13px] leading-relaxed">
+          <p class="font-bold text-[#2C5282]">
+            Jl. R.E Martadinata, Kecamatan Simboro dan Kepulauan, Kabupaten Mamuju, Sulawesi Barat
+          </p>
+          <div class="space-y-0.5 text-slate-600">
+            <p>Phone: +62 82-9609-0996</p>
+            <p>E-mail: lpprrimamuju@gmail.com</p>
+          </div>
+        </div>
+
+        <!-- Col 3: Links -->
+        <div class="md:col-span-2 space-y-2.5 text-xs sm:text-[13px]">
+          <h4 class="font-bold text-slate-900">Links</h4>
+          <ul class="space-y-1.5 list-disc list-inside marker:text-slate-700">
+            <li><a href="https://mamuju.ppid.rri.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">PPID</a></li>
+            <li><a href="https://asndigital.bkn.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">ASN-DIGITAL</a></li>
+            <li><a href="https://srikandi.arsip.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">SRIKANDI</a></li>
+            <li><a href="https://sakti.kemenkeu.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">SAKTI</a></li>
+            <li><a href="https://tetrak.rri.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">Te-Track</a></li>
+            <li><a href="https://pusdatin.rri.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">Pusdatin</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: Websites -->
+        <div class="md:col-span-2 space-y-2.5 text-xs sm:text-[13px]">
+          <h4 class="font-bold text-slate-900">Websites</h4>
+          <ul class="space-y-1.5 list-disc list-inside marker:text-slate-700">
+            <li><a href="https://play.rri.co.id/sharing/radio/010461" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">RRI Digital Pro 1</a></li>
+            <li><a href="https://play.rri.co.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">RRI Digital Pro 2</a></li>
+            <li><a href="https://rri.co.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">RRI NET</a></li>
+            <li><a href="https://stream-node0.rri.co.id/streaming/20/9020/rrimamujupro1" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">RRI Streaming</a></li>
+          </ul>
+        </div>
+
       </div>
+
+      <!-- Divider & Centered Copyright -->
+      <div class="border-t border-slate-300 mt-10 pt-5 text-center text-[11px] text-slate-500">
+        All rights reserved © 2026 ikhwnfzan.
+      </div>
+
     </div>
   </footer>
+  <!-- <footer class="bg-white border-t border-slate-200 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-xs text-slate-600">
+      <div class="space-y-2 lg:col-span-2">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-1 rounded bg-[#0F2942] text-white font-extrabold text-xs">RRI</span>
+          <span class="font-extrabold text-sm text-slate-900">LPP RRI Mamuju</span>
+        </div>
+        <p class="text-slate-500 max-w-md leading-relaxed">{{ station.address }}</p>
+        <p class="text-slate-500">Telp: {{ station.phone }} • Email: {{ station.email }}</p>
+      </div>
 
-  <!-- LOGIN MODAL -->
-  <div id="loginModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+      <div class="space-y-2">
+        <h4 class="font-extrabold text-slate-900 uppercase tracking-wider">Kanal Resmi</h4>
+        <ul class="space-y-1.5">
+          {% for p in station.portals %}
+          <li><a href="{{ p.url }}" target="_blank" rel="noopener" class="hover:text-[#0F2942] hover:underline">{{ p.label }} ↗</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="space-y-2">
+        <h4 class="font-extrabold text-slate-900 uppercase tracking-wider">Aplikasi Kedinasan</h4>
+        <ul class="space-y-1.5">
+          {% for sys in station.office_systems %}
+          <li><a href="{{ sys.url }}" target="_blank" rel="noopener" class="hover:text-[#0F2942] hover:underline">{{ sys.label }} ↗</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-slate-100 py-4 text-center text-[11px] text-slate-400">
+      All rights reserved © 2026 LPP RRI Mamuju • ikhwnfzan
+    </div>
+  </footer> -->
+
+  <!-- ========================================================= -->
+  <!-- LOGIN MODAL                                               -->
+  <!-- ========================================================= -->
+  <div id="loginModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-base font-bold text-[#0F2942]">Login Pegawai RRI Mamuju</h3>
+        <h3 class="text-base font-extrabold text-slate-900">Login Pegawai RRI Mamuju</h3>
         <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
       </div>
-      <p class="text-xs text-slate-500">Masukkan username dan PIN pegawai (terverifikasi melalui tab <code>Users</code> di Google Sheet).</p>
+      <p class="text-xs text-slate-500">Masuk untuk membuka Content Planner, Jadwal Siaran, Pengumuman Pegawai, dan fitur input data.</p>
       <div class="space-y-3">
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Username</label>
-          <input type="text" id="loginUser" placeholder="contoh: admin / siaran / kmb"
-            class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
+          <label class="block text-xs font-bold text-slate-700 mb-1">Username</label>
+          <input type="text" id="loginUser" placeholder="admin / siaran / kmb"
+            class="w-full text-sm px-3.5 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F2942]" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">PIN</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1">PIN</label>
           <input type="password" id="loginPin" placeholder="••••"
-            class="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
+            class="w-full text-sm px-3.5 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F2942]" />
         </div>
         <p id="loginError" class="text-xs text-red-600 hidden"></p>
-        <button onclick="submitLogin()" class="w-full bg-[#0F2942] hover:bg-sky-900 text-white text-sm font-bold py-2.5 rounded-lg transition">
-          Masuk ke Dashboard
+        <button onclick="submitLogin()" class="w-full bg-[#0F2942] hover:bg-slate-800 text-white text-sm font-bold py-2.5 rounded-lg transition">
+          Masuk
         </button>
       </div>
       <div class="bg-slate-50 p-2.5 rounded-lg text-[11px] text-slate-500">
-        <strong>Akun Default:</strong> <code>admin</code> (PIN: <code>2026</code>) atau <code>siaran</code> (PIN: <code>1234</code>)
+        <strong>Default:</strong> <code>admin</code> (PIN: <code>2026</code>) atau <code>siaran</code> (PIN: <code>1234</code>)
       </div>
     </div>
   </div>
 
-  <!-- ADD RECORD MODAL -->
-  <div id="addModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 my-8">
+  <!-- ========================================================= -->
+  <!-- ADD RECORD MODAL                                          -->
+  <!-- ========================================================= -->
+  <div id="addModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 my-8">
       <div class="flex items-center justify-between">
-        <h3 class="text-base font-bold text-[#0F2942]" id="addModalTitle">Tambah Data Baru</h3>
+        <h3 class="text-base font-extrabold text-slate-900" id="addModalTitle">Tambah Data Baru</h3>
         <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
       </div>
       <form id="addRecordForm" onsubmit="submitNewRecord(event)" class="space-y-3"></form>
@@ -348,73 +501,42 @@
       siaran: [],
       info_pegawai: []
     };
-    let ACTIVE_TAB = 'timeline';
-    let TIMELINE_FILTER = 'ALL';
+
+    let CATEGORY_FILTER = 'ALL';
 
     async function loadBoard() {
       try {
         const res = await fetch('/api/board');
         BOARD_DATA = await res.json();
-        updateHeaderAndStats();
-        buildTimelinePills();
-        renderCurrentTab();
+        updateStatusUI();
+        buildCategoryChips();
+        renderAllSections();
       } catch (err) {
         document.getElementById('syncStatusText').textContent = 'Gagal memuat data server.';
       }
     }
 
-    function updateHeaderAndStats() {
-      const dot = BOARD_DATA.connected ? '🟢' : '🟡';
-      document.getElementById('syncStatusText').textContent = `${dot} ${BOARD_DATA.status_msg} • ${BOARD_DATA.server_time}`;
-      document.getElementById('statEvents').textContent = BOARD_DATA.timeline.length;
-      document.getElementById('statDialogs').textContent = BOARD_DATA.dialogs.length;
-      document.getElementById('statArchive').textContent = BOARD_DATA.archive.length;
-
-      const isAuth = BOARD_DATA.authenticated;
-      document.getElementById('statAccess').textContent = isAuth ? BOARD_DATA.user.divisi : 'Publik';
-      document.getElementById('statAccess').className = `text-lg font-extrabold mt-1 ${isAuth ? 'text-emerald-700' : 'text-amber-600'}`;
-      document.getElementById('statAccessSub').textContent = isAuth ? `Login sebagai ${BOARD_DATA.user.nama}` : 'Login untuk Planner & Piket';
-
-      document.querySelectorAll('.lock-badge').forEach(el => {
-        el.style.display = isAuth ? 'none' : 'inline-block';
-      });
-
-      const addBtn = document.getElementById('addRecordBtn');
-      if (isAuth) addBtn.classList.remove('hidden');
-      else addBtn.classList.add('hidden');
+    function updateStatusUI() {
+      const dot = document.getElementById('liveDot');
+      dot.className = `w-2 h-2 rounded-full ${BOARD_DATA.connected ? 'bg-emerald-400' : 'bg-amber-400'}`;
+      document.getElementById('syncStatusText').textContent = `${BOARD_DATA.status_msg} • ${BOARD_DATA.server_time}`;
     }
 
-    function buildTimelinePills() {
-      const categories = ['ALL', ...new Set(BOARD_DATA.timeline.map(i => (i.Kegiatan || '').trim()).filter(Boolean))];
-      const container = document.getElementById('timelinePills');
-      container.innerHTML = categories.map(cat => `
-        <button onclick="setTimelineFilter('${cat.replace(/'/g, "\'")}')"
-          class="filter-pill ${TIMELINE_FILTER === cat ? 'active' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'} border text-xs font-semibold px-3 py-1 rounded-full transition">
-          ${cat === 'ALL' ? 'Semua Kegiatan' : cat}
+    function buildCategoryChips() {
+      const cats = ['ALL', ...new Set(BOARD_DATA.timeline.map(i => (i.Kegiatan || '').trim()).filter(Boolean))];
+      const container = document.getElementById('categoryChips');
+      container.innerHTML = cats.map(c => `
+        <button onclick="setCategoryFilter('${c.replace(/'/g, "\'")}')"
+          class="filter-pill ${CATEGORY_FILTER === c ? 'active' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'} border text-xs font-bold px-3 py-1.5 rounded-lg transition">
+          ${c === 'ALL' ? 'Semua Kegiatan' : c}
         </button>
       `).join('');
     }
 
-    function setTimelineFilter(cat) {
-      TIMELINE_FILTER = cat;
-      buildTimelinePills();
-      renderCurrentTab();
-    }
-
-    function switchTab(tab) {
-      ACTIVE_TAB = tab;
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        if (btn.dataset.tab === tab) {
-          btn.classList.add('active');
-          btn.classList.remove('text-slate-700', 'hover:bg-slate-100');
-        } else {
-          btn.classList.remove('active');
-          btn.classList.add('text-slate-700', 'hover:bg-slate-100');
-        }
-      });
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-      document.getElementById(`panel-${tab}`).classList.remove('hidden');
-      renderCurrentTab();
+    function setCategoryFilter(cat) {
+      CATEGORY_FILTER = cat;
+      buildCategoryChips();
+      renderAllSections();
     }
 
     function matchesQuery(obj, q) {
@@ -422,202 +544,200 @@
       return Object.values(obj).some(v => String(v).toLowerCase().includes(q));
     }
 
-    function statusBadge(status) {
+    function statusPill(status) {
       const s = String(status || '').toLowerCase();
-      if (!s || s === '-') return `<span class="text-xs text-slate-400">-</span>`;
+      if (!s || s === '-') return '<span class="text-xs text-slate-400">-</span>';
       if (s.includes('terlaksana') || s.includes('hadir') || s.includes('selesai') || s.includes('tayang') || s.includes('duty')) {
-        return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${status}</span>`;
+        return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">${status}</span>`;
       }
       if (s.includes('batal') || s.includes('tidak') || s.includes('kendala')) {
-        return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">${status}</span>`;
+        return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-600 border border-red-200">${status}</span>`;
       }
-      if (s.includes('konfirmasi') || s.includes('review') || s.includes('desain') || s.includes('persiapan')) {
-        return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">${status}</span>`;
-      }
-      return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800">${status}</span>`;
+      return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">${status}</span>`;
     }
 
-    function eventAccentColor(kegiatan) {
-      const k = String(kegiatan || '').toLowerCase();
-      if (k.includes('bintang')) return 'border-t-sky-600';
-      if (k.includes('pidato')) return 'border-t-amber-500';
-      if (k.includes('fest')) return 'border-t-emerald-600';
-      if (k.includes('hari radio')) return 'border-t-indigo-600';
-      return 'border-t-[#0F2942]';
+    function renderAllSections() {
+      const q = (document.getElementById('globalSearch')?.value || '').trim().toLowerCase();
+      renderHorizontalTimeline(q);
+      renderDialogTable(q);
+      renderArchive(q);
+      if (BOARD_DATA.authenticated) {
+        renderEmployeeWorkspace(q);
+      }
     }
 
-    function renderCurrentTab() {
-      const q = document.getElementById('globalSearch').value.trim().toLowerCase();
+    // =========================================================
+    // HERO: SIMPLE SCROLLABLE HORIZONTAL ALTERNATING TIMELINE
+    // =========================================================
+    function renderHorizontalTimeline(q) {
+      const items = BOARD_DATA.timeline.filter(ev => {
+        const matchCat = CATEGORY_FILTER === 'ALL' || (ev.Kegiatan || '').trim() === CATEGORY_FILTER;
+        return matchCat && matchesQuery(ev, q);
+      });
 
-      // 1. Timeline (Sheet1 structure)
-      if (ACTIVE_TAB === 'timeline') {
-        const items = BOARD_DATA.timeline.filter(ev => {
-          const matchCat = TIMELINE_FILTER === 'ALL' || (ev.Kegiatan || '').trim() === TIMELINE_FILTER;
-          return matchCat && matchesQuery(ev, q);
-        });
-        const track = document.getElementById('timelineTrack');
-        if (!items.length) {
-          track.innerHTML = `<p class="text-xs text-slate-400">Tidak ada tahapan kegiatan ditemukan.</p>`;
-          return;
-        }
-        track.innerHTML = items.map(ev => {
-          const displayDate = ev.Tanggal || ev['Start Date'] || '';
-          const rangeNote = (ev['Start Date'] && ev['End Date'] && ev['Start Date'] !== ev['End Date'])
-            ? `${ev['Start Date']} – ${ev['End Date']}` : (ev['Start Date'] || '');
-          return `
-          <div class="min-w-[250px] max-w-[270px] bg-slate-50 border border-slate-200 border-t-4 ${eventAccentColor(ev.Kegiatan)} rounded-xl p-4 flex flex-col justify-between shrink-0 shadow-sm">
-            <div>
-              <div class="flex items-center justify-between gap-2 mb-2">
-                <span class="text-[11px] font-extrabold uppercase tracking-wide text-[#0F2942] bg-white px-2 py-0.5 rounded border border-slate-200">
-                  ${ev.Kegiatan || 'Kegiatan'}
-                </span>
-              </div>
-              <h3 class="font-bold text-sm text-slate-900 leading-snug">${ev.Tahapan || ''}</h3>
-              ${ev.Keterangan ? `<p class="text-xs text-slate-600 mt-1.5">📍 ${ev.Keterangan}</p>` : ''}
+      document.getElementById('timelineCountLabel').textContent = `${items.length} tahapan kegiatan`;
+      const track = document.getElementById('horizontalTimelineTrack');
+
+      if (!items.length) {
+        track.innerHTML = `<div class="w-full text-center py-12 text-xs text-slate-400">Tidak ada tahapan kegiatan ditemukan.</div>`;
+        return;
+      }
+
+      track.innerHTML = items.map((ev, idx) => {
+        const isBottom = idx % 2 === 0;
+        const dateLabel = ev.Tanggal || ev['Start Date'] || '';
+        const title = ev.Kegiatan || '';
+        const subtitle = ev.Tahapan || '';
+        const note = ev.Keterangan || '';
+
+        const cardHtml = `
+          <div class="htl-card">
+            <div class="text-xs sm:text-[13px] font-extrabold text-sky-600 leading-tight">${title}</div>
+            <div class="text-[11px] sm:text-xs font-medium text-slate-600 mt-1 leading-snug">${subtitle}</div>
+            ${note ? `<div class="text-[10px] text-slate-400 mt-0.5 truncate max-w-full">${note}</div>` : ''}
+          </div>
+        `;
+
+        return `
+          <div class="relative flex flex-col items-center w-[235px] shrink-0 select-none">
+            <div class="h-[105px] flex flex-col items-center justify-end w-full">
+              ${!isBottom ? `
+                ${cardHtml}
+                <div class="w-[2px] h-5 bg-sky-300"></div>
+              ` : ''}
             </div>
-            <div class="mt-4 pt-2.5 border-t border-slate-200 flex items-center justify-between text-[11px]">
-              <span class="font-bold text-sky-800">${displayDate}</span>
-              <span class="text-slate-400">${rangeNote}</span>
+
+            <div class="relative w-full flex items-center justify-center h-6">
+              <div class="w-full h-[3px] bg-slate-300"></div>
+              <div class="absolute w-5 h-5 rounded-full bg-white border-[3px] border-slate-500 z-10"></div>
+            </div>
+
+            <div class="mt-1.5 text-xs font-extrabold text-slate-700 tracking-tight">
+              ${dateLabel}
+            </div>
+
+            <div class="h-[105px] flex flex-col items-center justify-start w-full">
+              ${isBottom ? `
+                <div class="w-[2px] h-5 bg-sky-300 mt-1"></div>
+                ${cardHtml}
+              ` : ''}
             </div>
           </div>
-        `}).join('');
-      }
+        `;
+      }).join('');
+    }
 
-      // 2. Agenda Setting (Dialog structure)
-      if (ACTIVE_TAB === 'dialog') {
-        const items = BOARD_DATA.dialogs.filter(d => matchesQuery(d, q));
-        document.getElementById('dialogTableBody').innerHTML = items.map(d => {
-          const topik = d['Topik/ Isu'] || d['Topik'] || '-';
-          const instansi = d['Jabatan/ Instansi'] || '';
-          const kehadiran = d['KET. Kehadiran'] || '';
-          const pic = d['PIC Narasumber'] || '-';
-          const status = d['Keterlaksanaan'] || '';
-          const flyer = d['Flyer'] || '';
-          const kendala = d['Kendala'] || '';
-          const isFlyerLink = flyer.startsWith('http');
+    // =========================================================
+    // AGENDA SETTING TABLE
+    // =========================================================
+    function renderDialogTable(q) {
+      const items = BOARD_DATA.dialogs.filter(d => matchesQuery(d, q));
+      document.getElementById('dialogTableBody').innerHTML = items.map(d => {
+        const topik = d['Topik/ Isu'] || d['Topik'] || '-';
+        const instansi = d['Jabatan/ Instansi'] || '';
+        const kehadiran = d['KET. Kehadiran'] || '';
+        const status = d['Keterlaksanaan'] || '';
+        const flyer = d['Flyer'] || '';
+        const isLink = flyer.startsWith('http');
 
-          return `
+        return `
           <tr class="hover:bg-slate-50 align-top">
-            <td class="px-4 py-3 whitespace-nowrap">
-              <div class="font-bold text-slate-800">${d.Tanggal || '-'}</div>
-              ${d.No ? `<div class="text-[11px] text-slate-400">Hari ke-${d.No}</div>` : ''}
+            <td class="px-4 py-3.5 whitespace-nowrap">
+              <div class="font-bold text-slate-900">${d.Tanggal || '-'}</div>
+              ${d['PIC Narasumber'] ? `<div class="text-[11px] text-slate-400">PIC: ${d['PIC Narasumber']}</div>` : ''}
             </td>
-            <td class="px-4 py-3 whitespace-nowrap">
-              <span class="font-bold text-sky-800 bg-sky-50 px-2 py-1 rounded text-xs">${d.Program || '-'}</span>
+            <td class="px-4 py-3.5 whitespace-nowrap">
+              <span class="px-2.5 py-1 rounded-md bg-sky-50 text-sky-800 font-bold text-xs border border-sky-200/70">${d.Program || '-'}</span>
             </td>
-            <td class="px-4 py-3 max-w-xs">
-              <div class="font-semibold text-slate-900">${topik}</div>
-            </td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3.5 max-w-xs font-semibold text-slate-800">${topik}</td>
+            <td class="px-4 py-3.5">
               <div class="font-bold text-slate-900">${d.Narasumber || '-'}</div>
               ${instansi ? `<div class="text-xs text-slate-500">${instansi}</div>` : ''}
             </td>
-            <td class="px-4 py-3 whitespace-nowrap">${statusBadge(kehadiran)}</td>
-            <td class="px-4 py-3 text-xs font-medium text-slate-700">${pic}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${statusBadge(status)}</td>
-            <td class="px-4 py-3 text-xs space-y-1">
-              ${isFlyerLink ? `<div><a href="${flyer}" target="_blank" class="text-sky-700 font-semibold hover:underline">Lihat Flyer ↗</a></div>` : (flyer ? `<div>${flyer}</div>` : '')}
-              ${kendala && kendala !== '-' ? `<div class="text-red-600 text-[11px]">⚠ ${kendala}</div>` : ''}
+            <td class="px-4 py-3.5 whitespace-nowrap">${statusPill(kehadiran)}</td>
+            <td class="px-4 py-3.5 whitespace-nowrap">${statusPill(status)}</td>
+            <td class="px-4 py-3.5 whitespace-nowrap">
+              ${isLink ? `<a href="${flyer}" target="_blank" class="text-xs font-bold text-sky-700 hover:underline">Buka ↗</a>` : `<span class="text-xs text-slate-400">${flyer || '-'}</span>`}
             </td>
           </tr>
-        `}).join('') || `<tr><td colspan="8" class="p-6 text-center text-xs text-slate-400">Belum ada data Agenda Setting yang terisi.</td></tr>`;
-      }
+        `;
+      }).join('') || `<tr><td colspan="7" class="p-8 text-center text-xs text-slate-400">Belum ada data Agenda Setting.</td></tr>`;
+    }
 
-      // 3. Archive
-      if (ACTIVE_TAB === 'archive') {
-        const items = BOARD_DATA.archive.filter(a => matchesQuery(a, q));
-        document.getElementById('archiveGrid').innerHTML = items.map(a => `
-          <div class="border border-slate-200 rounded-xl p-4 flex flex-col justify-between hover:border-sky-400 transition">
-            <div>
-              <div class="flex items-center justify-between gap-2 text-xs mb-2">
-                <span class="font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded">${a.Kode_Arsip || ''}</span>
-                <span class="text-slate-400">${a.Tanggal || ''}</span>
-              </div>
-              <span class="text-[11px] font-bold uppercase tracking-wide text-indigo-700">${a.Kategori || ''}</span>
-              <h3 class="font-bold text-sm text-slate-900 mt-1">${a.Judul || ''}</h3>
+    // =========================================================
+    // ARCHIVE & PPID GRID
+    // =========================================================
+    function renderArchive(q) {
+      const items = BOARD_DATA.archive.filter(a => matchesQuery(a, q));
+      document.getElementById('archiveGrid').innerHTML = items.map(a => `
+        <div class="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between space-y-4 shadow-xs hover:border-sky-300 transition">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold">${a.Kategori || 'Arsip'}</span>
+              <span class="text-slate-400 font-medium">${a.Tanggal || ''}</span>
             </div>
-            <div class="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span class="text-slate-500">${a.Divisi || ''}</span>
-              <a href="${a.Link || '#'}" target="_blank" class="font-bold text-sky-700 hover:underline">Lihat Dokumen ↗</a>
-            </div>
+            <h3 class="font-extrabold text-sm text-slate-900">${a.Judul || ''}</h3>
+            <p class="text-[11px] font-mono text-slate-400">${a.Kode_Arsip || ''}</p>
           </div>
-        `).join('') || `<p class="text-xs text-slate-400">Arsip tidak ditemukan.</p>`;
-      }
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-slate-500 font-medium">${a.Divisi || ''}</span>
+            <a href="${a.Link || '#'}" target="_blank" class="font-extrabold text-sky-700 hover:underline">Buka Berkas ↗</a>
+          </div>
+        </div>
+      `).join('');
+    }
 
-      // 4. Planner
-      if (ACTIVE_TAB === 'planner') {
-        toggleLockView('planner', BOARD_DATA.authenticated);
-        if (BOARD_DATA.authenticated) {
-          const items = BOARD_DATA.planner.filter(p => matchesQuery(p, q));
-          document.getElementById('plannerTableBody').innerHTML = items.map(p => `
-            <tr class="hover:bg-slate-50">
-              <td class="px-4 py-3 whitespace-nowrap font-semibold">${p.Tanggal_Tayang || ''}</td>
-              <td class="px-4 py-3">
-                <div class="font-bold text-slate-800">${p.Platform || ''}</div>
-                <div class="text-xs text-sky-700">${p.Akun || ''}</div>
-              </td>
-              <td class="px-4 py-3">
-                <div class="font-semibold text-slate-900">${p.Judul_Konten || ''}</div>
-                <div class="text-xs text-slate-500">${p.Jenis || ''}</div>
-              </td>
-              <td class="px-4 py-3 text-xs">${p.Divisi || ''} • <strong>${p.PIC || ''}</strong></td>
-              <td class="px-4 py-3 whitespace-nowrap">${statusBadge(p.Status)}</td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                ${p.Link_Asset ? `<a href="${p.Link_Asset}" target="_blank" class="text-xs font-semibold text-sky-700 hover:underline">Drive/Link ↗</a>` : '-'}
-              </td>
-            </tr>
-          `).join('');
-        }
-      }
-
-      // 5. Siaran
-      if (ACTIVE_TAB === 'siaran') {
-        toggleLockView('siaran', BOARD_DATA.authenticated);
-        if (BOARD_DATA.authenticated) {
-          const items = BOARD_DATA.siaran.filter(s => matchesQuery(s, q));
-          document.getElementById('siaranTableBody').innerHTML = items.map(s => `
-            <tr class="hover:bg-slate-50">
-              <td class="px-4 py-3 whitespace-nowrap font-semibold">${s.Tanggal || ''}</td>
-              <td class="px-4 py-3 whitespace-nowrap font-bold text-sky-800">${s.Programa || ''}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-xs">${s.Shift || ''}</td>
-              <td class="px-4 py-3 font-semibold text-slate-900">🎙️ ${s.Penyiar || ''}</td>
-              <td class="px-4 py-3 text-slate-700">🎛️ ${s.Operator || ''}</td>
-              <td class="px-4 py-3 whitespace-nowrap">${statusBadge(s.Status)}</td>
-            </tr>
-          `).join('');
-        }
-      }
-
-      // 6. Info Pegawai
-      if (ACTIVE_TAB === 'pegawai') {
-        toggleLockView('pegawai', BOARD_DATA.authenticated);
-        if (BOARD_DATA.authenticated) {
-          const items = BOARD_DATA.info_pegawai.filter(i => matchesQuery(i, q));
-          document.getElementById('pegawaiCards').innerHTML = items.map(i => `
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold px-2.5 py-0.5 rounded ${String(i.Prioritas).toLowerCase() === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700'}">
-                  ${i.Prioritas || 'Info'}
-                </span>
-                <span class="text-xs text-slate-400">${i.Tanggal || ''}</span>
-              </div>
-              <h3 class="font-bold text-sm text-slate-900">${i.Judul || ''}</h3>
-              <p class="text-xs text-slate-600 leading-relaxed">${i.Isi || ''}</p>
-              <div class="pt-2 flex items-center justify-between text-xs text-slate-500">
-                <span>Target: <strong>${i.Target_Divisi || 'Semua'}</strong></span>
-                ${i.Lampiran ? `<a href="${i.Lampiran}" target="_blank" class="text-sky-700 font-semibold hover:underline">Buka Tautan ↗</a>` : ''}
-              </div>
+    // =========================================================
+    // LOGGED-IN EMPLOYEE WORKSPACE
+    // =========================================================
+    function renderEmployeeWorkspace(q) {
+      const pEl = document.getElementById('plannerList');
+      if (pEl) {
+        const pItems = BOARD_DATA.planner.filter(p => matchesQuery(p, q));
+        pEl.innerHTML = pItems.map(p => `
+          <div class="p-3 rounded-lg border border-slate-200 bg-slate-50/70 space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-bold text-sky-700">${p.Akun || p.Platform}</span>
+              ${statusPill(p.Status)}
             </div>
-          `).join('');
-        }
+            <p class="text-xs font-bold text-slate-900">${p.Judul_Konten || ''}</p>
+            <p class="text-[11px] text-slate-500">${p.Tanggal_Tayang || ''} • PIC: ${p.PIC || '-'}</p>
+          </div>
+        `).join('') || `<p class="text-xs text-slate-400">Belum ada rencana konten.</p>`;
+      }
+
+      const sEl = document.getElementById('siaranList');
+      if (sEl) {
+        const sItems = BOARD_DATA.siaran.filter(s => matchesQuery(s, q));
+        sEl.innerHTML = sItems.map(s => `
+          <div class="p-3 rounded-lg border border-slate-200 bg-slate-50/70 space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-bold text-slate-800">${s.Programa || ''}</span>
+              ${statusPill(s.Status)}
+            </div>
+            <p class="text-xs font-bold text-slate-900">🎙️ ${s.Penyiar || '-'}</p>
+            <p class="text-[11px] text-slate-500">🎛️ ${s.Operator || '-'} • ${s.Shift || ''}</p>
+          </div>
+        `).join('') || `<p class="text-xs text-slate-400">Belum ada jadwal siaran.</p>`;
+      }
+
+      const iEl = document.getElementById('pegawaiList');
+      if (iEl) {
+        const iItems = BOARD_DATA.info_pegawai.filter(i => matchesQuery(i, q));
+        iEl.innerHTML = iItems.map(i => `
+          <div class="p-3 rounded-lg border border-slate-200 bg-slate-50/70 space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-bold ${String(i.Prioritas).toLowerCase() === 'urgent' ? 'text-red-600' : 'text-sky-700'}">${i.Prioritas || 'Info'}</span>
+              <span class="text-slate-400">${i.Tanggal || ''}</span>
+            </div>
+            <p class="text-xs font-bold text-slate-900">${i.Judul || ''}</p>
+            <p class="text-[11px] text-slate-600 line-clamp-2">${i.Isi || ''}</p>
+          </div>
+        `).join('') || `<p class="text-xs text-slate-400">Belum ada pengumuman.</p>`;
       }
     }
 
-    function toggleLockView(name, unlocked) {
-      document.getElementById(`${name}Locked`).classList.toggle('hidden', unlocked);
-      document.getElementById(`${name}Content`).classList.toggle('hidden', !unlocked);
-    }
-
+    // Audio Toggle
     function toggleAudio() {
       const audio = document.getElementById('pro1Audio');
       const icon = document.getElementById('audioIcon');
@@ -630,15 +750,14 @@
       }
     }
 
+    // Modals & Auth
     function openLoginModal() {
       const m = document.getElementById('loginModal');
-      m.classList.remove('hidden');
-      m.classList.add('flex');
+      m.classList.remove('hidden'); m.classList.add('flex');
     }
     function closeLoginModal() {
       const m = document.getElementById('loginModal');
-      m.classList.add('hidden');
-      m.classList.remove('flex');
+      m.classList.add('hidden'); m.classList.remove('flex');
     }
 
     async function submitLogin() {
@@ -671,82 +790,54 @@
     }
 
     async function setupSheets() {
-      if (!confirm('Buat tab baru (Planner, Siaran, Arsip, Info_Pegawai, Users) di Google Sheet Anda? Tab Sheet1 & Agenda Setting Anda tidak akan diubah.')) return;
+      if (!confirm('Buat tab baru (Planner, Siaran, Arsip, Info_Pegawai, Users) di Google Sheet Anda?')) return;
       const res = await fetch('/api/setup-sheets', { method: 'POST' });
       const data = await res.json();
       alert(data.message);
       if (data.ok) await loadBoard();
     }
 
-    // Exact column schemas matching your existing Google Sheets!
-    const TAB_SCHEMAS = {
-      timeline: {
-        target: 'Timeline',
-        title: 'Tambah Tahapan Timeline (Sheet1)',
-        fields: ['Kegiatan', 'Tahapan', 'Start Date', 'End Date', 'Keterangan', 'Tanggal']
-      },
-      dialog: {
-        target: 'Agenda_Setting',
-        title: 'Tambah Jadwal Dialog (Agenda Setting)',
-        fields: ['Tanggal', 'Program', 'Topik/ Isu', 'Narasumber', 'Jabatan/ Instansi', 'KET. Kehadiran', 'PIC Narasumber', 'Flyer', 'Keterlaksanaan', 'Kendala']
-      },
-      archive: {
-        target: 'Arsip',
-        title: 'Tambah Arsip / Dokumen PPID',
-        fields: ['Kode_Arsip', 'Tanggal', 'Kategori', 'Judul', 'Divisi', 'Link']
-      },
-      planner: {
-        target: 'Planner',
-        title: 'Tambah Rencana Konten',
-        fields: ['Tanggal_Tayang', 'Platform', 'Akun', 'Judul_Konten', 'Jenis', 'Divisi', 'PIC', 'Status', 'Link_Asset']
-      },
-      siaran: {
-        target: 'Siaran',
-        title: 'Tambah Jadwal Siaran',
-        fields: ['Tanggal', 'Shift', 'Programa', 'Penyiar', 'Operator', 'Status']
-      },
-      pegawai: {
-        target: 'Info_Pegawai',
-        title: 'Tambah Pengumuman Pegawai',
-        fields: ['Tanggal', 'Prioritas', 'Judul', 'Isi', 'Target_Divisi', 'Lampiran']
-      }
+    const ADD_SCHEMAS = {
+      Timeline: { title: 'Tambah Tahapan Timeline', fields: ['Kegiatan', 'Tahapan', 'Start Date', 'End Date', 'Keterangan', 'Tanggal'] },
+      Agenda_Setting: { title: 'Tambah Agenda Setting', fields: ['Tanggal', 'Program', 'Topik/ Isu', 'Narasumber', 'Jabatan/ Instansi', 'KET. Kehadiran', 'PIC Narasumber', 'Flyer', 'Keterlaksanaan', 'Kendala'] },
+      Arsip: { title: 'Tambah Arsip / PPID', fields: ['Kode_Arsip', 'Tanggal', 'Kategori', 'Judul', 'Divisi', 'Link'] },
+      Planner: { title: 'Tambah Content Planner', fields: ['Tanggal_Tayang', 'Platform', 'Akun', 'Judul_Konten', 'Jenis', 'Divisi', 'PIC', 'Status', 'Link_Asset'] },
+      Siaran: { title: 'Tambah Jadwal Siaran', fields: ['Tanggal', 'Shift', 'Programa', 'Penyiar', 'Operator', 'Status'] },
+      Info_Pegawai: { title: 'Tambah Info Pegawai', fields: ['Tanggal', 'Prioritas', 'Judul', 'Isi', 'Target_Divisi', 'Lampiran'] }
     };
 
-    function openAddModal() {
-      const schema = TAB_SCHEMAS[ACTIVE_TAB];
+    function openAddModal(targetKey) {
+      const schema = ADD_SCHEMAS[targetKey];
       if (!schema) return;
       document.getElementById('addModalTitle').textContent = schema.title;
       const form = document.getElementById('addRecordForm');
-      form.dataset.targetKey = schema.target;
+      form.dataset.targetKey = targetKey;
       form.innerHTML = schema.fields.map(f => `
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">${f}</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1">${f}</label>
           <input type="text" name="${f}" ${['Kegiatan', 'Tahapan', 'Tanggal', 'Program', 'Judul', 'Judul_Konten'].includes(f) ? 'required' : ''}
             placeholder="Isi ${f}..."
-            class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
+            class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F2942]" />
         </div>
       `).join('') + `
-        <button type="submit" class="w-full bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold py-2.5 rounded-lg">
+        <button type="submit" class="w-full bg-[#0F2942] hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-lg">
           Simpan ke Google Sheet
         </button>
       `;
       const m = document.getElementById('addModal');
-      m.classList.remove('hidden');
-      m.classList.add('flex');
+      m.classList.remove('hidden'); m.classList.add('flex');
     }
 
     function closeAddModal() {
       const m = document.getElementById('addModal');
-      m.classList.add('hidden');
-      m.classList.remove('flex');
+      m.classList.add('hidden'); m.classList.remove('flex');
     }
 
     async function submitNewRecord(e) {
       e.preventDefault();
       const form = e.target;
       const targetKey = form.dataset.targetKey;
-      const formData = new FormData(form);
-      const payload = Object.fromEntries(formData.entries());
+      const payload = Object.fromEntries(new FormData(form).entries());
 
       const res = await fetch(`/api/add/${targetKey}`, {
         method: 'POST',

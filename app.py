@@ -12,34 +12,34 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "rri-mamuju-digital-board-secret-
 db = SheetsDB()
 
 STATION_INFO = {
-    "name": "LPP RRI Mamuju",
-    "tagline": "Sekali di Udara Tetap di Udara",
+    "name": "RRI Mamuju.",
+    "subtitle": "Your station, synced",
     "address": "Jl. R.E. Martadinata, Kec. Simboro dan Kepulauan, Kab. Mamuju, Sulawesi Barat",
     "phone": "+62 822-9609-0996",
     "email": "lpprrimamuju@gmail.com",
     "streams": {
         "pro1": {
             "name": "RRI Pro 1 Mamuju",
-            "freq": "96.0 FM / 100.2 FM",
+            "freq": "96.0 FM",
             "url": "https://stream-node0.rri.co.id/streaming/20/9020/rrimamujupro1",
             "share": "https://play.rri.co.id/sharing/radio/010461"
         }
     },
     "portals": [
-        {"label": "Portal Berita RRI Mamuju", "url": "https://rri.co.id/mamuju"},
-        {"label": "PPID RRI Mamuju", "url": "https://mamuju.ppid.rri.go.id/"},
-        {"label": "RRI Digital (Pro 1)", "url": "https://play.rri.co.id/sharing/radio/010461"},
-        {"label": "YouTube @LPPRRIMamuju", "url": "https://www.youtube.com/@LPPRRIMamuju"},
-        {"label": "Instagram @rri_mamuju", "url": "https://www.instagram.com/rri_mamuju/"},
-        {"label": "Instagram @pro2_mamuju", "url": "https://www.instagram.com/pro2_mamuju/"},
-        {"label": "Linktree RRI Mamuju", "url": "https://linktr.ee/rri_mamuju"}
+        {"label": "rri.co.id/mamuju", "url": "https://rri.co.id/mamuju"},
+        {"label": "PPID Mamuju", "url": "https://mamuju.ppid.rri.go.id/"},
+        {"label": "RRI Digital", "url": "https://play.rri.co.id/sharing/radio/010461"},
+        {"label": "YouTube", "url": "https://www.youtube.com/@LPPRRIMamuju"},
+        {"label": "@rri_mamuju", "url": "https://www.instagram.com/rri_mamuju/"},
+        {"label": "@pro2_mamuju", "url": "https://www.instagram.com/pro2_mamuju/"},
+        {"label": "Linktree", "url": "https://linktr.ee/rri_mamuju"}
     ],
     "office_systems": [
         {"label": "PPID", "url": "https://mamuju.ppid.rri.go.id/"},
         {"label": "ASN-DIGITAL", "url": "https://asndigital.bkn.go.id/"},
         {"label": "SRIKANDI", "url": "https://srikandi.arsip.go.id/"},
         {"label": "SAKTI", "url": "https://sakti.kemenkeu.go.id/"},
-        {"label": "RRI Digital Dashboard", "url": "https://dashboard-rri.svara.id/"}
+        {"label": "RRI Digital", "url": "https://dashboard-rri.svara.id/"}
     ]
 }
 
@@ -55,7 +55,7 @@ def api_board():
     user = session.get("user")
     payload = {
         "connected": db.connected,
-        "status_msg": "Terhubung ke Google Sheets" if db.connected else (db.last_error or "Mode Demo Aktif"),
+        "status_msg": "Live Google Sheets" if db.connected else (db.last_error or "Mode Demo"),
         "server_time": datetime.now().strftime("%d %b %Y • %H:%M WITA"),
         "authenticated": bool(user),
         "user": user,
@@ -99,7 +99,7 @@ def api_logout():
 @app.route("/api/refresh", methods=["POST"])
 def api_refresh():
     db.clear_cache()
-    return jsonify({"ok": True, "message": "Cache diperbarui dari Google Sheets."})
+    return jsonify({"ok": True, "message": "Cache diperbarui."})
 
 
 @app.route("/api/setup-sheets", methods=["POST"])
