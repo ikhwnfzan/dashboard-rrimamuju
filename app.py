@@ -21,7 +21,7 @@ STATION_INFO = {
         "pro1": {
             "name": "RRI Pro 1 Mamuju",
             "freq": "96.0 FM",
-            "url": "https://stream-node0.rri.co.id/streaming/20/9020/rrimamujupro1",
+            "url": "https://stream-node0.rri.co.id/streaming/20/9020/rrimamujupro1.mp3",
             "share": "https://play.rri.co.id/sharing/radio/010461"
         }
     },
