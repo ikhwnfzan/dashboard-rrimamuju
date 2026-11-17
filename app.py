@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, send_from_directory
 from dotenv import load_dotenv
 from sheets_service import SheetsDB
 
@@ -48,6 +48,11 @@ STATION_INFO = {
 def index():
     user = session.get("user")
     return render_template("index.html", station=STATION_INFO, user=user)
+
+
+@app.route("/favicon.svg")
+def favicon():
+    return send_from_directory(app.template_folder, "favicon.svg", mimetype="image/svg+xml")
 
 
 @app.route("/api/board")
