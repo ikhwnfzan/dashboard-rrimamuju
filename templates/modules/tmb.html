@@ -1,0 +1,33 @@
+<!-- TMB: JADWAL TMB -->
+<section id="mod-jadwal_tmb" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg>
+      </span>
+      <div>
+        <h2 class="text-xl font-extrabold">Jadwal TMB (Teknologi &amp; Media Baru)</h2>
+        <p class="text-xs text-slate-400">Jadwal piket teknisi studio, MCR, dan pemancar</p>
+      </div>
+    </div>
+    <button id="btnAddTmb" onclick="openAddModal('Jadwal_TMB')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+      + Tambah Jadwal TMB
+    </button>
+  </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Tanggal</th>
+          <th class="py-3 px-3">Shift (Daypart)</th>
+          <th class="py-3 px-3">Lokasi / Pemancar</th>
+          <th class="py-3 px-3">Teknisi TMB</th>
+          <th class="py-3 px-3">Tugas</th>
+          <th class="py-3 px-3">Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyTmb" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagTmb" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>

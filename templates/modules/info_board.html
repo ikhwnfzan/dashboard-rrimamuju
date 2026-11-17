@@ -1,0 +1,17 @@
+<section id="mod-info_board" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-300 flex items-center justify-center">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      </span>
+      <div>
+        <h2 class="text-xl font-extrabold">Info Board</h2>
+        <p class="text-xs text-slate-400">Papan pengumuman &amp; informasi internal LPP RRI Mamuju</p>
+      </div>
+    </div>
+    <button id="btnAddInfoBoard" onclick="openAddModal('Info_Board')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+      + Posting Info Baru
+    </button>
+  </div>
+  <div id="fullInfoBoardList" class="grid md:grid-cols-2 gap-4"></div>
+</section>

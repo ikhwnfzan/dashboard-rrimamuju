@@ -1,0 +1,109 @@
+<!-- PERENCANAAN & SIARAN: DIALOG (WITH BESTCUT) -->
+<section id="mod-dialog" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-300 flex items-center justify-center">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+      </span>
+      <div>
+        <h2 class="text-xl font-extrabold">Jadwal Dialog</h2>
+        <p class="text-xs text-slate-400">Agenda dialog interaktif, narasumber, flyer, dan tautan Bestcut</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="text" id="searchDialog" oninput="renderDialogModule()" placeholder="Cari program, topik, narasumber..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
+      <button id="btnAddDialog" onclick="openAddModal('Agenda_Setting')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Tambah Dialog
+      </button>
+    </div>
+  </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Tanggal</th>
+          <th class="py-3 px-3">Program</th>
+          <th class="py-3 px-3">Topik / Isu</th>
+          <th class="py-3 px-3">Narasumber</th>
+          <th class="py-3 px-3">Kehadiran</th>
+          <th class="py-3 px-3">Status</th>
+          <th class="py-3 px-3">Bestcut</th>
+          <th class="py-3 px-3">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyDialog" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagDialog" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- PERENCANAAN & SIARAN: JADWAL SIARAN -->
+<section id="mod-jadwal_siaran" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-300 flex items-center justify-center">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
+      </span>
+      <div>
+        <h2 class="text-xl font-extrabold">Jadwal Siaran</h2>
+        <p class="text-xs text-slate-400">Jadwal penyiar &amp; operator siaran Pro 1 / Pro 2</p>
+      </div>
+    </div>
+    <button id="btnAddSiaran" onclick="openAddModal('Siaran')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+      + Tambah Jadwal Siaran
+    </button>
+  </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Tanggal</th>
+          <th class="py-3 px-3">Shift (Daypart)</th>
+          <th class="py-3 px-3">Programa</th>
+          <th class="py-3 px-3">Penyiar</th>
+          <th class="py-3 px-3">Operator</th>
+          <th class="py-3 px-3">Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbodySiaran" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagSiaran" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- PERENCANAAN & SIARAN: PROGRAM SIARAN -->
+<section id="mod-program_siaran" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-950 text-cyan-600 dark:text-cyan-300 flex items-center justify-center">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+      </span>
+      <div>
+        <h2 class="text-xl font-extrabold">Program Siaran</h2>
+        <p class="text-xs text-slate-400">Daftar mata acara, jam tayang, format, dan produser programa RRI Mamuju</p>
+      </div>
+    </div>
+    <button id="btnAddProgramSiaran" onclick="openAddModal('Program_Siaran')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+      + Tambah Program Siaran
+    </button>
+  </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Kode</th>
+          <th class="py-3 px-3">Programa</th>
+          <th class="py-3 px-3">Nama Program</th>
+          <th class="py-3 px-3">Hari</th>
+          <th class="py-3 px-3">Jam Tayang</th>
+          <th class="py-3 px-3">Format</th>
+          <th class="py-3 px-3">Produser</th>
+          <th class="py-3 px-3">Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyProgramSiaran" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagProgramSiaran" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>

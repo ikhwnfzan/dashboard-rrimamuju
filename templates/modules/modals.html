@@ -1,0 +1,165 @@
+<!-- SDM MODAL: EDIT EMPLOYEE -->
+<div id="empEditModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 overflow-y-auto">
+  <div class="bg-white dark:bg-[#111827] rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-8">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-extrabold">Edit Data Pegawai</h3>
+      <button onclick="closeEmpEditModal()" class="text-slate-400 hover:text-slate-700 font-bold">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <form onsubmit="submitEmpUpdate(event)" class="space-y-3 text-xs">
+      <input type="hidden" id="editEmpRowNum" />
+      <div class="grid grid-cols-3 gap-2">
+        <div>
+          <label class="block font-bold mb-1">No</label>
+          <input type="text" id="editEmpNo" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+        <div class="col-span-2">
+          <label class="block font-bold mb-1">NIP / NIPPK</label>
+          <input type="text" id="editEmpNip" required class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Nama Pegawai</label>
+        <input type="text" id="editEmpNama" required class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Pangkat / Golongan</label>
+        <input type="text" id="editEmpPangkat" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Jabatan</label>
+        <input type="text" id="editEmpJabatan" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block font-bold mb-1">Posisi</label>
+          <input type="text" id="editEmpPosisi" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+        <div>
+          <label class="block font-bold mb-1">Status</label>
+          <select id="editEmpStatus" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <option value="Aktif">Aktif</option>
+            <option value="Cuti">Cuti</option>
+            <option value="Pensiun">Pensiun</option>
+            <option value="Mutasi">Mutasi</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold transition">
+        Simpan Perubahan Pegawai
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ADMIN MODAL: ADD / EDIT USER WITH MULTI-ROLE CHECKBOXES -->
+<div id="userModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 overflow-y-auto">
+  <div class="bg-white dark:bg-[#111827] rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-8">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-extrabold">Kelola Akun User (NIP, Password, Role)</h3>
+      <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-700 font-bold">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <form onsubmit="submitUserForm(event)" class="space-y-3 text-xs">
+      <div>
+        <label class="block font-bold mb-1">NIP / NIPPPK Pegawai</label>
+        <input type="text" id="usrNip" list="pegawaiNipDatalist" required placeholder="Pilih atau ketik NIP..."
+          class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        <datalist id="pegawaiNipDatalist"></datalist>
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Password Login</label>
+        <input type="text" id="usrPassword" placeholder="Isi password baru (kosongkan jika tidak diubah)"
+          class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div>
+        <label class="block font-bold mb-1.5">Pilih Role (Bisa lebih dari 1 role)</label>
+        <div id="roleCheckboxes" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700"></div>
+      </div>
+      <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold transition">
+        Simpan Akun User
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- DIALOG UPDATE MODAL (WITH BESTCUT FIELD) -->
+<div id="dialogEditModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 overflow-y-auto">
+  <div class="bg-white dark:bg-[#111827] rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-8">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-extrabold">Update Status &amp; Detail Dialog</h3>
+      <button onclick="closeDialogEditModal()" class="text-slate-400 hover:text-slate-700 font-bold">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <form onsubmit="submitDialogUpdate(event)" class="space-y-3 text-xs">
+      <input type="hidden" id="editDialogRowNum" />
+      <div>
+        <label class="block font-bold mb-1">Topik / Isu</label>
+        <input type="text" id="editDialogTopik" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Narasumber</label>
+        <input type="text" id="editDialogNarasumber" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block font-bold mb-1">KET. Kehadiran</label>
+          <input type="text" id="editDialogKehadiran" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+        <div>
+          <label class="block font-bold mb-1">Keterlaksanaan</label>
+          <input type="text" id="editDialogStatus" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Link Flyer</label>
+        <input type="text" id="editDialogFlyer" placeholder="https://..." class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Bestcut (Link Audio / Video Potongan Terbaik)</label>
+        <input type="text" id="editDialogBestcut" placeholder="https://drive.google.com/... atau https://youtube.com/..." class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">
+        Simpan Perubahan
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ADMIN INITIAL DATA MODAL -->
+<div id="initModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+  <div class="bg-white dark:bg-[#111827] rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-extrabold">Initial Data</h3>
+      <button onclick="closeInitModal()" class="text-slate-400 hover:text-slate-700 font-bold">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+      Menjalankan Initial Data akan <strong>me-reset hanya tab <code>Users</code></strong> (NIP, Password, Role) ke akun default dan membuat tab yang belum ada. Tab <code>DB_Pegawai</code> dan semua data lain tetap aman.
+    </p>
+    <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+      <input type="checkbox" id="initIncludeSamples" checked class="rounded text-teal-600" />
+      <span>Sertakan contoh data awal pada tab baru</span>
+    </label>
+    <button onclick="runInitData()" id="btnRunInit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold">
+      Jalankan Initial Data
+    </button>
+  </div>
+</div>
+
+<!-- GENERIC ADD RECORD MODAL -->
+<div id="genericAddModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 overflow-y-auto">
+  <div class="bg-white dark:bg-[#111827] rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-8">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-extrabold" id="genericModalTitle">Tambah Data</h3>
+      <button onclick="closeGenericModal()" class="text-slate-400 hover:text-slate-700 font-bold">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <form id="genericAddForm" onsubmit="submitGenericRecord(event)" class="space-y-3 text-xs"></form>
+  </div>
+</div>

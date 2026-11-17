@@ -1,0 +1,54 @@
+<!-- ADMIN: MANAGE USERS (MULTI-ROLE) -->
+<section id="mod-manage_users" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-300 flex items-center justify-center">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+      </span>
+      <div>
+        <h2 class="text-xl font-extrabold">Manage User</h2>
+      </div>
+    </div>
+    <button onclick="openUserModal()" class="text-xs font-bold px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+      + Tambah / Edit Akun User
+    </button>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">NIP</th>
+          <th class="py-3 px-3">Nama Pegawai</th>
+          <th class="py-3 px-3">Posisi</th>
+          <th class="py-3 px-3">Assigned Roles</th>
+          <th class="py-3 px-3 text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyUsers" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagUsers" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- ADMIN: MANAGE MODULE ACCESS PER ROLE -->
+<section id="mod-manage_modules" class="mod-section hidden space-y-5">
+  <div class="flex items-center gap-3">
+    <span class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </span>
+    <div>
+      <h2 class="text-xl font-extrabold">Manage Module</h2>
+      <p class="text-xs text-slate-400">Atur hak akses setiap role terhadap masing-masing modul</p>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs">
+      <thead class="bg-slate-50 dark:bg-slate-800/70 text-slate-500 font-bold">
+        <tr id="matrixHeaderRow"></tr>
+      </thead>
+      <tbody id="matrixBodyRows" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+  </div>
+</section>
