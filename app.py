@@ -5,12 +5,15 @@ from dotenv import load_dotenv
 from sheets_service import SheetsDB, TAB_SCHEMAS, ALL_MODULES, ALL_ROLES
 from datetime import datetime, timezone
 
+from media_service import MediaFeedService
+
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "rri-mamuju-digital-board-secret-2026")
 
 db = SheetsDB()
+media_feed = MediaFeedService()
 
 STATION_INFO = {
     "name": "RRI Mamuju.",
@@ -160,6 +163,8 @@ def api_board():
         "stock_master": stock_bundle["master"],
         "stock_in": stock_bundle["in_list"],
         "stock_out": stock_bundle["out_list"],
+        "youtube_feed": media_feed.get_youtube_feed(),
+        "drive_flyers": media_feed.get_drive_flyers(),
     }
     return jsonify(payload)
 
@@ -190,6 +195,7 @@ def api_logout():
 @app.route("/api/refresh", methods=["POST"])
 def api_refresh():
     db.clear_cache()
+    media_feed.clear_cache()
     return jsonify({"ok": True, "message": "Cache diperbarui."})
 
 

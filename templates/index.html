@@ -182,7 +182,7 @@
 
           <div class="flex items-center gap-2 w-full sm:w-auto">
             <input type="search" id="timelineSearch" name="timeline_filter_q" autocomplete="off" data-lpignore="true"
-              oninput="renderHorizontalTimeline()" placeholder="Filter kegiatan / tahapan timeline..."
+              oninput="renderHorizontalTimeline()" placeholder="Cari Kegiatan"
               class="w-full sm:w-64 text-xs px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F2942]" />
           </div>
         </div>
@@ -194,7 +194,7 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-between text-[11px] text-slate-400">
+        <div class="flex items-center justify-center text-[11px] text-slate-400">
           <span>← Geser ke samping untuk melihat seluruh jadwal →</span>
         </div>
       </div>
@@ -235,7 +235,7 @@
     </section>
     {% endif %}
 
-    <!-- SECTION 2: AGENDA SETTING & DIALOG SIARAN -->
+    <!-- SECTION 1: AGENDA SETTING & DIALOG SIARAN -->
     <section id="agenda-dialog" class="space-y-4">
       <div>
         <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Jadwal Dialog Siaran</h2>
@@ -262,7 +262,7 @@
       </div>
     </section>
 
-    <!-- SECTION 3: PROGRAM SIARAN UNGGULAN -->
+    <!-- SECTION 3: PROGRAM SIARAN -->
     <section id="program-siaran" class="space-y-4">
       <div>
         <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Program Siaran LPP RRI Mamuju</h2>
@@ -270,14 +270,38 @@
       <div id="programGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </section>
 
-    <!-- SECTION 4: ARSIP DIGITAL & PPID -->
-    <section id="arsip-ppid" class="space-y-4">
-      <div>
-        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Arsip Digital &amp; Layanan PPID</h2>
-        <p class="text-xs sm:text-sm text-slate-500">Dokumentasi acara siaran berkala, rekaman YouTube, dan berkas publik</p>
-      </div>
+    <!-- SECTION 2: YOUTUBE LPP RRI MAMUJU & GOOGLE DRIVE FLYER CAROUSEL -->
+    <section id="media-showcase" class="space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
-      <div id="archiveGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <!-- Left (8 cols): YouTube LPP RRI Mamuju Recent Video / Live -->
+        <div class="lg:col-span-8 h-full bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-3.5">
+          <!-- Responsive 16:9 YouTube Iframe -->
+          <div class="relative h-full aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-200">
+            <iframe id="ytShowcaseIframe"
+              src="https://www.youtube.com/embed/vACkSb0QIIU?rel=0"
+              title="LPP RRI Mamuju YouTube"
+              class="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen>
+            </iframe>
+          </div>
+        </div>
+
+        <!-- Right (4 cols): Google Drive Flyer Poster Carousel -->
+        <div class="lg:col-span-4 h-full bg-white rounded-2xl border border-slate-200 shadow-xs">
+          <!-- Poster Frame -->
+          <div class="relative h-full min-h-[340px] rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center group">
+            <div id="flyerImgLink" class="w-full h-full flex items-center justify-center">
+              <img id="flyerActiveImg" src="" alt="Flyer RRI Mamuju"
+                class="w-full h-full object-contain transition-opacity duration-300" />
+            </div>
+            <!-- Carousel Pagination Dots -->
+            <div class="absolute inset-x-0 bottom-3 z-10 flex items-center justify-center gap-1.5 rounded-full" id="flyerDots"></div>
+          </div>
+        </div>
+
+      </div>
     </section>
 
     <!-- EMPLOYEE CTA BANNER (Public visitors) -->
@@ -285,7 +309,7 @@
     <section class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
       <div class="space-y-1 text-center sm:text-left">
         <h3 class="text-base sm:text-lg font-extrabold text-slate-900">Pegawai LPP RRI Mamuju?</h3>
-        <p class="text-xs sm:text-sm text-slate-500">Masuk menggunakan NIP / NIPPPK dan Password untuk membuka Dashboard Pegawai (SDM, Perencanaan, Siaran, KMB, TMB, BMN).</p>
+        <p class="text-xs sm:text-sm text-slate-500">Masuk menggunakan NIP / NIPPPK dan Password untuk membuka Dashboard Pegawai</p>
       </div>
       <button onclick="openLoginModal()"
         class="shrink-0 text-xs sm:text-sm font-bold px-5 py-2.5 rounded-lg bg-[#0F2942] hover:bg-slate-800 text-white transition">
@@ -385,7 +409,7 @@
       </div>
 
       <div class="border-t border-slate-300 mt-10 pt-5 text-center text-[11px] text-slate-500">
-        All rights reserved © 2026 ikhwnfzan.
+        All rights reserved © {{ now().year }} ikhwnfzan.
       </div>
     </div>
   </footer>
@@ -404,13 +428,13 @@
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">NIP / NIPPPK</label>
           <input type="text" id="loginEmpId" name="username" autocomplete="username"
-            placeholder="Contoh: 199806212025041001"
+            placeholder="Masukkan NIP / NIPPPK"
             class="w-full text-sm px-3.5 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F2942]" />
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
           <input type="password" id="loginPassword" name="password" autocomplete="current-password" onkeydown="if(event.key==='Enter') submitLogin()"
-            placeholder="••••••••"
+            placeholder="Masukkan Password"
             class="w-full text-sm px-3.5 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F2942]" />
         </div>
         <p id="loginError" class="text-xs text-red-600 hidden"></p>
@@ -428,6 +452,8 @@
     let BOARD_DATA = {
       authenticated: false,
       user: null,
+      youtube_feed: { videos: [] },
+      drive_flyers: { items: [] },
       timeline: [],
       dialogs: [],
       program_siaran: [],
@@ -435,6 +461,75 @@
     };
 
     let CATEGORY_FILTER = 'ALL';
+    let YT_MODE = 'latest';
+    let YT_SELECTED_IDX = 0;
+    let FLYER_IDX = 0;
+
+    function renderAllSections() {
+      renderHorizontalTimeline();
+      renderDialogTable();
+      renderProgramSiaranPublic();
+      renderMediaShowcase();
+    }
+    
+    function renderMediaShowcase() {
+      const yt = BOARD_DATA.youtube_feed || { videos: [] };
+      const videos = yt.videos || [];
+      renderYoutubePlayer();
+
+      const drive = BOARD_DATA.drive_flyers || { items: [] };
+      console.log('FLYER_IDX', FLYER_IDX, drive.items.length);
+      if (drive.folder_url) {
+        const dLink = document.getElementById('driveFolderLink');
+        if (dLink) dLink.href = drive.folder_url;
+      }
+      stepFlyer(0);
+    }
+
+    function renderYoutubePlayer() {
+      const yt = BOARD_DATA.youtube_feed || { videos: [] };
+      const videos = yt.videos || [];
+      const iframe = document.getElementById('ytShowcaseIframe');
+      if (!iframe) return;
+
+      const v = videos[YT_SELECTED_IDX] || videos[0];
+      if (iframe.src !== v.embed_url) iframe.src = v.embed_url;
+    }
+
+    function renderFlyerCarousel() {
+      const items = (BOARD_DATA.drive_flyers || {}).items || [];
+      const imgEl = document.getElementById('flyerActiveImg');
+      const dotsEl = document.getElementById('flyerDots');
+
+      if (!items.length) {
+        if (dotsEl) dotsEl.innerHTML = '';
+        return;
+      }
+
+      if (FLYER_IDX >= items.length) FLYER_IDX = 0;
+      if (FLYER_IDX < 0) FLYER_IDX = items.length - 1;
+
+      const cur = items[FLYER_IDX];
+      if (imgEl) {
+        imgEl.src = cur.image_url;
+        imgEl.alt = cur.name;
+      }
+
+      if (dotsEl) {
+        dotsEl.innerHTML = items.map((_, i) => `
+          <button onclick="stepFlyer(${i - FLYER_IDX})" aria-label="Slide ${i + 1}"
+            class="w-2 h-2 rounded-full transition ${i === FLYER_IDX ? 'bg-slate-800 scale-110' : 'bg-slate-300 hover:bg-slate-400'}">
+          </button>
+        `).join('');
+      }
+    }
+
+    function stepFlyer(delta) {
+      const items = (BOARD_DATA.drive_flyers || {}).items || [];
+      if (!items.length) return;
+      FLYER_IDX = (FLYER_IDX + delta + items.length) % items.length;
+      renderFlyerCarousel();
+    }
 
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
@@ -503,13 +598,6 @@
         return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-600 border border-red-200">${status}</span>`;
       }
       return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">${status}</span>`;
-    }
-
-    function renderAllSections() {
-      renderHorizontalTimeline();
-      renderDialogTable();
-      renderProgramSiaranPublic();
-      renderArchive();
     }
 
     function renderHorizontalTimeline() {
@@ -614,26 +702,6 @@
           </div>
         </div>
       `).join('') || `<div class="col-span-full text-center py-6 text-xs text-slate-400">Belum ada jadwal program siaran.</div>`;
-    }
-
-    function renderArchive() {
-      const items = BOARD_DATA.archive || [];
-      document.getElementById('archiveGrid').innerHTML = items.map(a => `
-        <div class="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between space-y-4 shadow-xs hover:border-sky-300 transition">
-          <div class="space-y-2">
-            <div class="flex items-center justify-between text-xs">
-              <span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold">${a.Kategori || 'Arsip'}</span>
-              <span class="text-slate-400 font-medium">${a.Tanggal || ''}</span>
-            </div>
-            <h3 class="font-extrabold text-sm text-slate-900">${a.Judul || ''}</h3>
-            <p class="text-[11px] font-mono text-slate-400">${a.Kode_Arsip || ''}</p>
-          </div>
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span class="text-slate-500 font-medium">${a.Divisi || ''}</span>
-            <a href="${a.Link || '#'}" target="_blank" rel="noopener" class="font-extrabold text-sky-700 hover:underline">Buka Berkas ↗</a>
-          </div>
-        </div>
-      `).join('');
     }
 
     function setAudioIcon(isPlaying) {
