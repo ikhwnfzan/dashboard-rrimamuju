@@ -1,6 +1,7 @@
 let DATA = {};
 const PAGE_STATE = {};
 const DEFAULT_PAGE_SIZE = 10;
+let loadingTaskCount = 0;
 
 const ICON_CLASSES = {
   overview: 'ti-layout-dashboard',
@@ -61,18 +62,68 @@ const MODULE_NAV_CONFIG = [
 function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
   if (!container) return;
-  const isErr = type === 'error';
+  const colorClasses = {
+    success: 'bg-emerald-50 dark:bg-emerald-950/95 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200',
+    error: 'bg-rose-50 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200',
+    warning: 'bg-amber-50 dark:bg-amber-950/95 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200',
+    info: 'bg-sky-50 dark:bg-sky-950/95 border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-200'
+  };
   const toast = document.createElement('div');
   toast.className = `pointer-events-auto flex items-start gap-3 p-3.5 rounded-2xl shadow-xl border text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${
-    isErr ? 'bg-rose-50 dark:bg-rose-950/95 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100'
+    colorClasses[type] || colorClasses.success
   }`;
-  toast.innerHTML = `<div class="flex-1 leading-snug">${message}</div><button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-700">✕</button>`;
+  const text = document.createElement('div');
+  text.className = 'flex-1 leading-snug';
+  text.textContent = String(message ?? '');
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.setAttribute('aria-label', 'Tutup notifikasi');
+  closeButton.className = 'text-slate-400 hover:text-slate-700';
+  closeButton.textContent = '✕';
+  closeButton.addEventListener('click', () => toast.remove());
+  toast.append(text, closeButton);
   container.appendChild(toast);
   requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
   setTimeout(() => {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
   }, 4000);
+}
+
+function showLoadingOverlay() {
+  if (document.getElementById('globalLoadingOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'globalLoadingOverlay';
+  overlay.className = 'fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 backdrop-blur-sm';
+  overlay.setAttribute('role', 'status');
+  overlay.setAttribute('aria-live', 'polite');
+  overlay.innerHTML = `
+    <div class="flex items-center gap-3 rounded-2xl bg-white dark:bg-slate-900 px-5 py-4 shadow-xl border border-slate-200 dark:border-slate-700">
+      <span aria-hidden="true" class="h-6 w-6 animate-spin rounded-full border-[3px] border-slate-200 dark:border-slate-700 border-t-teal-600 dark:border-t-teal-400"></span>
+      <span class="text-sm font-bold text-slate-700 dark:text-slate-200">Sedang memproses...</span>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function withLoadingOverlay(operation) {
+  loadingTaskCount += 1;
+  try {
+    if (loadingTaskCount === 1) showLoadingOverlay();
+    return await operation();
+  } finally {
+    loadingTaskCount = Math.max(0, loadingTaskCount - 1);
+    if (loadingTaskCount === 0) document.getElementById('globalLoadingOverlay')?.remove();
+  }
+}
+
+async function processWithLoading(operation, errorMessage = 'Gagal memproses permintaan') {
+  try {
+    return await withLoadingOverlay(operation);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    showToast(`${errorMessage}: ${detail}`, 'error');
+    return null;
+  }
 }
 
 function escapeHtml(value) {
@@ -264,20 +315,21 @@ async function submitAppSettings(event) {
     default_theme: document.getElementById('appDefaultTheme').value
   };
   try {
-    const response = await fetch('/api/admin/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ settings })
-    });
-    const result = await response.json();
-    showToast(result.message, result.ok ? 'success' : 'error');
-    if (result.ok) {
-      DATA.app_config = result.app_config;
-      applyTheme(result.app_config.default_theme);
-      await loadDashboard();
-    }
-  } catch (error) {
-    showToast(`Gagal menyimpan pengaturan: ${error.message}`, 'error');
+    const result = await processWithLoading(async () => {
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings })
+      });
+      const result = await response.json();
+      if (result.ok) {
+        DATA.app_config = result.app_config;
+        applyTheme(result.app_config.default_theme);
+        await loadDashboard();
+      }
+      return result;
+    }, 'Gagal menyimpan pengaturan');
+    if (result) showToast(result.message, result.ok ? 'success' : 'error');
   } finally {
     button.disabled = false;
   }
@@ -286,14 +338,17 @@ async function submitAppSettings(event) {
 async function deleteRecord(targetKey, rowNum, label = 'data ini') {
   if (!rowNum) { showToast('Nomor baris tidak ditemukan.', 'error'); return; }
   if (!confirm(`Hapus ${label}?`)) return;
-  const res = await fetch(`/api/delete/${targetKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ row_num: rowNum })
-  });
-  const out = await res.json();
-  showToast(out.message, out.ok ? 'success' : 'error');
-  if (out.ok) await loadDashboard();
+  const out = await processWithLoading(async () => {
+    const res = await fetch(`/api/delete/${targetKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ row_num: rowNum })
+    });
+    const out = await res.json();
+    if (out.ok) await loadDashboard();
+    return out;
+  }, 'Gagal menghapus data');
+  if (out) showToast(out.message, out.ok ? 'success' : 'error');
 }
 
 function renderInfoBoard() {
@@ -585,10 +640,13 @@ async function submitEmpUpdate(e) {
     'Posisi': document.getElementById('editEmpPosisi').value,
     'Status': document.getElementById('editEmpStatus').value,
   };
-  const res = await fetch('/api/employees/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ row_num, updates }) });
-  const out = await res.json();
-  showToast(out.message, out.ok ? 'success' : 'error');
-  if (out.ok) { closeEmpEditModal(); await loadDashboard(); }
+  const out = await processWithLoading(async () => {
+    const res = await fetch('/api/employees/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ row_num, updates }) });
+    const out = await res.json();
+    if (out.ok) { closeEmpEditModal(); await loadDashboard(); }
+    return out;
+  }, 'Gagal memperbarui pegawai');
+  if (out) showToast(out.message, out.ok ? 'success' : 'error');
 }
 
 function renderArsipSdm() {
@@ -824,10 +882,13 @@ async function submitUserForm(e) {
   const nip = document.getElementById('usrNip').value;
   const password = document.getElementById('usrPassword').value;
   const roles = Array.from(document.querySelectorAll('input[name="roleChk"]:checked')).map(c => c.value);
-  const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nip, password, roles }) });
-  const out = await res.json();
-  showToast(out.message, out.ok ? 'success' : 'error');
-  if (out.ok) { closeUserModal(); await loadDashboard(); }
+  const out = await processWithLoading(async () => {
+    const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nip, password, roles }) });
+    const out = await res.json();
+    if (out.ok) { closeUserModal(); await loadDashboard(); }
+    return out;
+  }, 'Gagal menyimpan pengguna');
+  if (out) showToast(out.message, out.ok ? 'success' : 'error');
 }
 
 function renderManageModules() {
@@ -861,9 +922,11 @@ function renderManageModules() {
 }
 
 async function updateRoleModule(role, module_key, level) {
-  const res = await fetch('/api/admin/role-modules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role, module_key, level }) });
-  const out = await res.json();
-  showToast(out.message, out.ok ? 'success' : 'error');
+  const out = await processWithLoading(async () => {
+    const res = await fetch('/api/admin/role-modules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role, module_key, level }) });
+    return await res.json();
+  }, 'Gagal memperbarui hak akses');
+  if (out) showToast(out.message, out.ok ? 'success' : 'error');
 }
 
 function openDialogEdit(rowObj) {
@@ -888,10 +951,13 @@ async function submitDialogUpdate(e) {
     'Flyer': document.getElementById('editDialogFlyer').value,
     'Bestcut': document.getElementById('editDialogBestcut').value,
   };
-  const res = await fetch('/api/dialog/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ row_num, updates }) });
-  const out = await res.json();
-  showToast(out.message, out.ok ? 'success' : 'error');
-  if (out.ok) { closeDialogEditModal(); await loadDashboard(); }
+  const out = await processWithLoading(async () => {
+    const res = await fetch('/api/dialog/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ row_num, updates }) });
+    const out = await res.json();
+    if (out.ok) { closeDialogEditModal(); await loadDashboard(); }
+    return out;
+  }, 'Gagal memperbarui dialog');
+  if (out) showToast(out.message, out.ok ? 'success' : 'error');
 }
 
 const SCHEMAS = {
@@ -961,17 +1027,20 @@ async function submitTimeline(event) {
   const editing = Boolean(TIMELINE_EDIT_ROW);
   const url = editing ? '/api/timeline/update' : '/api/add/DB_Timeline';
   const rowNum = editing ? TIMELINE_EDIT_ROW._row_num : null;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(editing ? { row_num: rowNum, updates: payload } : payload)
-  });
-  const out = await res.json();
-  showToast(out.message, out.ok ? 'success' : 'error');
-  if (out.ok) {
-    closeTimelineModal();
-    await loadDashboard();
-  }
+  const out = await processWithLoading(async () => {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editing ? { row_num: rowNum, updates: payload } : payload)
+    });
+    const out = await res.json();
+    if (out.ok) {
+      closeTimelineModal();
+      await loadDashboard();
+    }
+    return out;
+  }, editing ? 'Gagal memperbarui kegiatan' : 'Gagal menyimpan kegiatan');
+  if (out) showToast(out.message, out.ok ? 'success' : 'error');
 }
 
 function handleRoomNipLookup(nipInputEl) {
@@ -1013,10 +1082,13 @@ async function submitGenericRecord(e) {
   e.preventDefault();
   const key = e.target.dataset.targetKey;
   const payload = Object.fromEntries(new FormData(e.target).entries());
-  const res = await fetch(`/api/add/${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  const out = await res.json();
-  showToast(out.message, out.ok ? 'success' : 'error');
-  if (out.ok) { closeGenericModal(); await loadDashboard(); }
+  const out = await processWithLoading(async () => {
+    const res = await fetch(`/api/add/${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const out = await res.json();
+    if (out.ok) { closeGenericModal(); await loadDashboard(); }
+    return out;
+  }, 'Gagal menyimpan data');
+  if (out) showToast(out.message, out.ok ? 'success' : 'error');
 }
 
 function openInitModal() { const m = document.getElementById('initModal'); m.classList.remove('hidden'); m.classList.add('flex'); }
@@ -1025,23 +1097,37 @@ async function runInitData() {
   const btn = document.getElementById('btnRunInit');
   btn.disabled = true;
   const include_samples = document.getElementById('initIncludeSamples').checked;
-  const res = await fetch('/api/init-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ include_samples }) });
-  const out = await res.json();
-  showToast(out.message, out.ok ? 'success' : 'error');
-  btn.disabled = false;
-  if (out.ok) { closeInitModal(); await loadDashboard(); }
+  try {
+    const out = await processWithLoading(async () => {
+      const res = await fetch('/api/init-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ include_samples }) });
+      const out = await res.json();
+      if (out.ok) { closeInitModal(); await loadDashboard(); }
+      return out;
+    }, 'Gagal menjalankan inisialisasi');
+    if (out) showToast(out.message, out.ok ? 'success' : 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function refreshAll() {
-  await fetch('/api/refresh', { method: 'POST' });
-  await loadDashboard();
-  showToast('Data berhasil disinkronkan dengan Google Sheets.', 'success');
+  const result = await processWithLoading(async () => {
+    const response = await fetch('/api/refresh', { method: 'POST' });
+    const result = await response.json();
+    if (result.ok) await loadDashboard();
+    return result;
+  }, 'Gagal menyinkronkan data');
+  if (result) showToast(result.message || 'Data berhasil disinkronkan dengan Google Sheets.', result.ok ? 'success' : 'error');
 }
 
 async function logoutUser() {
-  await fetch('/api/logout', { method: 'POST' });
-  window.location.href = '/';
+  await processWithLoading(async () => {
+    const response = await fetch('/api/logout', { method: 'POST' });
+    const result = await response.json();
+    if (!result.ok) throw new Error(result.message || 'Logout gagal.');
+    window.location.href = '/';
+  }, 'Gagal keluar');
 }
 
 initTheme();
-loadDashboard();
+processWithLoading(loadDashboard, 'Gagal memuat dashboard');
