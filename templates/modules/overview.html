@@ -4,7 +4,7 @@
       <div class="flex items-start justify-between">
         <div>
           <h3 class="text-sm font-extrabold">Info Board</h3>
-          <p class="text-[11px] text-slate-400 mt-0.5">Pengumuman Internal Stasiun</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">Pengumuman Internal</p>
         </div>
         <span class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
           <i aria-hidden="true" class="ti ti-speakerphone w-4 h-4 text-base leading-none"></i>
@@ -13,7 +13,6 @@
       <div class="flex items-end justify-between mt-4">
         <div>
           <p class="text-3xl font-extrabold" id="statInfoCount">0</p>
-          <p class="text-[11px] text-teal-600 dark:text-teal-400 font-semibold mt-0.5">Terbuka untuk semua role</p>
         </div>
         <button onclick="switchModule('info_board')" class="w-8 h-8 rounded-full bg-slate-900 dark:bg-slate-700 text-white flex items-center justify-center">
           <i aria-hidden="true" class="ti ti-arrow-right w-3.5 h-3.5 text-sm leading-none"></i>
@@ -24,7 +23,7 @@
     <div class="bg-white dark:bg-[#111827] rounded-3xl p-5 border border-slate-300/80 dark:border-slate-700 dashed-kpi flex flex-col justify-between min-h-[155px]">
       <div class="flex items-start justify-between">
         <div>
-          <h3 class="text-sm font-extrabold">Modul Aktif Anda</h3>
+          <h3 class="text-sm font-extrabold">Modul Aktif</h3>
           <p class="text-[11px] text-slate-400 mt-0.5">Sesuai hak akses role</p>
         </div>
         <span class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 flex items-center justify-center">
@@ -34,7 +33,6 @@
       <div class="flex items-end justify-between mt-4">
         <div>
           <p class="text-3xl font-extrabold" id="statAccessibleMods">0</p>
-          <p class="text-[11px] text-slate-400 font-semibold mt-0.5">{{ user.roles | join(', ') }}</p>
         </div>
       </div>
     </div>
@@ -42,14 +40,14 @@
     <div class="bg-white dark:bg-[#111827] rounded-3xl p-5 border border-slate-300/80 dark:border-slate-700 dashed-kpi flex flex-col justify-between min-h-[155px]">
       <div class="flex items-start justify-between">
         <div>
-          <h3 class="text-sm font-extrabold">Sinkronisasi Sheet</h3>
-          <p class="text-[11px] text-slate-400 mt-0.5" id="syncTimeLabel">-</p>
+          <h3 class="text-sm font-extrabold">Sinkronisasi Database</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5">Realtime</p>
         </div>
         <span id="syncBadge" class="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-600 text-[10px] font-extrabold">Live</span>
       </div>
       <div class="mt-4">
         <p class="text-xs font-bold truncate" id="syncStatusLabel">Memuat...</p>
-        <p class="text-[11px] text-slate-400 mt-0.5">NIP: {{ user.nip }}</p>
+        <p class="text-[11px] text-slate-400 mt-0.5" id="syncTimeLabel">-</p>
       </div>
     </div>
 
@@ -69,7 +67,6 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 class="text-base font-extrabold">Timeline Kegiatan</h2>
-        <p class="text-xs text-slate-400">Kelola rangkaian kegiatan, tahapan, dan jadwal stasiun</p>
       </div>
       <button id="btnAddTimeline" onclick="openTimelineModal()" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
         + Tambah Kegiatan

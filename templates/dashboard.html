@@ -37,7 +37,7 @@
           <a href="/" class="flex items-center gap-2.5">
             <img src="{{ url_for('favicon') }}" alt="RRI" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 object-cover" />
             <div>
-              <span class="font-extrabold text-base tracking-tight block">RRI Mamuju</span>
+              <span class="font-extrabold text-base tracking-tight block">BEACON</span>
               <span class="text-[11px] text-slate-400 block">Workspace Portal</span>
             </div>
           </a>
@@ -67,7 +67,7 @@
             <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition">
               <i aria-hidden="true" class="ti ti-menu-2 w-4 h-4 text-base leading-none"></i>
             </button>
-            <h1 id="pageTitle" class="text-lg sm:text-xl font-extrabold tracking-tight truncate">Dashboard Pegawai</h1>
+            <h1 id="pageTitle" class="text-lg sm:text-xl font-extrabold tracking-tight truncate">RRI Mamuju Dashboard</h1>
           </div>
 
           <div class="flex items-center gap-2.5 shrink-0">
@@ -87,9 +87,7 @@
                 <div class="hidden sm:block leading-tight">
                   <p class="text-xs font-extrabold truncate max-w-[150px]">{{ user.nama }}</p>
                   <div class="flex flex-wrap justify-end gap-1 mt-0.5">
-                    {% for r in user.roles %}
-                    <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300">{{ r }}</span>
-                    {% endfor %}
+                    <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300">{{ user.posisi }}</span>
                   </div>
                 </div>
                 <div onclick="toggleUserMenu()" id="userMenuButton"
@@ -133,6 +131,14 @@
 
   {% include 'modules/modals.html' %}
   <div id="toastContainer" class="fixed top-5 right-5 z-[60] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+ 
+  <footer class="bg-white dark:bg-[#111827] border-t border-slate-200 dark:border-slate-700 pt-2 pb-3">
+    <div class="max-w-[100rem] w-full mx-auto px-4 sm:px-8">
+      <p class="text-center text-sm text-slate-500">
+        BEACON &copy; {{ now().year }} ikhwnfzan. All rights reserved • <span class="font-mono text-xs">Broadcast Events, Archive, Content & Operations Network</span>
+      </p>
+    </div>
+  </footer>
 
   <script id="user-data" type="application/json">{{ user | tojson }}</script>
   <script id="app-config" type="application/json">{{ app_config | tojson }}</script>
