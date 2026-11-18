@@ -3,6 +3,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify, session, send_from_directory, redirect, url_for
 from dotenv import load_dotenv
 from sheets_service import SheetsDB, TAB_SCHEMAS, ALL_MODULES, ALL_ROLES
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -80,6 +81,9 @@ def _has_perm(user, module_key, min_level="view"):
     cur = perms.get(module_key, "none")
     return LEVEL_RANK.get(cur, 0) >= LEVEL_RANK.get(min_level, 1)
 
+@app.context_processor
+def inject_now():
+    return {'now': lambda: datetime.now(timezone.utc)}
 
 @app.route("/")
 def index():
