@@ -1069,7 +1069,7 @@ function openAddModal(key) {
     return `
       <div>
         <label class="block font-bold mb-1">${f}${isRoomNip ? ' <span class="text-teal-600 font-normal">(Auto-Lookup Pegawai)</span>' : ''}</label>
-        <input type="text" name="${f}" ${extraAttrs} placeholder="Isi ${f}..."
+        <input type="text" name="${f}" ${extraAttrs} placeholder="Isi ${f}"
           class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
       </div>
     `;

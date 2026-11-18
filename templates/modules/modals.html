@@ -45,13 +45,13 @@
 <div id="userModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 overflow-y-auto">
   <div class="bg-white dark:bg-[#111827] rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-8">
     <div class="flex items-center justify-between">
-      <h3 class="text-base font-extrabold">Kelola Akun User (CFG_Users)</h3>
+      <h3 class="text-base font-extrabold">Kelola Akun User</h3>
       <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
     </div>
     <form onsubmit="submitUserForm(event)" class="space-y-3 text-xs">
       <div>
         <label class="block font-bold mb-1">NIP Pegawai</label>
-        <input type="text" id="usrNip" list="pegawaiNipDatalist" required placeholder="Pilih atau ketik NIP..."
+        <input type="text" id="usrNip" list="pegawaiNipDatalist" required placeholder="Pilih atau ketik NIP"
           class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
         <datalist id="pegawaiNipDatalist"></datalist>
       </div>
@@ -97,11 +97,11 @@
       </div>
       <div>
         <label class="block font-bold mb-1">Link Flyer</label>
-        <input type="text" id="editDialogFlyer" placeholder="https://..." class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        <input type="text" id="editDialogFlyer" placeholder="Isi link flyer" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
       </div>
       <div>
         <label class="block font-bold mb-1">Bestcut</label>
-        <input type="text" id="editDialogBestcut" placeholder="https://..." class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        <input type="text" id="editDialogBestcut" placeholder="Isi link bestcut" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
       </div>
       <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">Simpan Perubahan</button>
     </form>
@@ -149,9 +149,7 @@
       <button onclick="closeInitModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
     </div>
     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-      Menjalankan <strong>Initial Data</strong> akan:
-      <br>• Menyamakan nama seluruh tab menjadi format <code>DB_*</code> &amp; <code>CFG_*</code> serta menstandarisasi header Row 1 (tanpa menghapus data yang ada).
-      <br>• Me-reset hanya tab <code>CFG_Users</code> ke akun default (<code>DB_Pegawai</code> &amp; semua data <code>DB_*</code> tetap aman).
+      Anda yakin ingin menjalankan <strong>Initial Data</strong>? Tindakan ini akan melakukan beberapa perubahan pada struktur database.
     </p>
     <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
       <input type="checkbox" id="initIncludeSamples" checked class="rounded text-teal-600" />

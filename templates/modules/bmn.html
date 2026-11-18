@@ -5,7 +5,7 @@
       <p class="text-xs text-slate-400">Inventaris barang BMN per ruangan</p>
     </div>
     <div class="flex items-center gap-2">
-      <input type="text" id="searchBarang" oninput="renderMasterBarang()" placeholder="Cari barang, kode, ruangan..."
+      <input type="text" id="searchBarang" oninput="renderMasterBarang()" placeholder="Cari"
         class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
       <button id="btnAddBarang" onclick="openAddModal('DB_Aset')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
         + Tambah Barang
@@ -67,7 +67,7 @@
       <p class="text-xs text-slate-400">Pencatatan penerimaan &amp; penambahan barang persediaan</p>
     </div>
     <div class="flex items-center gap-2">
-      <input type="text" id="searchStokIn" oninput="renderPersediaanMasuk()" placeholder="Cari barang, penanggung jawab..."
+      <input type="text" id="searchStokIn" oninput="renderPersediaanMasuk()" placeholder="Cari"
         class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
       <button id="btnAddStokMasuk" onclick="openAddModal('DB_Stok_Masuk')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition">
         + Catat Barang Masuk
@@ -100,7 +100,7 @@
       <p class="text-xs text-slate-400">Distribusi &amp; pengambilan barang persediaan per bidang/pegawai</p>
     </div>
     <div class="flex items-center gap-2">
-      <input type="text" id="searchStokOut" oninput="renderPersediaanKeluar()" placeholder="Cari barang, bidang, penerima..."
+      <input type="text" id="searchStokOut" oninput="renderPersediaanKeluar()" placeholder="Cari"
         class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
       <button id="btnAddStokKeluar" onclick="openAddModal('DB_Stok_Keluar')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition">
         - Catat Barang Keluar
@@ -134,7 +134,7 @@
       <p class="text-xs text-slate-400">Daftar ruangan &amp; penanggung jawab terhubung otomatis via NIP Pegawai</p>
     </div>
     <div class="flex items-center gap-2">
-      <input type="text" id="searchRuangan" oninput="renderMasterRuangan()" placeholder="Cari nomor, nama ruangan, PJ..."
+      <input type="text" id="searchRuangan" oninput="renderMasterRuangan()" placeholder="Cari"
         class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
       <button id="btnAddRuangan" onclick="openAddModal('DB_Ruangan')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
         + Tambah Ruangan
