@@ -518,8 +518,6 @@
         const matchCat = CATEGORY_FILTER === 'ALL' || (ev.Kegiatan || '').trim() === CATEGORY_FILTER;
         return matchCat && matchesQuery(ev, q);
       });
-
-      document.getElementById('timelineCountLabel').textContent = `${items.length} tahapan kegiatan`;
       const track = document.getElementById('horizontalTimelineTrack');
 
       if (!items.length) {
