@@ -82,7 +82,7 @@
         {% if user %}
         <div class="flex items-center gap-2">
           <a href="/dashboard" class="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-xs transition">
-            <span>Dashboard Pegawai</span>
+            <span>Dashboard Pegawai ↗</span>
           </a>
           <button onclick="logoutUser()" class="text-xs font-bold px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition">Logout</button>
         </div>
@@ -129,20 +129,16 @@
     {% if user %}
     <section class="bg-white rounded-2xl border border-teal-200/80 p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
       <div class="space-y-1">
+        <h2 class="text-lg font-extrabold text-slate-900">Halo, {{ user.nama }}</h2>
+        <p class="text-xs text-slate-500"><span class="font-mono font-semibold text-teal-700">{{ user.nip }}</span> • {{ user.posisi or user.jabatan }}</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-[11px] font-extrabold uppercase tracking-wider text-teal-700">Sesi Pegawai Aktif</span>
           {% for r in user.roles %}
           <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200/70">{{ r }}</span>
           {% endfor %}
         </div>
-        <h2 class="text-lg font-extrabold text-slate-900">Halo, {{ user.nama }}</h2>
-        <p class="text-xs text-slate-500">NIP: <span class="font-mono font-semibold">{{ user.nip }}</span> • {{ user.posisi or user.jabatan }}</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        {% for sys in station.office_systems %}
-        <a href="{{ sys.url }}" target="_blank" rel="noopener" class="text-xs font-semibold bg-slate-50 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg border border-slate-200 transition">{{ sys.label }} ↗</a>
-        {% endfor %}
-        <a href="/dashboard" class="text-xs font-extrabold px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-xs transition">Buka Dashboard Pegawai →</a>
       </div>
     </section>
     {% endif %}

@@ -548,11 +548,16 @@ function renderDataPegawai() {
         <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${String(e.Status || 'Aktif').toLowerCase() === 'aktif' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300'}">${e.Status || 'Aktif'}</span>
       </td>
       <td class="py-3 px-3 text-right whitespace-nowrap space-x-1">
-        ${editable ? `<button type="button" title="Edit pegawai" aria-label="Edit pegawai" onclick='openEmpEdit(${JSON.stringify(e)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
+        ${editable ? `<button type="button" title="Edit pegawai" aria-label="Edit pegawai" onclick="openEmpEditByRow(${Number(e._row_num)})" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
         ${deletable && e._row_num ? `<button type="button" title="Hapus pegawai" aria-label="Hapus pegawai" onclick="deleteRecord('DB_Pegawai', ${e._row_num}, '${(e['Nama Pegawai'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
       </td>
     </tr>
   `).join('');
+}
+
+function openEmpEditByRow(rowNum) {
+  const emp = (DATA.employees || []).find(item => Number(item._row_num) === rowNum);
+  if (emp) openEmpEdit(emp);
 }
 
 function openEmpEdit(emp) {
