@@ -1,5 +1,7 @@
 __pycache__/
 *.py[cod]
+*.zip
+*.rar
 .env
 service_account.json
 venv/

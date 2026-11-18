@@ -1,64 +1,49 @@
 <section id="mod-user_profile" class="mod-section hidden space-y-6">
   <div class="max-w-2xl mx-auto">
-    <!-- Employee License / ID Card -->
     <div class="relative bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xl overflow-hidden">
-      <!-- Top Institutional Header Strip -->
       <div class="bg-gradient-to-r from-[#0F2942] via-[#134E4A] to-[#0D9488] px-6 py-5 text-white flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <img src="/favicon.svg" alt="RRI" class="w-10 h-10 rounded-xl bg-white/10 p-1 border border-white/20 object-cover" />
+          <img src="{{ url_for('favicon') }}" alt="RRI" class="w-10 h-10 rounded-xl bg-white/10 p-1 border border-white/20 object-cover" />
           <div>
             <p class="text-[10px] font-extrabold uppercase tracking-widest text-teal-200">Kartu Identitas Pegawai</p>
             <h2 class="text-base font-extrabold tracking-tight">LPP RRI MAMUJU</h2>
           </div>
         </div>
-        <span class="px-3 py-1 rounded-full text-[11px] font-extrabold bg-white/15 border border-white/20 backdrop-blur-xs">
-          {{ user.status or 'AKTIF' }}
-        </span>
+        <span class="px-3 py-1 rounded-full text-[11px] font-extrabold bg-white/15 border border-white/20">{{ user.status or 'AKTIF' }}</span>
       </div>
 
-      <!-- Card Body -->
       <div class="p-6 sm:p-8 space-y-6">
         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-          <!-- Monogram Avatar -->
           <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-extrabold text-3xl flex items-center justify-center shadow-md shrink-0">
             {{ user.nama[:2].upper() }}
           </div>
-
           <div class="text-center sm:text-left space-y-1.5 flex-1 min-w-0">
-            <p class="text-[11px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
-              {{ user.posisi or user.jabatan or 'Pegawai' }}
-            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">{{ user.posisi or user.jabatan or 'Pegawai' }}</p>
             <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight truncate">{{ user.nama }}</h3>
-            <p class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-              NIP / NIPPPK: {{ user.nip }}
-            </p>
+            <p class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">NIP: {{ user.nip }}</p>
             <div class="flex flex-wrap justify-center sm:justify-start gap-1.5 pt-1">
               {% for r in user.roles %}
-              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                {{ r }}
-              </span>
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">{{ r }}</span>
               {% endfor %}
             </div>
           </div>
         </div>
 
-        <!-- License Metadata Fields -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-4 border-t border-dashed border-slate-200 dark:border-slate-800 text-xs">
           <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pangkat / Golongan</p>
-            <p class="font-extrabold mt-1 text-slate-800 dark:text-slate-100">{{ user.pangkat or '-' }}</p>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pangkat Golongan</p>
+            <p class="font-extrabold mt-1">{{ user.pangkat or '-' }}</p>
           </div>
           <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
             <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Jabatan</p>
-            <p class="font-extrabold mt-1 text-slate-800 dark:text-slate-100">{{ user.jabatan or '-' }}</p>
+            <p class="font-extrabold mt-1">{{ user.jabatan or '-' }}</p>
           </div>
           <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
             <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Satuan Kerja</p>
-            <p class="font-extrabold mt-1 text-slate-800 dark:text-slate-100">RRI Mamuju (Sulbar)</p>
+            <p class="font-extrabold mt-1">RRI Mamuju (Sulbar)</p>
           </div>
         </div>
 
-        <!-- Footer Strip -->
         <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
           <span>ID: {{ user.nip_clean }}</span>
           <span>VERIFIED • LPP RRI</span>

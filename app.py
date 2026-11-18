@@ -1,10 +1,8 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Flask, render_template, request, jsonify, session, send_from_directory, redirect, url_for
 from dotenv import load_dotenv
 from sheets_service import SheetsDB, TAB_SCHEMAS, ALL_MODULES, ALL_ROLES
-from datetime import datetime, timezone
-
 from media_service import MediaFeedService
 
 load_dotenv()
@@ -35,15 +33,6 @@ STATION_INFO = {
             "share": "https://play.rri.co.id/sharing/radio/015293"
         }
     },
-    "portals": [
-        {"label": "rri.co.id/mamuju", "url": "https://rri.co.id/mamuju"},
-        {"label": "PPID Mamuju", "url": "https://mamuju.ppid.rri.go.id/"},
-        {"label": "RRI Digital", "url": "https://play.rri.co.id/sharing/radio/010461"},
-        {"label": "YouTube", "url": "https://www.youtube.com/@LPPRRIMamuju"},
-        {"label": "@rri_mamuju", "url": "https://www.instagram.com/rri_mamuju/"},
-        {"label": "@pro2_mamuju", "url": "https://www.instagram.com/pro2_mamuju/"},
-        {"label": "Linktree", "url": "https://linktr.ee/rri_mamuju"}
-    ],
     "office_systems": [
         {"label": "PPID", "url": "https://mamuju.ppid.rri.go.id/"},
         {"label": "ASN-DIGITAL", "url": "https://asndigital.bkn.go.id/"},
@@ -54,15 +43,14 @@ STATION_INFO = {
 }
 
 TARGET_PERMISSION_MAP = {
-    "Timeline": ("dialog", "full"),
-    "Agenda_Setting": ("dialog", "full"),
+    "DB_Timeline": ("dialog", "full"),
+    "DB_Dialog": ("dialog", "full"),
     "DB_Konten": ("konten", "full"),
-    "Siaran": ("jadwal_siaran", "full"),
+    "DB_Siaran": ("jadwal_siaran", "full"),
     "DB_Program": ("program_siaran", "full"),
-    "Jadwal_TMB": ("jadwal_tmb", "full"),
-    "Arsip": ("info_board", "full"),
-    "Info_Board": ("info_board", "full"),
-    "Arsip_SDM": ("arsip_sdm", "full"),
+    "DB_Jadwal_TMB": ("jadwal_tmb", "full"),
+    "DB_Info_Board": ("info_board", "full"),
+    "DB_Arsip_SDM": ("arsip_sdm", "full"),
     "DB_Pegawai": ("data_pegawai", "full"),
     "DB_Aset": ("master_barang", "full"),
     "DB_Ruangan": ("master_ruangan", "full"),
@@ -84,9 +72,11 @@ def _has_perm(user, module_key, min_level="view"):
     cur = perms.get(module_key, "none")
     return LEVEL_RANK.get(cur, 0) >= LEVEL_RANK.get(min_level, 1)
 
+
 @app.context_processor
 def inject_now():
-    return {'now': lambda: datetime.now(timezone.utc)}
+    return {"now": lambda: datetime.now(timezone.utc)}
+
 
 @app.route("/")
 def index():
@@ -149,13 +139,12 @@ def api_board():
         "missing_tabs": missing_tabs,
         "timeline": db.get_timeline(),
         "dialogs": db.get_agenda_setting(),
-        "archive": db.get_tab_records("Arsip"),
-        "info_board": db.get_tab_records("Info_Board", include_row_num=True) if user else [],
-        "content_planner": db.get_tab_records("DB_Konten", include_row_num=True) if _has_perm(user, "konten", "view") else [],
-        "siaran": db.get_tab_records("Siaran", include_row_num=True) if _has_perm(user, "jadwal_siaran", "view") else [],
-        "program_siaran": db.get_tab_records("DB_Program", include_row_num=True),
-        "jadwal_tmb": db.get_tab_records("Jadwal_TMB", include_row_num=True) if _has_perm(user, "jadwal_tmb", "view") else [],
-        "arsip_sdm": db.get_tab_records("Arsip_SDM", include_row_num=True) if _has_perm(user, "arsip_sdm", "view") else [],
+        "info_board": db.get_tab_records(["DB_Info_Board", "Info_Board"], include_row_num=True) if user else [],
+        "content_planner": db.get_tab_records(["DB_Konten"], include_row_num=True) if _has_perm(user, "konten", "view") else [],
+        "siaran": db.get_tab_records(["DB_Siaran", "Siaran"], include_row_num=True) if _has_perm(user, "jadwal_siaran", "view") else [],
+        "program_siaran": db.get_tab_records(["DB_Program"], include_row_num=True),
+        "jadwal_tmb": db.get_tab_records(["DB_Jadwal_TMB", "Jadwal_TMB"], include_row_num=True) if _has_perm(user, "jadwal_tmb", "view") else [],
+        "arsip_sdm": db.get_tab_records(["DB_Arsip_SDM", "Arsip_SDM"], include_row_num=True) if _has_perm(user, "arsip_sdm", "view") else [],
         "employees": db.get_employees() if (_has_perm(user, "data_pegawai", "view") or _has_perm(user, "master_ruangan", "view") or is_admin) else [],
         "users_list": db.get_users_list() if is_admin else [],
         "assets": db.get_assets() if _has_perm(user, "master_barang", "view") else [],

@@ -1,6 +1,4 @@
-# RRI Mamuju. — Digital Board & Employee Portal (v4)
-
-Menggabungkan navigasi modern responsif (floating dock mobile + pill nav desktop) dengan **Timeline Horizontal Scrollable** yang simpel dan bersih sesuai desain v1 Anda.
+# RRI Mamuju — Digital Board & Employee Portal
 
 ## Menjalankan di PC Lokal (Git Bash / Windows)
 ```bash

@@ -11,12 +11,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_YT_HANDLE = "@LPPRRIMamuju"
 DEFAULT_DRIVE_FOLDER_ID = "1CwKdnqac1S3MrZApAzPpZKvrRZ8r8iZn"
 
-_MEDIA_CACHE = {
-    "youtube": (0, None),
-    "flyers": (0, None),
-    "channel_id": None,
-}
-MEDIA_TTL = 300  # 5 minutes cache
+_MEDIA_CACHE = {"youtube": (0, None), "flyers": (0, None), "channel_id": None}
+MEDIA_TTL = 300
 
 
 def _extract_folder_id(val):
@@ -61,22 +57,15 @@ class MediaFeedService:
             return _MEDIA_CACHE["channel_id"]
 
         handle = self.yt_handle if self.yt_handle.startswith("@") else f"@{self.yt_handle}"
-        url = f"https://www.youtube.com/{handle}"
         try:
-            resp = requests.get(
-                url,
-                headers={"User-Agent": "Mozilla/5.0", "Accept-Language": "en-US,en;q=0.9"},
-                timeout=8,
-            )
+            resp = requests.get(f"https://www.youtube.com/{handle}", headers={"User-Agent": "Mozilla/5.0"}, timeout=8)
             if resp.ok:
-                m = re.search(r'"externalId"\s*:\s*"(UC[a-zA-Z0-9_-]{22})"', resp.text)
-                if not m:
-                    m = re.search(r'channel_id=(UC[a-zA-Z0-9_-]{22})', resp.text)
+                m = re.search(r'"externalId"\s*:\s*"(UC[a-zA-Z0-9_-]{22})"', resp.text) or re.search(r'channel_id=(UC[a-zA-Z0-9_-]{22})', resp.text)
                 if m:
                     _MEDIA_CACHE["channel_id"] = m.group(1)
                     return m.group(1)
-        except Exception as e:
-            print("[MediaFeed] YouTube channel ID lookup warning:", e)
+        except Exception:
+            pass
         return None
 
     def get_youtube_feed(self, force=False):
@@ -88,36 +77,28 @@ class MediaFeedService:
         cid = self._resolve_youtube_channel_id()
         videos = []
         if cid:
-            rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={cid}"
             try:
-                r = requests.get(rss_url, timeout=8)
+                r = requests.get(f"https://www.youtube.com/feeds/videos.xml?channel_id={cid}", timeout=8)
                 if r.ok:
                     root = ET.fromstring(r.text)
-                    ns = {
-                        "atom": "http://www.w3.org/2005/Atom",
-                        "yt": "http://www.youtube.com/xml/schemas/2015",
-                        "media": "http://search.yahoo.com/mrss/",
-                    }
+                    ns = {"atom": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015"}
                     for entry in root.findall("atom:entry", ns)[:6]:
                         vid_el = entry.find("yt:videoId", ns)
                         title_el = entry.find("atom:title", ns)
                         pub_el = entry.find("atom:published", ns)
                         if vid_el is not None and vid_el.text:
                             vid = vid_el.text.strip()
-                            title = title_el.text.strip() if title_el is not None else "Siaran LPP RRI Mamuju"
-                            published = (pub_el.text or "")[:10] if pub_el is not None else ""
                             videos.append({
                                 "video_id": vid,
-                                "title": title,
-                                "published": published,
+                                "title": title_el.text.strip() if title_el is not None else "Siaran LPP RRI Mamuju",
+                                "published": (pub_el.text or "")[:10] if pub_el is not None else "",
                                 "url": f"https://www.youtube.com/watch?v={vid}",
                                 "embed_url": f"https://www.youtube.com/embed/{vid}?rel=0",
                                 "thumbnail": f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg",
                             })
-            except Exception as e:
-                print("[MediaFeed] YouTube RSS parse warning:", e)
+            except Exception:
+                pass
 
-        # Fallback to verified recent LPP RRI Mamuju videos if network/RSS is blocked
         if not videos:
             videos = [
                 {
@@ -127,15 +108,7 @@ class MediaFeedService:
                     "url": "https://www.youtube.com/watch?v=vACkSb0QIIU",
                     "embed_url": "https://www.youtube.com/embed/vACkSb0QIIU?rel=0",
                     "thumbnail": "https://i.ytimg.com/vi/vACkSb0QIIU/hqdefault.jpg",
-                },
-                {
-                    "video_id": "3h9VhTWc35Y",
-                    "title": "HALO RRI | Jumat, 13 November 2026",
-                    "published": "2026-11-14",
-                    "url": "https://www.youtube.com/watch?v=3h9VhTWc35Y",
-                    "embed_url": "https://www.youtube.com/embed/3h9VhTWc35Y?rel=0",
-                    "thumbnail": "https://i.ytimg.com/vi/3h9VhTWc35Y/hqdefault.jpg",
-                },
+                }
             ]
 
         result = {
@@ -155,19 +128,12 @@ class MediaFeedService:
 
         flyers = []
         folder_id = self.drive_folder_id
-
-        # Method 1: Official Google Drive API via Service Account
         creds = _load_sa_credentials()
         if creds:
             try:
                 service = build("drive", "v3", credentials=creds, cache_discovery=False)
                 query = f"'{folder_id}' in parents and trashed = false and mimeType contains 'image/'"
-                res = service.files().list(
-                    q=query,
-                    pageSize=15,
-                    orderBy="createdTime desc",
-                    fields="files(id, name, mimeType, webViewLink, createdTime)",
-                ).execute()
+                res = service.files().list(q=query, pageSize=15, orderBy="createdTime desc", fields="files(id, name, webViewLink, createdTime)").execute()
                 for f in res.get("files", []):
                     fid = f["id"]
                     flyers.append({
@@ -175,42 +141,29 @@ class MediaFeedService:
                         "name": f.get("name", "Flyer Siaran"),
                         "image_url": f"https://drive.google.com/thumbnail?id={fid}&sz=w1000",
                         "view_url": f.get("webViewLink") or f"https://drive.google.com/file/d/{fid}/view",
-                        "created": (f.get("createdTime") or "")[:10],
                     })
-            except Exception as e:
-                print("[MediaFeed] Drive API warning:", e)
+            except Exception:
+                pass
 
-        # Method 2: Public Folder HTML Fallback (works even if folder isn't shared with Service Account)
         if not flyers:
             try:
-                pub_url = f"https://drive.google.com/embeddedfolderview?id={folder_id}#grid"
-                resp = requests.get(pub_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=8)
+                resp = requests.get(f"https://drive.google.com/embeddedfolderview?id={folder_id}#grid", headers={"User-Agent": "Mozilla/5.0"}, timeout=8)
                 if resp.ok:
-                    # Extract file IDs and titles from embeddedfolderview
-                    entries = re.findall(
-                        r'href="https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)/view[^"]*"[^>]*>.*?<div class="flip-entry-title">([^<]+)</div>',
-                        resp.text,
-                        re.DOTALL,
-                    )
+                    entries = re.findall(r'href="https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)/view[^"]*"[^>]*>.*?<div class="flip-entry-title">([^<]+)</div>', resp.text, re.DOTALL)
                     seen = set()
                     for fid, raw_name in entries:
-                        if fid in seen:
-                            continue
-                        seen.add(fid)
-                        flyers.append({
-                            "id": fid,
-                            "name": raw_name.strip(),
-                            "image_url": f"https://drive.google.com/thumbnail?id={fid}&sz=w1000",
-                            "view_url": f"https://drive.google.com/file/d/{fid}/view",
-                            "created": "",
-                        })
-            except Exception as e:
-                print("[MediaFeed] Drive public fallback warning:", e)
+                        if fid not in seen:
+                            seen.add(fid)
+                            flyers.append({
+                                "id": fid,
+                                "name": raw_name.strip(),
+                                "image_url": f"https://drive.google.com/thumbnail?id={fid}&sz=w1000",
+                                "view_url": f"https://drive.google.com/file/d/{fid}/view",
+                            })
+            except Exception:
+                pass
 
-        result = {
-            "folder_url": f"https://drive.google.com/drive/folders/{folder_id}",
-            "items": flyers[:12],
-        }
+        result = {"folder_url": f"https://drive.google.com/drive/folders/{folder_id}", "items": flyers[:12]}
         _MEDIA_CACHE["flyers"] = (now, result)
         return result
 

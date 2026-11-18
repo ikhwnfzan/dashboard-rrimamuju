@@ -134,15 +134,6 @@ DEFAULT_ROLE_PERMISSIONS = {
         "master_ruangan": "full",
         "bmn_area": "full",
     },
-    "Operator BMN": {
-        "info_board": "view",
-        "master_barang": "full",
-        "master_persediaan": "full",
-        "persediaan_masuk": "full",
-        "persediaan_keluar": "full",
-        "master_ruangan": "full",
-        "bmn_area": "full",
-    },
     "LPU": {"info_board": "view"},
     "Berita": {"info_board": "view"},
     "Keuangan": {"info_board": "view"},
@@ -150,77 +141,108 @@ DEFAULT_ROLE_PERMISSIONS = {
     "Kasubag TU": {"info_board": "view", "data_pegawai": "view", "master_barang": "view", "master_persediaan": "view"},
 }
 
+# Unified Database (`DB_*`) & Configuration (`CFG_*`) Schemas with standardized Title Case Headers
 TAB_SCHEMAS = {
-    "Users": ["NIP", "Password", "Role"],
-    "Role_Modules": ["Role"] + [m["key"] for m in ALL_MODULES],
-    "DB_Pegawai": ["No", "Nama Pegawai", "NIP / NIPPK", "Pangkat/ Golongan", "Jabatan", "Status", "Posisi"],
-    "Arsip_SDM": ["Nomor Dokumen", "Nama Dokumen", "Tanggal", "Jenis", "Link"],
-    "Info_Board": ["Tanggal", "Prioritas", "Judul", "Isi", "Target_Divisi", "Lampiran"],
-    "DB_Konten": ["Tanggal_Tayang", "Platform", "Akun", "Judul_Konten", "Jenis", "Divisi", "PIC", "Status", "Link_Asset"],
-    "Siaran": ["Tanggal", "Shift", "Programa", "Penyiar", "Operator", "Status"],
-    "DB_Program": ["Kode Program", "Programa", "Nama Program", "Hari", "Jam Tayang", "Format", "Produser", "Status"],
-    "Jadwal_TMB": ["Tanggal", "Shift", "Lokasi_Pemancar", "Teknisi_TMB", "Tugas", "Status"],
-    "DB_Ruangan": ["Nomor Ruangan", "Nama Ruangan", "Lokasi", "Penanggungjawab Ruangan", "Nama", "NIP/ NIPPPK"],
-    "DB_Aset": ["Kode Ruang", "Nomor Kode Barang", "Nama Barang", "Merk/ Model", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"],
+    "CFG_Users": ["NIP", "Password", "Role"],
+    "CFG_Role_Modules": ["Role"] + [m["key"] for m in ALL_MODULES],
+    "DB_Timeline": ["Kegiatan", "Tahapan", "Tanggal Mulai", "Tanggal Selesai", "Keterangan", "Tanggal"],
+    "DB_Dialog": ["No", "Tanggal", "Program", "Topik", "Narasumber", "Foto Narasumber", "Jabatan", "Kehadiran", "PIC Narasumber", "Flyer", "Bestcut", "Keterlaksanaan", "Kendala"],
+    "DB_Siaran": ["Tanggal", "Shift", "Programa", "Penyiar", "Operator", "Status"],
+    "DB_Program": ["Kode Program", "Programa", "Nama Program", "Hari", "Jam", "Format", "Produser", "Status"],
+    "DB_Konten": ["ID", "Tanggal Tayang", "Platform", "Akun", "Judul Konten", "Jenis", "Divisi", "PIC", "Status", "Link Asset"],
+    "DB_Jadwal_TMB": ["Tanggal", "Shift", "Lokasi Pemancar", "Teknisi TMB", "Tugas", "Status"],
+    "DB_Pegawai": ["No", "Nama Pegawai", "NIP", "Pangkat Golongan", "Jabatan", "Status", "Posisi"],
+    "DB_Arsip_SDM": ["Nomor Dokumen", "Nama Dokumen", "Tanggal", "Jenis", "Link"],
+    "DB_Info_Board": ["Tanggal", "Prioritas", "Judul", "Isi", "Target Divisi", "Lampiran"],
+    "DB_Ruangan": ["Nomor Ruangan", "Nama Ruangan", "Lokasi", "NIP Penanggung Jawab"],
+    "DB_Aset": ["Nomor Kode Barang", "Kode Ruang", "Nama Barang", "Merk Model", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"],
     "DB_Stok_Master": ["Kode Barang", "Nama Barang", "Unit", "Stok Awal", "Keterangan"],
     "DB_Stok_Masuk": ["Tanggal", "Penanggung Jawab", "Nama Barang", "Jumlah Masuk", "Unit", "Pcs", "Keterangan"],
     "DB_Stok_Keluar": ["Tanggal", "Nama Barang", "Bidang", "Penerima Barang", "Jumlah Keluar", "Unit", "Pcs", "Keterangan"],
-    "Arsip": ["Kode_Arsip", "Tanggal", "Kategori", "Judul", "Divisi", "Link"],
+}
+
+# Maps legacy tab titles -> new standardized tab titles for automatic migration on Initial Data
+LEGACY_TAB_RENAMES = {
+    "sheet1": "DB_Timeline",
+    "agenda setting": "DB_Dialog",
+    "siaran": "DB_Siaran",
+    "jadwal_tmb": "DB_Jadwal_TMB",
+    "arsip_sdm": "DB_Arsip_SDM",
+    "info_board": "DB_Info_Board",
+    "users": "CFG_Users",
+    "role_modules": "CFG_Role_Modules",
+}
+
+# Maps legacy column header aliases -> standardized Title Case header
+HEADER_ALIASES = {
+    "start date": "Tanggal Mulai",
+    "end date": "Tanggal Selesai",
+    "topik/ isu": "Topik",
+    "jabatan/ instansi": "Jabatan",
+    "ket. kehadiran": "Kehadiran",
+    "tanggal_tayang": "Tanggal Tayang",
+    "judul_konten": "Judul Konten",
+    "link_asset": "Link Asset",
+    "jam_tayang": "Jam",
+    "kode_program": "Kode Program",
+    "nama_program": "Nama Program",
+    "lokasi_pemancar": "Lokasi Pemancar",
+    "teknisi_tmb": "Teknisi TMB",
+    "nip / nippk": "NIP",
+    "nip / nippk": "NIP",
+    "pangkat/ golongan": "Pangkat Golongan",
+    "target_divisi": "Target Divisi",
+    "penanggungjawab ruangan": "NIP Penanggung Jawab",
+    "merk/ model": "Merk Model",
 }
 
 DEMO_DATA = {
-    "Users": [
-        {"NIP": "199806212025041001", "Password": "rri2026", "Role": "Admin"},
-        {"NIP": "200112082025042004", "Password": "bmn2026", "Role": "TMB; Operator BMN"},
+    "CFG_Users": [
+        {"NIP": "199806212025041001", "Password": "rri2026", "Role": "Admin; TMB"},
+        {"NIP": "200112082025042004", "Password": "bmn2026", "Role": "TMB; BMN"},
         {"NIP": "199203252024212001", "Password": "sdm2026", "Role": "SDM"},
         {"NIP": "199210252025042002", "Password": "ren2026", "Role": "Siaran; Perencanaan"},
         {"NIP": "199010302022211010", "Password": "kmb2026", "Role": "KMB; Siaran"},
     ],
-    "DB_Pegawai": [
-        {"No": "1", "Nama Pegawai": "Rina Irfantini, S.H., M.Si.", "NIP / NIPPK": "197312051999032007", "Pangkat/ Golongan": "Pembina Tk.I IV/b", "Posisi": "Kepala Stasiun LPP RRI Mamuju", "Status": "Aktif", "Jabatan": "Kepala Stasiun"},
-        {"No": "2", "Nama Pegawai": "Muhamad Dirsan, S.E.", "NIP / NIPPK": "197506231998031002", "Pangkat/ Golongan": "Penata Tk.I III/d", "Posisi": "Kepala Sub Bagian Tata Usaha", "Status": "Aktif", "Jabatan": "Kepala Sub Bagian Tata Usaha"},
-        {"No": "3", "Nama Pegawai": "Jamil Ma'ruf, S.E.", "NIP / NIPPK": "199208152022021002", "Pangkat/ Golongan": "Penata Muda III/a", "Posisi": "Bendahara", "Status": "Aktif", "Jabatan": "Bendahara"},
-        {"No": "4", "Nama Pegawai": "Dwita Ardiyana", "NIP / NIPPK": "199210252025042002", "Pangkat/ Golongan": "Penata Muda III/a", "Posisi": "Staf", "Status": "Aktif", "Jabatan": "Pranata Siaran Ahli Pertama"},
-        {"No": "5", "Nama Pegawai": "Ikhwan Fauzan, A.Md.T", "NIP / NIPPK": "199806212025041001", "Pangkat/ Golongan": "Pengatur II/c", "Posisi": "Staf", "Status": "Aktif", "Jabatan": "Asisten Teknisi Siaran Terampil"},
-        {"No": "6", "Nama Pegawai": "Muthiah Azizah Ijsam, A.Md.T", "NIP / NIPPK": "200112082025042004", "Pangkat/ Golongan": "Pengatur II/c", "Posisi": "Staf", "Status": "Aktif", "Jabatan": "Asisten Teknisi Siaran Terampil"},
-        {"No": "7", "Nama Pegawai": "A. Mirwan Syam", "NIP / NIPPK": "199006082022211012", "Pangkat/ Golongan": "Pengatur Muda V", "Posisi": "Ketua Tim TMB", "Status": "Aktif", "Jabatan": "Ketua Tim TMB"},
-        {"No": "8", "Nama Pegawai": "Nurul Qodriyah, S.E.", "NIP / NIPPK": "199203252024212001", "Pangkat/ Golongan": "Penata Muda IX", "Posisi": "Staf", "Status": "Aktif", "Jabatan": "Analis SDM"},
-        {"No": "9", "Nama Pegawai": "Sugiyanto", "NIP / NIPPK": "199010302022211010", "Pangkat/ Golongan": "Pengatur Muda V", "Posisi": "Ketua Tim KMB", "Status": "Aktif", "Jabatan": "Ketua Tim KMB"},
+    "DB_Timeline": [
+        {"Kegiatan": "Bintang Radio", "Tahapan": "Pendaftaran dibuka", "Tanggal Mulai": "08/01/2026", "Tanggal Selesai": "08/01/2026", "Keterangan": "Online & Kantor LPP RRI Mamuju", "Tanggal": "1 Agustus 2026"},
+        {"Kegiatan": "RRI Fest", "Tahapan": "Bersih-Bersih Lingkungan", "Tanggal Mulai": "08/28/2026", "Tanggal Selesai": "08/28/2026", "Keterangan": "Pantai Manakarra", "Tanggal": "28 Agustus 2026"},
+        {"Kegiatan": "Hari Radio", "Tahapan": "Upacara dan Penyuluhan Obor", "Tanggal Mulai": "09/11/2026", "Tanggal Selesai": "09/11/2026", "Keterangan": "Auditorium LPP RRI Mamuju", "Tanggal": "11 September 2026"},
     ],
-    "Arsip_SDM": [
-        {"Nomor Dokumen": "SK-014/RRI-MMJ/SDM/2026", "Nama Dokumen": "SK Tim Pengelola BMN & Persediaan 2026", "Tanggal": "2026-01-10", "Jenis": "Surat Keputusan", "Link": "https://drive.google.com"},
-        {"Nomor Dokumen": "ST-088/RRI-MMJ/SDM/2026", "Nama Dokumen": "Surat Tugas Liputan RRI Fest Mamuju", "Tanggal": "2026-08-25", "Jenis": "Surat Tugas", "Link": "https://drive.google.com"},
+    "DB_Dialog": [
+        {"No": "1", "Tanggal": "Tuesday, 01 September 2026", "Program": "Dialog Interaktif Pro 1", "Topik": "Kesiapan Pelaksanaan RRI Fest & Bintang Radio Mamuju 2026", "Narasumber": "Ketua Panitia RRI Fest Mamuju", "Foto Narasumber": "", "Jabatan": "Koordinator LPU LPP RRI Mamuju", "Kehadiran": "Hadir di Studio", "PIC Narasumber": "Tim Siaran Pro 1", "Flyer": "https://www.instagram.com/rri_mamuju/", "Bestcut": "https://www.youtube.com/@LPPRRIMamuju", "Keterlaksanaan": "Terlaksana", "Kendala": "-"}
     ],
-    "Info_Board": [
-        {"Tanggal": "2026-11-17", "Prioritas": "Urgent", "Judul": "Pemutakhiran Data Kepegawaian & SK Jabatan", "Isi": "Seluruh pegawai dimohon mengecek kesesuaian NIP, Pangkat/Golongan, dan Jabatan pada modul Data Pegawai.", "Target_Divisi": "Semua Pegawai", "Lampiran": ""}
-    ],
-    "Timeline": [
-        {"Kegiatan": "Bintang Radio", "Tahapan": "Pendaftaran dibuka", "Start Date": "08/01/2026", "End Date": "08/01/2026", "Keterangan": "Online & Kantor LPP RRI Mamuju", "Tanggal": "01 Aug 2026"},
-        {"Kegiatan": "RRI Fest", "Tahapan": "Bersih-Bersih Lingkungan", "Start Date": "08/28/2026", "End Date": "08/28/2026", "Keterangan": "Pantai Manakarra", "Tanggal": "28 Aug 2026"},
-        {"Kegiatan": "Hari Radio", "Tahapan": "Upacara dan Penyuluhan Obor", "Start Date": "09/11/2026", "End Date": "09/11/2026", "Keterangan": "Auditorium LPP RRI Mamuju", "Tanggal": "11 Sep 2026"},
-    ],
-    "Agenda_Setting": [
-        {"No": "1", "Tanggal": "Tuesday, 01 September 2026", "Program": "Dialog Interaktif Pro 1", "Topik/ Isu": "Kesiapan Pelaksanaan RRI Fest & Bintang Radio Mamuju 2026", "Narasumber": "Ketua Panitia RRI Fest Mamuju", "Jabatan/ Instansi": "Koordinator LPU LPP RRI Mamuju", "KET. Kehadiran": "Hadir di Studio", "PIC Narasumber": "Tim Siaran Pro 1", "Flyer": "https://www.instagram.com/rri_mamuju/", "Bestcut": "https://www.youtube.com/@LPPRRIMamuju", "Keterlaksanaan": "Terlaksana", "Kendala": "-"}
-    ],
-    "DB_Konten": [
-        {"Tanggal_Tayang": "2026-11-17", "Platform": "Instagram & TikTok", "Akun": "@pro2_mamuju", "Judul_Konten": "Teaser Reels Pro 2 Music Live Chat", "Jenis": "Reels / Short Video", "Divisi": "KMB / Pro 2", "PIC": "Tim Kreatif Pro 2", "Status": "Review", "Link_Asset": "https://drive.google.com"}
-    ],
-    "Siaran": [
+    "DB_Siaran": [
         {"Tanggal": "2026-11-17", "Shift": "Pagi (05:00 - 12:00 WITA)", "Programa": "Pro 1 (96.0 FM)", "Penyiar": "Penyiar Shift Pagi A", "Operator": "Operator TMB 1", "Status": "On Duty"}
     ],
     "DB_Program": [
-        {"Kode_Program": "PRG-P1-01", "Programa": "Pro 1 (96.0 FM)", "Nama_Program": "Mamuju Pagi Ini (Dialog Interaktif)", "Hari": "Senin - Jumat", "Jam_Tayang": "08:00 - 09:00 WITA", "Format": "Dialog & Informasi", "Produser": "Tim Perencanaan & Siaran", "Status": "Aktif"},
-        {"Kode_Program": "PRG-P2-01", "Programa": "Pro 2 (89.3 FM)", "Nama_Program": "Pro 2 Music Live Chat", "Hari": "Sabtu", "Jam_Tayang": "16:00 - 17:30 WITA", "Format": "Musik & Talkshow Kreatif", "Produser": "Tim Pro 2 & KMB", "Status": "Aktif"},
+        {"Kode Program": "PRG-P1-01", "Programa": "Pro 1", "Nama Program": "Halo Sulbar", "Hari": "Setiap Hari", "Jam": "09:00 - 10:00 WITA", "Format": "Dialog", "Produser": "Pengelola Pro 1", "Status": "Aktif"},
+        {"Kode Program": "PRG-P2-03", "Programa": "Pro 2", "Nama Program": "Music Live Chat", "Hari": "Sabtu", "Jam": "19:00 - 20:00 WITA", "Format": "Dialog & Live Music", "Produser": "Sugiyanto", "Status": "Aktif"},
     ],
-    "Jadwal_TMB": [
-        {"Tanggal": "2026-11-17", "Shift": "Pagi (06:00 - 14:00 WITA)", "Lokasi_Pemancar": "Studio & MCR Kantor", "Teknisi_TMB": "A. Mirwan Syam", "Tugas": "Monitoring Tx & Audio Stream", "Status": "On Duty"},
+    "DB_Konten": [
+        {"ID": "CNT-01", "Tanggal Tayang": "2026-11-17", "Platform": "Instagram & TikTok", "Akun": "@pro2_mamuju", "Judul Konten": "Teaser Reels Pro 2 Music Live Chat", "Jenis": "Reels / Short Video", "Divisi": "KMB / Pro 2", "PIC": "Tim Kreatif Pro 2", "Status": "Review", "Link Asset": "https://drive.google.com"}
+    ],
+    "DB_Jadwal_TMB": [
+        {"Tanggal": "2026-11-17", "Shift": "Pagi (06:00 - 14:00 WITA)", "Lokasi Pemancar": "Studio & MCR Kantor", "Teknisi TMB": "A. Mirwan Syam", "Tugas": "Monitoring Tx & Audio Stream", "Status": "On Duty"},
+    ],
+    "DB_Pegawai": [
+        {"No": "1", "Nama Pegawai": "Rina Irfantini, S.H., M.Si.", "NIP": "197312051999032007", "Pangkat Golongan": "Pembina Tk.I IV/b", "Jabatan": "Kepala Stasiun", "Status": "Aktif", "Posisi": "Kepala Stasiun LPP RRI Mamuju"},
+        {"No": "2", "Nama Pegawai": "Muhamad Dirsan, S.E.", "NIP": "197506231998031002", "Pangkat Golongan": "Penata Tk.I III/d", "Jabatan": "Kepala Sub Bagian Tata Usaha", "Status": "Aktif", "Posisi": "Kepala Sub Bagian Tata Usaha"},
+        {"No": "9", "Nama Pegawai": "Ikhwan Fauzan, A.Md.T", "NIP": "199806212025041001", "Pangkat Golongan": "Pengatur II/c", "Jabatan": "Asisten Teknisi Siaran Terampil", "Status": "Aktif", "Posisi": "Staf"},
+        {"No": "14", "Nama Pegawai": "Muthiah Azizah Ijsam, A.Md.T", "NIP": "200112082025042004", "Pangkat Golongan": "Pengatur II/c", "Jabatan": "Asisten Teknisi Siaran Terampil", "Status": "Aktif", "Posisi": "Staf"},
+    ],
+    "DB_Arsip_SDM": [
+        {"Nomor Dokumen": "SK-014/RRI-MMJ/SDM/2026", "Nama Dokumen": "SK Tim Pengelola BMN & Persediaan 2026", "Tanggal": "2026-01-10", "Jenis": "Surat Keputusan", "Link": "https://drive.google.com"},
+    ],
+    "DB_Info_Board": [
+        {"Tanggal": "2026-11-17", "Prioritas": "Urgent", "Judul": "Pemutakhiran Data Kepegawaian & SK Jabatan", "Isi": "Seluruh pegawai dimohon mengecek kesesuaian NIP, Pangkat/Golongan, dan Jabatan pada modul Data Pegawai.", "Target Divisi": "Semua Pegawai", "Lampiran": ""}
     ],
     "DB_Ruangan": [
-        {"Nomor Ruangan": "1.0", "Nama Ruangan": "Lantai 1", "Lokasi": "Kantor RRI Mamuju", "Penanggungjawab Ruangan": "Operator BMN", "Nama": "Muthiah Azizah Ijsam, A.Md.T.", "NIP/ NIPPPK": "NIP. 20011208 202504 2 004"},
-        {"Nomor Ruangan": "1.13", "Nama Ruangan": "Gudang TMB", "Lokasi": "Lantai 1", "Penanggungjawab Ruangan": "Ketua Tim Teknologi dan Media Baru", "Nama": "A. Mirwan Syam", "NIP/ NIPPPK": "NIPPPK. 19900608 202221 1 012"},
+        {"Nomor Ruangan": "1", "Nama Ruangan": "Lantai 1", "Lokasi": "Kantor RRI Mamuju", "NIP Penanggung Jawab": "200112082025042004"},
+        {"Nomor Ruangan": "1.13", "Nama Ruangan": "Gudang TMB", "Lokasi": "Lantai 1", "NIP Penanggung Jawab": "199006082022211012"},
     ],
     "DB_Aset": [
-        {"Kode Ruang": "1.13", "Nomor Kode Barang": "3030205002", "Nama Barang": "Tool Kit Box", "Merk/ Model": "Hand Toolset", "Tahun": "2026", "NUP": "1", "Kondisi": "Baik", "Tindak Lanjut": "", "Keterangan": ""},
+        {"Nomor Kode Barang": "3030205002", "Kode Ruang": "1.13", "Nama Barang": "Tool Kit Box", "Merk Model": "Hand Toolset", "Tahun": "2026", "NUP": "1", "Kondisi": "Baik", "Tindak Lanjut": "", "Keterangan": ""},
     ],
     "DB_Stok_Master": [
         {"Kode Barang": "ATK-001", "Nama Barang": "Kertas HVS F4", "Unit": "Rim", "Stok Awal": 10, "Keterangan": "Kertas F4 70gsm"},
@@ -230,9 +252,6 @@ DEMO_DATA = {
     ],
     "DB_Stok_Keluar": [
         {"Tanggal": "15 Januari 2026", "Nama Barang": "Kertas HVS F4", "Bidang": "Tim Penyiaran", "Penerima Barang": "Meydiana Indah", "Jumlah Keluar": 2, "Unit": "Rim", "Pcs": 2, "Keterangan": "Kebutuhan Naskah Siaran"},
-    ],
-    "Arsip": [
-        {"Kode_Arsip": "PPID-RRI/129/2026", "Tanggal": "2026-08-31", "Kategori": "PPID - Acara Siaran", "Judul": "Rekaman & Naskah Mimbar Agama Hindu (Berkala)", "Divisi": "Siaran / PPID", "Link": "https://mamuju.ppid.rri.go.id/"}
     ],
 }
 
@@ -252,8 +271,8 @@ class SheetsDB:
     def __init__(self):
         self.sheet_id = _extract_sheet_id(os.getenv("GOOGLE_SHEET_ID", ""))
         self.creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON", "").strip()
-        self.timeline_tab = os.getenv("TIMELINE_TAB_NAME", "Sheet1").strip()
-        self.dialog_tab = os.getenv("DIALOG_TAB_NAME", "Agenda Setting").strip()
+        self.timeline_tab = os.getenv("TIMELINE_TAB_NAME", "DB_Timeline").strip()
+        self.dialog_tab = os.getenv("DIALOG_TAB_NAME", "DB_Dialog").strip()
 
         self.client = None
         self.spreadsheet = None
@@ -373,59 +392,144 @@ class SheetsDB:
         return None
 
     # ---------------------------------------------------------
-    # ADMIN INITIAL DATA (Resets ONLY Users tab, creates missing tabs)
+    # ADMIN INITIAL DATA (REFACTOR + NON-DESTRUCTIVE MIGRATION):
+    # 1. Renames legacy tabs (`Sheet1` -> `DB_Timeline`, `Agenda Setting` -> `DB_Dialog`, etc.) if target `DB_*`/`CFG_*` doesn't exist yet.
+    # 2. Normalizes Row 1 headers across all `DB_*` & `CFG_*` tabs to clean Title Case (keeping all existing data rows intact!).
+    # 3. Resets ONLY `CFG_Users` to default accounts (never touches `DB_Pegawai` or any `DB_*` data).
+    # 4. Syncs `CFG_Role_Modules` columns (`program_siaran`, `persediaan_masuk`, `persediaan_keluar`).
     # ---------------------------------------------------------
     def init_database_tabs(self, include_sample_rows=True):
         if not self.connected or not self.spreadsheet:
             return False, "Google Sheet utama belum terhubung."
 
         self._sync_snapshot(force=True)
+        migrated = []
         created = []
         reset_tabs = []
 
-        for tab_name, headers in TAB_SCHEMAS.items():
+        # Step 1: Migrate legacy tab names to standardized `DB_*` / `CFG_*` names
+        for old_lower, new_title in LEGACY_TAB_RENAMES.items():
+            new_lower = new_title.lower()
+            if old_lower in self._ws_cache and new_lower not in self._ws_cache:
+                try:
+                    ws = self._ws_cache[old_lower]
+                    ws.update_title(new_title)
+                    del self._ws_cache[old_lower]
+                    self._ws_cache[new_lower] = ws
+                    migrated.append(f"{old_lower}→{new_title}")
+                except Exception as e:
+                    print(f"[InitData] Rename warning ({old_lower} -> {new_title}):", e)
+
+        self._sync_snapshot(force=True)
+
+        # Step 2: Ensure every standardized tab exists and has clean Title Case Row 1 headers
+        for tab_name, target_headers in TAB_SCHEMAS.items():
             key = tab_name.lower()
 
-            if key == "users":
+            # Reset ONLY CFG_Users
+            if key == "cfg_users":
                 if key in self._ws_cache:
                     ws = self._ws_cache[key]
                     ws.clear()
                 else:
-                    ws = self.spreadsheet.add_worksheet(title=tab_name, rows=200, cols=len(headers) + 2)
-                ws.append_row(headers, value_input_option="USER_ENTERED")
-                default_users = [[str(u.get(h, "")) for h in headers] for u in DEMO_DATA["Users"]]
+                    ws = self.spreadsheet.add_worksheet(title=tab_name, rows=200, cols=len(target_headers) + 2)
+                ws.append_row(target_headers, value_input_option="USER_ENTERED")
+                default_users = [[str(u.get(h, "")) for h in target_headers] for u in DEMO_DATA["CFG_Users"]]
                 if default_users:
                     ws.append_rows(default_users, value_input_option="USER_ENTERED")
                 reset_tabs.append(tab_name)
                 continue
 
-            if key in self._ws_cache:
+            # Ensure CFG_Role_Modules has exact 17 standardized module columns (migrating existing permissions + splitting persediaan_mutasi)
+            if key == "cfg_role_modules":
+                if key not in self._ws_cache:
+                    ws = self.spreadsheet.add_worksheet(title=tab_name, rows=50, cols=len(target_headers) + 4)
+                    ws.append_row(target_headers, value_input_option="USER_ENTERED")
+                    perm_rows = []
+                    for r_name in ALL_ROLES:
+                        perms = DEFAULT_ROLE_PERMISSIONS.get(r_name, {})
+                        perm_rows.append([r_name] + [perms.get(m["key"], "none") for m in ALL_MODULES])
+                    ws.append_rows(perm_rows, value_input_option="USER_ENTERED")
+                    created.append(tab_name)
+                else:
+                    ws = self._ws_cache[key]
+                    cur_vals = self._snapshot.get(key) or ws.get_all_values()
+                    existing_by_role = {}
+                    if cur_vals and len(cur_vals) > 1:
+                        old_hdrs = [h.strip() for h in cur_vals[0]]
+                        for row in cur_vals[1:]:
+                            if not row or not row[0].strip():
+                                continue
+                            r_name = row[0].strip()
+                            row_dict = {old_hdrs[i]: row[i].strip().lower() for i in range(min(len(old_hdrs), len(row))) if old_hdrs[i]}
+                            # Migrate legacy persediaan_mutasi -> persediaan_masuk & persediaan_keluar
+                            if "persediaan_mutasi" in row_dict:
+                                row_dict.setdefault("persediaan_masuk", row_dict["persediaan_mutasi"])
+                                row_dict.setdefault("persediaan_keluar", row_dict["persediaan_mutasi"])
+                            existing_by_role[r_name] = row_dict
+
+                    # Ensure grid has enough columns before writing
+                    if ws.col_count < len(target_headers):
+                        ws.resize(rows=max(ws.row_count, 50), cols=len(target_headers) + 4)
+
+                    rebuilt_matrix = [target_headers]
+                    seen_roles = set()
+                    for r_name in ALL_ROLES:
+                        seen_roles.add(r_name.lower())
+                        saved_map = existing_by_role.get(r_name, {})
+                        def_map = DEFAULT_ROLE_PERMISSIONS.get(r_name, {})
+                        rebuilt_matrix.append([
+                            r_name
+                        ] + [
+                            saved_map.get(m["key"]) or def_map.get(m["key"], "none")
+                            for m in ALL_MODULES
+                        ])
+                    # Preserve any custom roles that existed in the sheet
+                    for r_name, saved_map in existing_by_role.items():
+                        if r_name.lower() not in seen_roles:
+                            rebuilt_matrix.append([r_name] + [saved_map.get(m["key"], "none") for m in ALL_MODULES])
+
+                    ws.clear()
+                    ws.update("A1", rebuilt_matrix, value_input_option="USER_ENTERED")
                 continue
 
-            ws = self.spreadsheet.add_worksheet(title=tab_name, rows=300, cols=len(headers) + 2)
-            ws.append_row(headers, value_input_option="USER_ENTERED")
+            # Existing DB_* tab: standardize Row 1 header names in-place without touching data rows!
+            if key in self._ws_cache:
+                ws = self._ws_cache[key]
+                cur_vals = self._snapshot.get(key) or []
+                if cur_vals:
+                    cur_row1 = cur_vals[0]
+                    updated_row1 = []
+                    changed_hdr = False
+                    for h in cur_row1:
+                        h_clean = str(h).strip()
+                        mapped = HEADER_ALIASES.get(h_clean.lower(), h_clean)
+                        if mapped != h_clean:
+                            changed_hdr = True
+                        updated_row1.append(mapped)
+                    if changed_hdr:
+                        ws.update("1:1", [updated_row1], value_input_option="USER_ENTERED")
+                continue
 
-            if key == "role_modules":
-                perm_rows = []
-                for r_name in ALL_ROLES:
-                    perms = DEFAULT_ROLE_PERMISSIONS.get(r_name, {})
-                    perm_rows.append([r_name] + [perms.get(m["key"], "none") for m in ALL_MODULES])
-                ws.append_rows(perm_rows, value_input_option="USER_ENTERED")
-            elif include_sample_rows and tab_name in DEMO_DATA:
-                rows_to_insert = [[str(sample.get(h, "")) for h in headers] for sample in DEMO_DATA[tab_name]]
+            # Create missing DB_* tab
+            ws = self.spreadsheet.add_worksheet(title=tab_name, rows=300, cols=len(target_headers) + 2)
+            ws.append_row(target_headers, value_input_option="USER_ENTERED")
+            if include_sample_rows and tab_name in DEMO_DATA:
+                rows_to_insert = [[str(sample.get(h, "")) for h in target_headers] for sample in DEMO_DATA[tab_name]]
                 if rows_to_insert:
                     ws.append_rows(rows_to_insert, value_input_option="USER_ENTERED")
-
             created.append(tab_name)
 
         self.clear_cache()
         parts = []
         if reset_tabs:
             parts.append(f"Tab {', '.join(reset_tabs)} di-reset")
+        if migrated:
+            parts.append(f"Tab direfaktor: {', '.join(migrated)}")
         if created:
             parts.append(f"Tab baru dibuat: {', '.join(created)}")
         if not parts:
-            return True, "Tab Users berhasil di-reset. Semua tab master lainnya tetap aman."
+            return True, "CFG_Users di-reset & header seluruh tab DB_* sudah terstandarisasi."
         return True, " • ".join(parts) + "."
 
     # ---------------------------------------------------------
@@ -433,7 +537,7 @@ class SheetsDB:
     # ---------------------------------------------------------
     def get_role_matrix(self):
         matrix = {r: dict(DEFAULT_ROLE_PERMISSIONS.get(r, {})) for r in ALL_ROLES}
-        vals = self._get_values_from_snapshot(["Role_Modules"])
+        vals = self._get_values_from_snapshot(["CFG_Role_Modules", "Role_Modules"])
         if not vals:
             return matrix
 
@@ -453,14 +557,16 @@ class SheetsDB:
             return False, "Level akses tidak valid."
 
         DEFAULT_ROLE_PERMISSIONS.setdefault(role_name, {})[module_key] = level
-        ws = self._find_ws(["Role_Modules"])
+        ws = self._find_ws(["CFG_Role_Modules", "Role_Modules"])
         if not ws:
             return True, f"Akses {role_name} → {module_key} diubah ke '{level}' (Mode Demo)."
 
         try:
-            all_vals = self._get_values_from_snapshot(["Role_Modules"]) or ws.get_all_values()
+            all_vals = self._get_values_from_snapshot(["CFG_Role_Modules", "Role_Modules"]) or ws.get_all_values()
             headers = [h.strip() for h in all_vals[0]]
             if module_key not in headers:
+                if ws.col_count < len(headers) + 1:
+                    ws.resize(rows=max(ws.row_count, 50), cols=len(headers) + 4)
                 ws.update_cell(1, len(headers) + 1, module_key)
                 headers.append(module_key)
             col_idx = headers.index(module_key) + 1
@@ -479,7 +585,7 @@ class SheetsDB:
             self._sync_snapshot(force=True)
             return True, f"Hak akses '{role_name}' untuk modul '{module_key}' diubah menjadi '{level}'."
         except Exception as e:
-            return False, f"Gagal menyimpan ke Role_Modules: {e}"
+            return False, f"Gagal menyimpan ke CFG_Role_Modules: {e}"
 
     def compute_effective_permissions(self, roles_list):
         rank = {"none": 0, "view": 1, "update": 2, "full": 3}
@@ -500,18 +606,22 @@ class SheetsDB:
         return effective
 
     # ---------------------------------------------------------
-    # TIMELINE & AGENDA SETTING (DIALOG WITH BESTCUT)
+    # TIMELINE & DIALOG (SUPPORTS BOTH REFACTORED & LEGACY HEADERS)
     # ---------------------------------------------------------
     def get_timeline(self):
-        vals = self._get_values_from_snapshot([self.timeline_tab, "Sheet1", "Events", "Timeline"])
+        vals = self._get_values_from_snapshot(["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"])
         if vals is None:
-            return DEMO_DATA["Timeline"]
-        return _rows_to_dicts(vals)
+            return DEMO_DATA["DB_Timeline"]
+        rows = _rows_to_dicts(vals)
+        for r in rows:
+            r.setdefault("Tanggal Mulai", r.get("Start Date", ""))
+            r.setdefault("Tanggal Selesai", r.get("End Date", ""))
+        return rows
 
     def get_agenda_setting(self):
-        all_values = self._get_values_from_snapshot([self.dialog_tab, "Agenda Setting", "Dialog"])
+        all_values = self._get_values_from_snapshot(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"])
         if all_values is None:
-            return DEMO_DATA["Agenda_Setting"]
+            return DEMO_DATA["DB_Dialog"]
         if not all_values:
             return []
 
@@ -529,6 +639,10 @@ class SheetsDB:
             padded = raw_row + [""] * (len(headers) - len(raw_row))
             item = {headers[i]: padded[i].strip() for i in range(len(headers)) if headers[i]}
             item["_row_num"] = raw_row_idx
+            # Normalize keys so frontend works seamlessly before and after header rename
+            item["Topik"] = item.get("Topik") or item.get("Topik/ Isu") or ""
+            item["Jabatan"] = item.get("Jabatan") or item.get("Jabatan/ Instansi") or ""
+            item["Kehadiran"] = item.get("Kehadiran") or item.get("KET. Kehadiran") or ""
             item.setdefault("Bestcut", "")
             if item.get("No"):
                 last_no = item["No"]
@@ -538,18 +652,18 @@ class SheetsDB:
                 last_tanggal = item["Tanggal"]
             else:
                 item["Tanggal"] = last_tanggal
-            if any([item.get("Program", ""), item.get("Topik/ Isu", ""), item.get("Topik", ""), item.get("Narasumber", "")]):
+            if any([item.get("Program", ""), item.get("Topik", ""), item.get("Narasumber", "")]):
                 parsed_rows.append(item)
         return parsed_rows
 
     def update_dialog_row(self, row_num, updates_dict):
-        ws = self._find_ws([self.dialog_tab, "Agenda Setting", "Dialog"])
+        ws = self._find_ws(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"])
         if not ws:
-            for d in DEMO_DATA["Agenda_Setting"]:
+            for d in DEMO_DATA["DB_Dialog"]:
                 d.update(updates_dict)
             return True, "Dialog diperbarui (Mode Demo)."
         try:
-            all_values = self._get_values_from_snapshot([self.dialog_tab, "Agenda Setting", "Dialog"]) or ws.get_all_values()
+            all_values = self._get_values_from_snapshot(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"]) or ws.get_all_values()
             header_idx = 0
             for idx, row in enumerate(all_values[:10]):
                 lowered = [c.strip().lower() for c in row]
@@ -558,25 +672,35 @@ class SheetsDB:
                     break
             headers = [h.strip() for h in all_values[header_idx]]
 
-            # Auto-create 'Bestcut' header column if not yet present in the Agenda Setting sheet
             if "Bestcut" in updates_dict and "Bestcut" not in headers:
                 new_col = len(headers) + 1
                 ws.update_cell(header_idx + 1, new_col, "Bestcut")
                 headers.append("Bestcut")
 
+            # Map normalized keys to whichever header is currently in the sheet
+            col_fallbacks = {
+                "Topik": ["Topik", "Topik/ Isu"],
+                "Kehadiran": ["Kehadiran", "KET. Kehadiran"],
+                "Jabatan": ["Jabatan", "Jabatan/ Instansi"],
+            }
             for col_name, new_val in updates_dict.items():
-                if col_name in headers:
-                    col_idx = headers.index(col_name) + 1
-                    ws.update_cell(int(row_num), col_idx, str(new_val))
+                candidates = col_fallbacks.get(col_name, [col_name])
+                for cand in candidates:
+                    if cand in headers:
+                        col_idx = headers.index(cand) + 1
+                        ws.update_cell(int(row_num), col_idx, str(new_val))
+                        break
             self._sync_snapshot(force=True)
-            return True, "Data Dialog (termasuk Bestcut) berhasil diperbarui!"
+            return True, "Data Dialog berhasil diperbarui!"
         except Exception as e:
             return False, f"Gagal memperbarui Dialog: {e}"
 
-    def get_tab_records(self, tab_name, include_row_num=False):
-        vals = self._get_values_from_snapshot([tab_name])
+    def get_tab_records(self, candidates, include_row_num=False):
+        if isinstance(candidates, str):
+            candidates = [candidates]
+        vals = self._get_values_from_snapshot(candidates)
         if vals is None:
-            rows = DEMO_DATA.get(tab_name, [])
+            rows = DEMO_DATA.get(candidates[0], [])
             if include_row_num:
                 return [dict(r, _row_num=idx) for idx, r in enumerate(rows, start=2)]
             return rows
@@ -586,27 +710,23 @@ class SheetsDB:
     # BMN: MASTER ASSET, ROOM & STOCK
     # ---------------------------------------------------------
     def get_rooms(self):
-        rooms = self.get_tab_records("DB_Ruangan", include_row_num=True)
+        rooms = self.get_tab_records(["DB_Ruangan"], include_row_num=True)
         emp_map = {e["nip_clean"]: e for e in self.get_employees() if e.get("nip_clean")}
         enriched = []
         for r in rooms:
             item = dict(r)
-            # In DB_Ruangan, `Penanggungjawab Ruangan` stores the NIP/NIPPPK (fallback to `NIP/ NIPPPK` if legacy)
-            raw_pj = str(item.get("Penanggungjawab Ruangan", "")).strip()
-            raw_legacy_nip = str(item.get("NIP/ NIPPPK", "")).strip()
-            candidate = raw_pj if any(ch.isdigit() for ch in raw_pj) else (raw_legacy_nip or raw_pj)
-            nip_clean = _normalize_nip(candidate.replace("NIPPPK.", "").replace("NIP.", ""))
+            raw_pj = str(item.get("NIP Penanggung Jawab", "") or item.get("Penanggungjawab Ruangan", "")).strip()
+            nip_clean = _normalize_nip(raw_pj.replace("NIPPPK.", "").replace("NIP.", ""))
             emp = emp_map.get(nip_clean)
-
+            item["NIP Penanggung Jawab"] = raw_pj
             if emp:
-                item["pj_nip"] = emp.get("NIP / NIPPK") or candidate
+                item["pj_nip"] = emp.get("NIP") or raw_pj
                 item["pj_nama"] = emp.get("Nama Pegawai") or "-"
                 item["pj_jabatan"] = emp.get("Jabatan") or emp.get("Posisi") or "-"
                 item["pj_posisi"] = emp.get("Posisi") or "-"
-                item["Nama"] = item["pj_nama"]
             else:
-                item["pj_nip"] = candidate or "-"
-                item["pj_nama"] = item.get("Nama") or "-"
+                item["pj_nip"] = raw_pj or "-"
+                item["pj_nama"] = "-"
                 item["pj_jabatan"] = "-"
                 item["pj_posisi"] = "-"
             item["nip_clean"] = nip_clean
@@ -614,21 +734,22 @@ class SheetsDB:
         return enriched
 
     def get_assets(self):
-        assets = self.get_tab_records("DB_Aset")
+        assets = self.get_tab_records(["DB_Aset"])
         rooms = self.get_rooms()
         room_lookup = {str(rm.get("Nomor Ruangan", "")).strip(): rm.get("Nama Ruangan", "") for rm in rooms}
         enriched = []
         for a in assets:
             item = dict(a)
+            item["Merk Model"] = item.get("Merk Model") or item.get("Merk/ Model") or ""
             kr = str(item.get("Kode Ruang", "")).strip()
             item["Nama Ruangan"] = room_lookup.get(kr, kr or "-")
             enriched.append(item)
         return enriched
 
     def get_stock_bundle(self):
-        master_rows = self.get_tab_records("DB_Stok_Master")
-        in_rows = self.get_tab_records("DB_Stok_Masuk")
-        out_rows = self.get_tab_records("DB_Stok_Keluar")
+        master_rows = self.get_tab_records(["DB_Stok_Master"])
+        in_rows = self.get_tab_records(["DB_Stok_Masuk"])
+        out_rows = self.get_tab_records(["DB_Stok_Keluar"])
 
         in_totals = {}
         for r in in_rows:
@@ -692,14 +813,17 @@ class SheetsDB:
         }
 
     # ---------------------------------------------------------
-    # EMPLOYEES (SDM EDIT) & USERS
+    # EMPLOYEES & CFG_USERS
     # ---------------------------------------------------------
     def get_employees(self):
-        rows = self.get_tab_records("DB_Pegawai", include_row_num=True)
+        rows = self.get_tab_records(["DB_Pegawai"], include_row_num=True)
         result = []
         for idx, r in enumerate(rows, start=2):
-            nip = str(r.get("NIP / NIPPK", "")).strip()
+            nip = str(r.get("NIP") or r.get("NIP / NIPPK") or "").strip()
+            pangkat = str(r.get("Pangkat Golongan") or r.get("Pangkat/ Golongan") or "").strip()
             item = dict(r)
+            item["NIP"] = nip
+            item["Pangkat Golongan"] = pangkat
             item["_row_num"] = r.get("_row_num") or idx
             item["nip_clean"] = _normalize_nip(nip)
             result.append(item)
@@ -709,7 +833,7 @@ class SheetsDB:
         ws = self._find_ws(["DB_Pegawai"])
         if not ws:
             for idx, e in enumerate(DEMO_DATA["DB_Pegawai"], start=2):
-                if idx == int(row_num or 0) or _normalize_nip(e.get("NIP / NIPPK")) == _normalize_nip(updates_dict.get("NIP / NIPPK")):
+                if idx == int(row_num or 0) or _normalize_nip(e.get("NIP")) == _normalize_nip(updates_dict.get("NIP")):
                     e.update(updates_dict)
             return True, "Data pegawai diperbarui (Mode Demo)."
         try:
@@ -717,53 +841,27 @@ class SheetsDB:
             headers = [h.strip() for h in all_vals[0]]
             target_row = int(row_num) if row_num else None
 
-            # Fallback lookup by NIP if row_num is missing
-            if not target_row and "NIP / NIPPK" in headers:
-                nip_idx = headers.index("NIP / NIPPK")
-                target_nip = _normalize_nip(updates_dict.get("NIP / NIPPK", ""))
-                for r_i, row in enumerate(all_vals[1:], start=2):
-                    if len(row) > nip_idx and _normalize_nip(row[nip_idx]) == target_nip:
-                        target_row = r_i
-                        break
-
-            if not target_row:
-                return False, "Baris pegawai tidak ditemukan di tab DB_Pegawai."
-
+            col_fallbacks = {
+                "NIP": ["NIP", "NIP / NIPPK"],
+                "Pangkat Golongan": ["Pangkat Golongan", "Pangkat/ Golongan"],
+            }
             for col_name, new_val in updates_dict.items():
-                if col_name in headers:
-                    col_idx = headers.index(col_name) + 1
-                    ws.update_cell(target_row, col_idx, str(new_val))
+                for cand in col_fallbacks.get(col_name, [col_name]):
+                    if cand in headers:
+                        col_idx = headers.index(cand) + 1
+                        ws.update_cell(target_row, col_idx, str(new_val))
+                        break
             self._sync_snapshot(force=True)
             return True, "Data pegawai berhasil diperbarui!"
         except Exception as e:
             return False, f"Gagal memperbarui data pegawai: {e}"
 
-    def delete_record(self, target_key, row_num):
-        tab_lookup = {
-            "Agenda_Setting": [self.dialog_tab, "Agenda Setting", "Dialog"],
-            "Info_Board": ["Info_Board", "Info_Pegawai"],
-        }
-        candidates = tab_lookup.get(target_key, [target_key])
-        ws = self._find_ws(candidates)
-        if not ws:
-            rows = DEMO_DATA.get(target_key, [])
-            idx = int(row_num) - 2
-            if 0 <= idx < len(rows):
-                rows.pop(idx)
-            return True, f"Baris dihapus dari {target_key} (Mode Demo)."
-        try:
-            ws.delete_rows(int(row_num))
-            self._sync_snapshot(force=True)
-            return True, f"Data berhasil dihapus dari tab '{ws.title}'!"
-        except Exception as e:
-            return False, f"Gagal menghapus baris: {e}"
-
     def get_users_list(self):
-        rows = self.get_tab_records("Users")
+        rows = self.get_tab_records(["CFG_Users", "Users"])
         emp_map = {e["nip_clean"]: e for e in self.get_employees() if e.get("nip_clean")}
         out = []
         for idx, u in enumerate(rows, start=2):
-            nip = str(u.get("NIP", u.get("NIP / NIPPPK", ""))).strip()
+            nip = str(u.get("NIP", "")).strip()
             nip_clean = _normalize_nip(nip)
             role_raw = str(u.get("Role", "")).strip()
             emp = emp_map.get(nip_clean)
@@ -772,7 +870,7 @@ class SheetsDB:
                 "NIP": nip,
                 "nip_clean": nip_clean,
                 "Nama": emp.get("Nama Pegawai") if emp else "(Belum di DB_Pegawai)",
-                "Pangkat": emp.get("Pangkat/ Golongan") if emp else "-",
+                "Pangkat": emp.get("Pangkat Golongan") if emp else "-",
                 "Posisi": emp.get("Posisi") if emp else "-",
                 "Jabatan": emp.get("Jabatan") if emp else "-",
                 "Status": emp.get("Status") if emp else "Aktif",
@@ -787,10 +885,10 @@ class SheetsDB:
         if not clean_id or not pwd:
             return None
 
-        users = self.get_tab_records("Users")
+        users = self.get_tab_records(["CFG_Users", "Users"])
         matched_user = None
         for u in users:
-            u_nip = _normalize_nip(u.get("NIP", u.get("NIP / NIPPPK", "")))
+            u_nip = _normalize_nip(u.get("NIP", ""))
             if u_nip == clean_id and str(u.get("Password", "")).strip() == pwd:
                 matched_user = u
                 break
@@ -803,10 +901,10 @@ class SheetsDB:
         permissions = self.compute_effective_permissions(combined_roles)
 
         return {
-            "nip": (emp_profile.get("NIP / NIPPK") if emp_profile else matched_user.get("NIP", "")),
+            "nip": (emp_profile.get("NIP") if emp_profile else matched_user.get("NIP", "")),
             "nip_clean": clean_id,
             "nama": (emp_profile.get("Nama Pegawai") if emp_profile else f"Pegawai ({clean_id})"),
-            "pangkat": emp_profile.get("Pangkat/ Golongan", "-") if emp_profile else "-",
+            "pangkat": emp_profile.get("Pangkat Golongan", "-") if emp_profile else "-",
             "jabatan": emp_profile.get("Jabatan", "Staf") if emp_profile else "Staf",
             "posisi": emp_profile.get("Posisi", "-") if emp_profile else "-",
             "status": emp_profile.get("Status", "Aktif") if emp_profile else "Aktif",
@@ -824,18 +922,18 @@ class SheetsDB:
         if not role_str:
             role_str = "Pegawai"
 
-        ws_usr = self._find_ws(["Users"])
+        ws_usr = self._find_ws(["CFG_Users", "Users"])
         if not ws_usr:
-            existing = next((u for u in DEMO_DATA["Users"] if _normalize_nip(u.get("NIP", "")) == nip_clean), None)
+            existing = next((u for u in DEMO_DATA["CFG_Users"] if _normalize_nip(u.get("NIP", "")) == nip_clean), None)
             if existing:
                 if password_input:
                     existing["Password"] = password_input
                 existing["Role"] = role_str
             else:
-                DEMO_DATA["Users"].append({"NIP": nip_clean, "Password": password_input or "rri2026", "Role": role_str})
+                DEMO_DATA["CFG_Users"].append({"NIP": nip_clean, "Password": password_input or "rri2026", "Role": role_str})
         else:
             try:
-                all_vals = self._get_values_from_snapshot(["Users"]) or ws_usr.get_all_values()
+                all_vals = self._get_values_from_snapshot(["CFG_Users", "Users"]) or ws_usr.get_all_values()
                 headers = [h.strip() for h in all_vals[0]] if all_vals else ["NIP", "Password", "Role"]
                 nip_idx = headers.index("NIP") if "NIP" in headers else 0
                 pwd_idx = headers.index("Password") if "Password" in headers else 1
@@ -854,56 +952,66 @@ class SheetsDB:
                 else:
                     ws_usr.append_row([nip_clean, password_input or "rri2026", role_str], value_input_option="USER_ENTERED")
             except Exception as e:
-                return False, f"Gagal menyimpan ke tab Users: {e}"
+                return False, f"Gagal menyimpan ke tab CFG_Users: {e}"
 
         self._sync_snapshot(force=True)
         return True, f"Akun user ({nip_clean}) dengan role [{role_str}] berhasil disimpan."
 
     # ---------------------------------------------------------
-    # GENERIC APPEND FOR MODULES
+    # GENERIC APPEND & DELETE
     # ---------------------------------------------------------
     def append_record(self, target_key, row_dict):
         tab_lookup = {
-            "Timeline": [self.timeline_tab, "Sheet1", "Events"],
-            "Agenda_Setting": [self.dialog_tab, "Agenda Setting", "Dialog"],
-            "Info_Board": ["Info_Board", "Info_Pegawai"],
+            "DB_Timeline": ["DB_Timeline", self.timeline_tab, "Sheet1"],
+            "DB_Dialog": ["DB_Dialog", self.dialog_tab, "Agenda Setting"],
+            "DB_Siaran": ["DB_Siaran", "Siaran"],
+            "DB_Jadwal_TMB": ["DB_Jadwal_TMB", "Jadwal_TMB"],
+            "DB_Arsip_SDM": ["DB_Arsip_SDM", "Arsip_SDM"],
+            "DB_Info_Board": ["DB_Info_Board", "Info_Board"],
         }
         candidates = tab_lookup.get(target_key, [target_key])
         ws = self._find_ws(candidates)
 
         if not ws:
             DEMO_DATA.setdefault(target_key, []).append(row_dict)
-            return True, f"Disimpan sementara ke {target_key} (Klik 'Initial Data' sebagai Admin untuk membuat tab di Google Sheet)."
+            return True, f"Disimpan sementara ke {target_key} (Klik 'Initial Data' sebagai Admin untuk sinkronisasi tab)."
 
         try:
             snap_vals = self._get_values_from_snapshot(candidates)
             headers = [h.strip() for h in snap_vals[0]] if (snap_vals and snap_vals[0]) else [h.strip() for h in ws.row_values(1)]
 
-            # Ensure Bestcut column exists if adding a new Agenda_Setting row with Bestcut
-            if target_key == "Agenda_Setting" and "Bestcut" in row_dict and "Bestcut" not in headers:
-                all_v = snap_vals or ws.get_all_values()
-                h_idx = 0
-                for idx, r in enumerate(all_v[:10]):
-                    if "tanggal" in [c.strip().lower() for c in r]:
-                        h_idx = idx
-                        break
-                headers = [h.strip() for h in all_v[h_idx]]
-                if "Bestcut" not in headers:
-                    ws.update_cell(h_idx + 1, len(headers) + 1, "Bestcut")
-                    headers.append("Bestcut")
-
             if target_key == "DB_Ruangan":
-                raw_nip = str(row_dict.get("Penanggungjawab Ruangan", "") or row_dict.get("NIP/ NIPPPK", "")).replace("NIPPPK.", "").replace("NIP.", "").strip()
+                raw_nip = str(row_dict.get("NIP Penanggung Jawab", "") or row_dict.get("Penanggungjawab Ruangan", "")).replace("NIPPPK.", "").replace("NIP.", "").strip()
                 nip_clean = _normalize_nip(raw_nip)
+                row_dict["NIP Penanggung Jawab"] = nip_clean
                 row_dict["Penanggungjawab Ruangan"] = nip_clean
-                emp = next((e for e in self.get_employees() if e.get("nip_clean") == nip_clean), None)
-                if emp:
-                    row_dict["Nama"] = emp.get("Nama Pegawai", "")
-                    row_dict["NIP/ NIPPPK"] = emp.get("NIP / NIPPK", nip_clean)
 
             row_values = [str(row_dict.get(h, "")) for h in headers]
             ws.append_row(row_values, value_input_option="USER_ENTERED")
             self._sync_snapshot(force=True)
-            return True, f"Data berhasil disimpan!'!"
+            return True, f"Data berhasil disimpan ke tab '{ws.title}'!"
         except Exception as e:
             return False, f"Gagal menyimpan ke '{ws.title}': {e}"
+
+    def delete_record(self, target_key, row_num):
+        tab_lookup = {
+            "DB_Dialog": ["DB_Dialog", self.dialog_tab, "Agenda Setting"],
+            "DB_Info_Board": ["DB_Info_Board", "Info_Board"],
+            "DB_Arsip_SDM": ["DB_Arsip_SDM", "Arsip_SDM"],
+            "DB_Jadwal_TMB": ["DB_Jadwal_TMB", "Jadwal_TMB"],
+            "DB_Siaran": ["DB_Siaran", "Siaran"],
+        }
+        candidates = tab_lookup.get(target_key, [target_key])
+        ws = self._find_ws(candidates)
+        if not ws:
+            rows = DEMO_DATA.get(target_key, [])
+            idx = int(row_num) - 2
+            if 0 <= idx < len(rows):
+                rows.pop(idx)
+            return True, f"Baris dihapus dari {target_key} (Mode Demo)."
+        try:
+            ws.delete_rows(int(row_num))
+            self._sync_snapshot(force=True)
+            return True, f"Data berhasil dihapus dari tab '{ws.title}'!"
+        except Exception as e:
+            return False, f"Gagal menghapus baris: {e}"
