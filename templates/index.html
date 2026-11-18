@@ -14,10 +14,8 @@
       background-color: #F8FAFC;
       color: #0F172A;
     }
-    html {
-      scroll-behavior: smooth;
-    }
     /* Minimalist thin scrollbar */
+    html {scroll-behavior: smooth;}
     * { scrollbar-width: thin; scrollbar-color: rgba(15, 23, 42, 0.25) transparent; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -472,6 +470,7 @@
       renderYoutubePlayer();
 
       const drive = BOARD_DATA.drive_flyers || { items: [] };
+      drive.items = (drive.items || []).slice(0, 10);
       console.log('FLYER_IDX', FLYER_IDX, drive.items.length);
       if (drive.folder_url) {
         const dLink = document.getElementById('driveFolderLink');
