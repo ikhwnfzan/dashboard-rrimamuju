@@ -193,14 +193,37 @@ function canUpdate(modKey) { return ['update', 'full'].includes(permLevel(modKey
 function canFull(modKey) { return permLevel(modKey) === 'full'; }
 function isAdmin() { return (USER.roles || []).some(role => role.toLowerCase() === 'admin'); }
 
-function initTheme() { applyTheme(APP_CONFIG.default_theme || 'dark'); }
-function applyTheme(mode) {
-  document.documentElement.classList.toggle('dark', mode === 'dark');
-  document.documentElement.classList.toggle('light', mode !== 'dark');
-  document.getElementById('themeIcon').innerHTML = icon(mode === 'light' ? 'sun' : 'moon', 'w-3.5 h-3.5 text-sm leading-none');
-  document.getElementById('themeLabel').textContent = mode === 'dark' ? 'Dark' : 'Light';
+const THEME_STORAGE_KEY = 'dashboard_theme';
+
+function getLocalTheme() {
+  try {
+    const mode = localStorage.getItem(THEME_STORAGE_KEY);
+    return mode === 'light' || mode === 'dark' ? mode : null;
+  } catch (_) {
+    return null;
+  }
 }
-function toggleTheme() { applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark'); }
+
+function initTheme() {
+  applyTheme(getLocalTheme() || APP_CONFIG.default_theme || 'dark');
+}
+
+function applyTheme(mode, saveToLocal = false) {
+  const resolvedMode = mode === 'light' ? 'light' : 'dark';
+  document.documentElement.classList.toggle('dark', resolvedMode === 'dark');
+  document.documentElement.classList.toggle('light', resolvedMode !== 'dark');
+  document.getElementById('themeIcon').innerHTML = icon(resolvedMode === 'light' ? 'sun' : 'moon', 'w-3.5 h-3.5 text-sm leading-none');
+  document.getElementById('themeLabel').textContent = resolvedMode === 'dark' ? 'Dark' : 'Light';
+  if (saveToLocal) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, resolvedMode);
+    } catch (_) {}
+  }
+}
+
+function toggleTheme() {
+  applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark', true);
+}
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 function openUserProfile() {
   document.getElementById('userMenu')?.classList.add('hidden');
@@ -210,7 +233,7 @@ function openUserProfile() {
 async function loadDashboard() {
   const res = await fetch('/api/board');
   DATA = await res.json();
-  if (DATA.app_config?.default_theme) applyTheme(DATA.app_config.default_theme);
+  applyTheme(getLocalTheme() || DATA.app_config?.default_theme || APP_CONFIG.default_theme || 'dark');
   buildRoleSidebar();
   populateNipDatalist();
   applyActionButtonVisibility();
