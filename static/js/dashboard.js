@@ -590,10 +590,11 @@ function renderDataPegawai() {
   const deletable = canFull('data_pegawai');
   const filtered = (DATA.employees || []).filter(e => Object.values(e).some(v => String(v).toLowerCase().includes(q)));
   const rows = paginateArray('pegawai', filtered, 'pagPegawai', 'renderDataPegawai');
+  const itemOffset = (PAGE_STATE.pegawai.page - 1) * PAGE_STATE.pegawai.size;
 
-  document.getElementById('tbodyPegawai').innerHTML = rows.map(e => `
+  document.getElementById('tbodyPegawai').innerHTML = rows.map((e, index) => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 text-slate-400">${e.No || '-'}</td>
+      <td class="py-3 px-3 text-slate-400">${itemOffset + index + 1}</td>
       <td class="py-3 px-3 font-extrabold">${e['Nama Pegawai'] || '-'}</td>
       <td class="py-3 px-3 font-mono text-xs text-slate-500">${e.NIP || '-'}</td>
       <td class="py-3 px-3 text-xs">${e['Pangkat Golongan'] || '-'}</td>
@@ -617,7 +618,6 @@ function openEmpEditByRow(rowNum) {
 
 function openEmpEdit(emp) {
   document.getElementById('editEmpRowNum').value = emp._row_num || '';
-  document.getElementById('editEmpNo').value = emp.No || '';
   document.getElementById('editEmpNip').value = emp.NIP || '';
   document.getElementById('editEmpNama').value = emp['Nama Pegawai'] || '';
   document.getElementById('editEmpPangkat').value = emp['Pangkat Golongan'] || '';
@@ -632,7 +632,6 @@ async function submitEmpUpdate(e) {
   e.preventDefault();
   const row_num = document.getElementById('editEmpRowNum').value;
   const updates = {
-    'No': document.getElementById('editEmpNo').value,
     'NIP': document.getElementById('editEmpNip').value,
     'Nama Pegawai': document.getElementById('editEmpNama').value,
     'Pangkat Golongan': document.getElementById('editEmpPangkat').value,
@@ -962,7 +961,7 @@ async function submitDialogUpdate(e) {
 
 const SCHEMAS = {
   DB_Info_Board: { title: 'Posting Info Board', fields: ['Tanggal', 'Prioritas', 'Judul', 'Isi', 'Target Divisi', 'Lampiran'] },
-  DB_Pegawai: { title: 'Tambah Data Pegawai', fields: ['No', 'Nama Pegawai', 'NIP', 'Pangkat Golongan', 'Jabatan', 'Status', 'Posisi'] },
+  DB_Pegawai: { title: 'Tambah Data Pegawai', fields: ['Nama Pegawai', 'NIP', 'Pangkat Golongan', 'Jabatan', 'Status', 'Posisi'] },
   DB_Arsip_SDM: { title: 'Tambah Arsip SDM', fields: ['Nomor Dokumen', 'Nama Dokumen', 'Tanggal', 'Jenis', 'Link'] },
   DB_Dialog: { title: 'Tambah Agenda Dialog', fields: ['Tanggal', 'Program', 'Topik', 'Narasumber', 'Jabatan', 'Kehadiran', 'PIC Narasumber', 'Flyer', 'Bestcut', 'Keterlaksanaan', 'Kendala'] },
   DB_Siaran: { title: 'Tambah Jadwal Siaran', fields: ['Tanggal', 'Shift', 'Programa', 'Penyiar', 'Operator', 'Status'] },
@@ -1117,7 +1116,7 @@ async function refreshAll() {
     if (result.ok) await loadDashboard();
     return result;
   }, 'Gagal menyinkronkan data');
-  if (result) showToast(result.message || 'Data berhasil disinkronkan dengan Google Sheets.', result.ok ? 'success' : 'error');
+  if (result) showToast(result.message || 'Data berhasil disinkronkan', result.ok ? 'success' : 'error');
 }
 
 async function logoutUser() {

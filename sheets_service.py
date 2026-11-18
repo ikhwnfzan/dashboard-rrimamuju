@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import threading
 import traceback
 import gspread
 from google.oauth2.service_account import Credentials
@@ -173,6 +174,13 @@ TAB_SCHEMAS = {
     "DB_Stok_Masuk": ["Tanggal", "Penanggung Jawab", "Nama Barang", "Jumlah Masuk", "Unit", "Pcs", "Keterangan"],
     "DB_Stok_Keluar": ["Tanggal", "Nama Barang", "Bidang", "Penerima Barang", "Jumlah Keluar", "Unit", "Pcs", "Keterangan"],
 }
+
+AUTO_ID_FIELDS = {
+    "DB_Pegawai": ("No", ""),
+    "DB_Dialog": ("No", ""),
+    "DB_Konten": ("ID", "CNT-"),
+}
+AUTO_ID_LOCK = threading.Lock()
 
 # Maps legacy tab titles -> new standardized tab titles for automatic migration on Initial Data
 LEGACY_TAB_RENAMES = {
@@ -555,13 +563,13 @@ class SheetsDB:
         self.clear_cache()
         parts = []
         if reset_tabs:
-            parts.append(f"Tab {', '.join(reset_tabs)} di-reset")
+            parts.append(f"Tabel {', '.join(reset_tabs)} di-reset")
         if migrated:
-            parts.append(f"Tab direfaktor: {', '.join(migrated)}")
+            parts.append(f"Tabel direfaktor: {', '.join(migrated)}")
         if created:
-            parts.append(f"Tab baru dibuat: {', '.join(created)}")
+            parts.append(f"Tabel baru dibuat: {', '.join(created)}")
         if not parts:
-            return True, "CFG_Users di-reset & header seluruh tab DB_* sudah terstandarisasi."
+            return True, "Tabel Users di-reset & header seluruh tabel sudah terstandarisasi"
         return True, " • ".join(parts) + "."
 
     # ---------------------------------------------------------
@@ -623,7 +631,7 @@ class SheetsDB:
             columns = {header.lower(): index + 1 for index, header in enumerate(headers) if header}
             required_columns = {"key", "value", "description"}
             if not required_columns.issubset(columns):
-                return False, "Header CFG_App harus memiliki kolom Key, Value, dan Description."
+                return False, "Header tabel harus memiliki kolom Key, Value, dan Description."
             if ws.col_count < len(headers):
                 ws.resize(rows=max(ws.row_count, 50), cols=len(headers) + 2)
 
@@ -647,9 +655,9 @@ class SheetsDB:
                     ws.append_row(new_row, value_input_option="USER_ENTERED")
 
             self._sync_snapshot(force=True)
-            return True, "Pengaturan aplikasi berhasil disimpan ke tab CFG_App."
+            return True, "Pengaturan aplikasi berhasil disimpan!"
         except Exception as e:
-            return False, f"Gagal menyimpan pengaturan ke CFG_App: {e}"
+            return False, f"Gagal menyimpan pengaturan: {e}"
 
     def get_role_matrix(self):
         matrix = {r: dict(DEFAULT_ROLE_PERMISSIONS.get(r, {})) for r in ALL_ROLES}
@@ -986,6 +994,8 @@ class SheetsDB:
         return result
 
     def update_employee_row(self, row_num, updates_dict):
+        if "No" in updates_dict:
+            return False, "Kolom No adalah ID otomatis dan tidak dapat diubah."
         ws = self._find_ws(["DB_Pegawai"])
         if not ws:
             for idx, e in enumerate(DEMO_DATA["DB_Pegawai"], start=2):
@@ -1108,7 +1118,7 @@ class SheetsDB:
                 else:
                     ws_usr.append_row([nip_clean, password_input or "rri2026", role_str], value_input_option="USER_ENTERED")
             except Exception as e:
-                return False, f"Gagal menyimpan ke tab CFG_Users: {e}"
+                return False, f"Gagal menyimpan User: {e}"
 
         self._sync_snapshot(force=True)
         return True, f"Akun user ({nip_clean}) dengan role [{role_str}] berhasil disimpan."
@@ -1116,7 +1126,42 @@ class SheetsDB:
     # ---------------------------------------------------------
     # GENERIC APPEND & DELETE
     # ---------------------------------------------------------
+    @staticmethod
+    def _next_auto_id(target_key, existing_rows):
+        field, prefix = AUTO_ID_FIELDS[target_key]
+        existing_values = set()
+        numbers = []
+        for row in existing_rows:
+            value = str(row.get(field) or "").strip()
+            if not value:
+                continue
+            existing_values.add(value)
+            if prefix:
+                if not value.startswith(prefix):
+                    continue
+                number_text = value[len(prefix):]
+            else:
+                number_text = value
+            if number_text.isdecimal():
+                numbers.append(int(number_text))
+
+        next_number = max(numbers, default=0) + 1
+        while True:
+            value = f"{prefix}{next_number:02d}" if prefix else str(next_number)
+            if value not in existing_values:
+                return value
+            next_number += 1
+
     def append_record(self, target_key, row_dict):
+        if target_key in AUTO_ID_FIELDS:
+            with AUTO_ID_LOCK:
+                return self._append_record(target_key, row_dict)
+        return self._append_record(target_key, row_dict)
+
+    def _append_record(self, target_key, row_dict):
+        if not isinstance(row_dict, dict):
+            return False, "Format data harus berupa objek."
+        row_dict = dict(row_dict)
         tab_lookup = {
             "DB_Timeline": ["DB_Timeline", self.timeline_tab, "Sheet1"],
             "DB_Dialog": ["DB_Dialog", self.dialog_tab, "Agenda Setting"],
@@ -1129,12 +1174,20 @@ class SheetsDB:
         ws = self._find_ws(candidates)
 
         if not ws:
+            if target_key in AUTO_ID_FIELDS:
+                field, _ = AUTO_ID_FIELDS[target_key]
+                row_dict[field] = self._next_auto_id(target_key, DEMO_DATA.get(target_key, []))
             DEMO_DATA.setdefault(target_key, []).append(row_dict)
             return True, f"Disimpan sementara ke {target_key} (Klik 'Initial Data' sebagai Admin untuk sinkronisasi tab)."
 
         try:
-            snap_vals = self._get_values_from_snapshot(candidates)
+            snap_vals = ws.get_all_values() if target_key in AUTO_ID_FIELDS else self._get_values_from_snapshot(candidates)
             headers = [h.strip() for h in snap_vals[0]] if (snap_vals and snap_vals[0]) else [h.strip() for h in ws.row_values(1)]
+            if target_key in AUTO_ID_FIELDS:
+                field, _ = AUTO_ID_FIELDS[target_key]
+                if field not in headers:
+                    return False, f"Kolom ID otomatis '{field}' tidak ditemukan di tab '{ws.title}'."
+                row_dict[field] = self._next_auto_id(target_key, _rows_to_dicts(snap_vals or []))
 
             if target_key == "DB_Ruangan":
                 raw_nip = str(row_dict.get("NIP Penanggung Jawab", "") or row_dict.get("Penanggungjawab Ruangan", "")).replace("NIPPPK.", "").replace("NIP.", "").strip()
@@ -1152,9 +1205,9 @@ class SheetsDB:
             ]
             ws.append_row(row_values, value_input_option="USER_ENTERED")
             self._sync_snapshot(force=True)
-            return True, f"Data berhasil disimpan ke tab '{ws.title}'!"
+            return True, f"Data berhasil disimpan!"
         except Exception as e:
-            return False, f"Gagal menyimpan ke '{ws.title}': {e}"
+            return False, f"Gagal menyimpan data!': {e}"
 
     def delete_record(self, target_key, row_num):
         tab_lookup = {
@@ -1176,6 +1229,6 @@ class SheetsDB:
         try:
             ws.delete_rows(int(row_num))
             self._sync_snapshot(force=True)
-            return True, f"Data berhasil dihapus dari tab '{ws.title}'!"
+            return True, f"Data berhasil dihapus!"
         except Exception as e:
             return False, f"Gagal menghapus baris: {e}"

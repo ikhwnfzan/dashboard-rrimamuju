@@ -379,7 +379,8 @@ def api_add_record(target_key):
 
     mod_key, req_lvl = TARGET_PERMISSION_MAP[target_key]
     if not _has_perm(user, mod_key, req_lvl):
-        return jsonify({"ok": False, "message": f"You need permission to access '{mod_key}'."}), 403
+        display_key = mod_key.replace("DB_", "Data")
+        return jsonify({"ok": False, "message": f"You need permission to access '{display_key}'."}), 403
 
     row_data = request.get_json(silent=True) or {}
     if target_key == "DB_Timeline":
