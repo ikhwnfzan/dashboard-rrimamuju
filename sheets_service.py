@@ -611,12 +611,52 @@ class SheetsDB:
     def get_timeline(self):
         vals = self._get_values_from_snapshot(["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"])
         if vals is None:
-            return DEMO_DATA["DB_Timeline"]
-        rows = _rows_to_dicts(vals)
+            return [dict(row, _row_num=idx) for idx, row in enumerate(DEMO_DATA["DB_Timeline"], start=2)]
+        rows = _rows_to_dicts(vals, include_row_num=True)
         for r in rows:
             r.setdefault("Tanggal Mulai", r.get("Start Date", ""))
             r.setdefault("Tanggal Selesai", r.get("End Date", ""))
         return rows
+
+    def update_timeline_row(self, row_num, updates_dict):
+        try:
+            target_row = int(row_num)
+            if target_row < 2:
+                return False, "Nomor baris timeline tidak valid."
+        except (TypeError, ValueError):
+            return False, "Nomor baris timeline tidak valid."
+
+        if not self._find_ws(["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"]):
+            rows = DEMO_DATA["DB_Timeline"]
+            idx = target_row - 2
+            if idx < 0 or idx >= len(rows):
+                return False, "Baris timeline tidak ditemukan."
+            rows[idx].update(updates_dict)
+            return True, "Timeline diperbarui (Mode Demo)."
+
+        ws = self._find_ws(["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"])
+        try:
+            all_values = self._get_values_from_snapshot(
+                ["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"]
+            ) or ws.get_all_values()
+            headers = [header.strip() for header in all_values[0]] if all_values else []
+            col_fallbacks = {
+                "Tanggal Mulai": ["Tanggal Mulai", "Start Date"],
+                "Tanggal Selesai": ["Tanggal Selesai", "End Date"],
+            }
+            updated_columns = 0
+            for col_name, new_val in updates_dict.items():
+                for candidate in col_fallbacks.get(col_name, [col_name]):
+                    if candidate in headers:
+                        ws.update_cell(target_row, headers.index(candidate) + 1, str(new_val))
+                        updated_columns += 1
+                        break
+            if not updated_columns:
+                return False, "Kolom timeline yang akan diperbarui tidak ditemukan."
+            self._sync_snapshot(force=True)
+            return True, "Data timeline berhasil diperbarui."
+        except Exception as e:
+            return False, f"Gagal memperbarui timeline: {e}"
 
     def get_agenda_setting(self):
         all_values = self._get_values_from_snapshot(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"])
@@ -986,7 +1026,14 @@ class SheetsDB:
                 row_dict["NIP Penanggung Jawab"] = nip_clean
                 row_dict["Penanggungjawab Ruangan"] = nip_clean
 
-            row_values = [str(row_dict.get(h, "")) for h in headers]
+            timeline_fallbacks = {
+                "Start Date": "Tanggal Mulai",
+                "End Date": "Tanggal Selesai",
+            } if target_key == "DB_Timeline" else {}
+            row_values = [
+                str(row_dict.get(header, row_dict.get(timeline_fallbacks.get(header, ""), "")))
+                for header in headers
+            ]
             ws.append_row(row_values, value_input_option="USER_ENTERED")
             self._sync_snapshot(force=True)
             return True, f"Data berhasil disimpan ke tab '{ws.title}'!"
@@ -995,6 +1042,7 @@ class SheetsDB:
 
     def delete_record(self, target_key, row_num):
         tab_lookup = {
+            "DB_Timeline": ["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"],
             "DB_Dialog": ["DB_Dialog", self.dialog_tab, "Agenda Setting"],
             "DB_Info_Board": ["DB_Info_Board", "Info_Board"],
             "DB_Arsip_SDM": ["DB_Arsip_SDM", "Arsip_SDM"],

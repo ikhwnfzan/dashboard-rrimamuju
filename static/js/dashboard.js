@@ -24,6 +24,16 @@ const FLAT_ICONS = {
   moon: '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>'
 };
 
+const ACTION_ICONS = {
+  edit: '<svg aria-hidden="true" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m16 4 4 4"/><path d="M4 20l4.5-1 11-11a2.12 2.12 0 0 0-3-3l-11 11L4 20z"/></svg>',
+  delete: '<svg aria-hidden="true" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>'
+};
+
+let TIMELINE_EDIT_ROW = null;
+let TIMELINE_SORT = { key: 'Tanggal Mulai', direction: 'asc' };
+let TIMELINE_VIEW = 'table';
+let TIMELINE_CALENDAR_MONTH = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
 const MODULE_NAV_CONFIG = [
   { key: 'overview', label: 'Overview', group: 'Utama', always: true },
   { key: 'info_board', label: 'Info Board', group: 'Utama' },
@@ -59,6 +69,16 @@ function showToast(message, type = 'success') {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
   }, 4000);
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
 }
 
 function paginateArray(tableKey, rows, pagContainerId, rerenderFnName) {
@@ -170,6 +190,7 @@ function buildRoleSidebar() {
 
 function applyActionButtonVisibility() {
   const toggle = (id, show) => { const el = document.getElementById(id); if (el) el.classList.toggle('hidden', !show); };
+  toggle('btnAddTimeline', canFull('dialog'));
   toggle('btnAddInfoOverview', canFull('info_board'));
   toggle('btnAddInfoBoard', canFull('info_board'));
   toggle('btnAddPegawai', canFull('data_pegawai'));
@@ -198,6 +219,7 @@ function renderAllModules() {
   document.getElementById('syncTimeLabel').textContent = DATA.server_time || '';
   document.getElementById('statInfoCount').textContent = (DATA.info_board || []).length;
 
+  renderTimelineModule();
   renderInfoBoard();
   if (canView('data_pegawai')) renderDataPegawai();
   if (canView('arsip_sdm')) renderArsipSdm();
@@ -236,15 +258,229 @@ function renderInfoBoard() {
         <span class="font-extrabold px-2 py-0.5 rounded-full ${String(i.Prioritas).toLowerCase() === 'urgent' ? 'bg-rose-100 text-rose-700' : 'bg-teal-100 text-teal-700'}">${i.Prioritas || 'Info'}</span>
         <div class="flex items-center gap-2">
           <span class="text-slate-400">${i.Tanggal || ''} • ${i['Target Divisi'] || 'Semua'}</span>
-          ${deletable && i._row_num ? `<button onclick="deleteRecord('DB_Info_Board', ${i._row_num}, '${(i.Judul || '').replace(/'/g, '')}')" class="text-rose-500 hover:underline font-bold">Hapus</button>` : ''}
+          ${deletable && i._row_num ? `<button type="button" title="Hapus pengumuman" aria-label="Hapus pengumuman" onclick="deleteRecord('DB_Info_Board', ${i._row_num}, '${(i.Judul || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition">${ACTION_ICONS.delete}</button>` : ''}
         </div>
       </div>
       <h4 class="font-extrabold text-sm">${i.Judul || ''}</h4>
       <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${i.Isi || ''}</p>
     </div>
   `).join('') || `<p class="text-xs text-slate-400">Belum ada pengumuman di Info Board.</p>`;
-  document.getElementById('overviewInfoList').innerHTML = cards;
-  document.getElementById('fullInfoBoardList').innerHTML = cards;
+  const overviewList = document.getElementById('overviewInfoList');
+  const fullList = document.getElementById('fullInfoBoardList');
+  if (overviewList) overviewList.innerHTML = cards;
+  if (fullList) fullList.innerHTML = cards;
+}
+
+function renderTimelineModule() {
+  const body = document.getElementById('tbodyTimeline');
+  if (!body) return;
+  const canEdit = canUpdate('dialog');
+  const canDelete = canFull('dialog');
+  const query = (document.getElementById('searchTimeline')?.value || '').trim().toLowerCase();
+  const startFilter = document.getElementById('timelineFilterStart')?.value || '';
+  const endFilter = document.getElementById('timelineFilterEnd')?.value || '';
+  const filtered = (DATA.timeline || []).filter(item => {
+    const searchValues = [
+      item.Kegiatan, item.Tahapan, item['Tanggal Mulai'], item['Start Date'],
+      item['Tanggal Selesai'], item['End Date'], item.Tanggal, item.Keterangan
+    ];
+    const matchesSearch = !query || searchValues.some(value => String(value || '').toLowerCase().includes(query));
+    const itemDate = dateValueForInput(item['Tanggal Mulai'] || item['Start Date'] || item.Tanggal || '');
+    const matchesDateRange = (!startFilter || (itemDate && itemDate >= startFilter)) &&
+      (!endFilter || (itemDate && itemDate <= endFilter));
+    return matchesSearch && matchesDateRange;
+  });
+  filtered.sort((a, b) => {
+    const getValue = item => TIMELINE_SORT.key === 'Tanggal Mulai'
+      ? dateValueForInput(item['Tanggal Mulai'] || item['Start Date'] || item.Tanggal || '')
+      : String(item[TIMELINE_SORT.key] || '').trim();
+    const aValue = getValue(a);
+    const bValue = getValue(b);
+    if (!aValue) return bValue ? 1 : 0;
+    if (!bValue) return -1;
+    const order = aValue.localeCompare(bValue, 'id', { numeric: true, sensitivity: 'base' });
+    return TIMELINE_SORT.direction === 'asc' ? order : -order;
+  });
+  const sortIndicators = {
+    Kegiatan: 'sortTimelineKegiatan',
+    Tahapan: 'sortTimelineTahapan',
+    'Tanggal Mulai': 'sortTimelineDate',
+    Keterangan: 'sortTimelineKeterangan'
+  };
+  Object.entries(sortIndicators).forEach(([key, id]) => {
+    const indicator = document.getElementById(id);
+    if (indicator) indicator.textContent = TIMELINE_SORT.key === key
+      ? (TIMELINE_SORT.direction === 'asc' ? '↑' : '↓')
+      : '';
+  });
+  const rows = paginateArray('timeline', filtered, 'pagTimeline', 'renderTimelineModule');
+  body.innerHTML = rows.map(item => {
+    const rowNum = Number(item._row_num);
+    const startDate = item['Tanggal Mulai'] || item['Start Date'] || item.Tanggal || '';
+    const endDate = item['Tanggal Selesai'] || item['End Date'] || '';
+    const dateLabel = startDate && endDate && startDate !== endDate
+      ? `${startDate} — ${endDate}`
+      : startDate || endDate || '-';
+    const actions = [
+      canEdit && rowNum >= 2
+        ? `<button type="button" title="Edit kegiatan" aria-label="Edit kegiatan" onclick="openTimelineModalByRow(${rowNum})" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-teal-600 transition">${ACTION_ICONS.edit}</button>`
+        : '',
+      canDelete && rowNum >= 2
+        ? `<button type="button" title="Hapus kegiatan" aria-label="Hapus kegiatan" onclick="deleteRecord('DB_Timeline', ${rowNum}, 'kegiatan ini')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition">${ACTION_ICONS.delete}</button>`
+        : ''
+    ].filter(Boolean).join(' ');
+    return `
+      <tr class="hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition border-b border-slate-100 dark:border-slate-800">
+        <td class="py-3 px-3 font-extrabold">${escapeHtml(item.Kegiatan || '-')}</td>
+        <td class="py-3 px-3">${escapeHtml(item.Tahapan || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap">${escapeHtml(dateLabel)}</td>
+        <td class="py-3 px-3 text-slate-500">${escapeHtml(item.Keterangan || '-')}</td>
+        <td class="py-3 px-3 text-right whitespace-nowrap space-x-1">${actions || '-'}</td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="5" class="py-8 text-center text-xs text-slate-400">Belum ada data timeline.</td></tr>';
+  renderTimelineCalendar(filtered);
+  renderDashboardHorizontalTimeline(filtered);
+  setTimelineView(TIMELINE_VIEW);
+}
+
+function filterTimelineTable() {
+  PAGE_STATE.timeline = PAGE_STATE.timeline || { page: 1, size: DEFAULT_PAGE_SIZE };
+  PAGE_STATE.timeline.page = 1;
+  renderTimelineModule();
+}
+
+function sortTimelineTable(key) {
+  if (TIMELINE_SORT.key === key) {
+    TIMELINE_SORT.direction = TIMELINE_SORT.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    TIMELINE_SORT = { key, direction: 'asc' };
+  }
+  PAGE_STATE.timeline = PAGE_STATE.timeline || { page: 1, size: DEFAULT_PAGE_SIZE };
+  PAGE_STATE.timeline.page = 1;
+  renderTimelineModule();
+}
+
+function setTimelineView(view) {
+  TIMELINE_VIEW = view;
+  const views = {
+    table: ['timelineTableTab', 'timelineTableView'],
+    calendar: ['timelineCalendarTab', 'timelineCalendarView'],
+    horizontal: ['timelineHorizontalTab', 'timelineHorizontalView']
+  };
+  Object.entries(views).forEach(([key, [tabId, panelId]]) => {
+    const active = key === view;
+    const tab = document.getElementById(tabId);
+    const panel = document.getElementById(panelId);
+    if (tab) {
+      tab.setAttribute('aria-selected', String(active));
+      tab.classList.toggle('bg-teal-600', active);
+      tab.classList.toggle('text-white', active);
+      tab.classList.toggle('border-teal-600', active);
+      tab.classList.toggle('bg-slate-100', !active);
+      tab.classList.toggle('text-slate-600', !active);
+      tab.classList.toggle('dark:bg-slate-800', !active);
+      tab.classList.toggle('dark:text-slate-300', !active);
+      tab.classList.toggle('border-slate-200', !active);
+      tab.classList.toggle('dark:border-slate-700', !active);
+    }
+    if (panel) panel.classList.toggle('hidden', !active);
+  });
+}
+
+function changeTimelineMonth(offset) {
+  TIMELINE_CALENDAR_MONTH = new Date(
+    TIMELINE_CALENDAR_MONTH.getFullYear(),
+    TIMELINE_CALENDAR_MONTH.getMonth() + offset,
+    1
+  );
+  renderTimelineModule();
+}
+
+function timelineDateObject(value) {
+  const isoDate = dateValueForInput(value);
+  if (!isoDate) return null;
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function timelineDateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function renderTimelineCalendar(items) {
+  const grid = document.getElementById('timelineCalendarGrid');
+  const title = document.getElementById('timelineCalendarMonth');
+  if (!grid || !title) return;
+  const year = TIMELINE_CALENDAR_MONTH.getFullYear();
+  const month = TIMELINE_CALENDAR_MONTH.getMonth();
+  title.textContent = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(TIMELINE_CALENDAR_MONTH);
+
+  const eventsByDate = new Map();
+  items.forEach(item => {
+    const date = timelineDateObject(item['Tanggal Mulai'] || item['Start Date'] || item.Tanggal || '');
+    if (!date) return;
+    const key = timelineDateKey(date);
+    eventsByDate.set(key, [...(eventsByDate.get(key) || []), item]);
+  });
+
+  const firstDayOffset = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cellCount = Math.ceil((firstDayOffset + daysInMonth) / 7) * 7;
+  const todayKey = timelineDateKey(new Date());
+  grid.innerHTML = Array.from({ length: cellCount }, (_, index) => {
+    const day = index - firstDayOffset + 1;
+    const date = new Date(year, month, day);
+    const inMonth = day > 0 && day <= daysInMonth;
+    const key = timelineDateKey(date);
+    const dayEvents = inMonth ? (eventsByDate.get(key) || []) : [];
+    const eventRows = dayEvents.slice(0, 3).map(item => `
+      <div title="${escapeHtml(item.Kegiatan || '')}${item.Tahapan ? ` — ${escapeHtml(item.Tahapan)}` : ''}"
+        class="mt-1 px-1.5 py-1 rounded-md bg-teal-50 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-900 text-teal-800 dark:text-teal-200">
+        <p class="font-extrabold truncate">${escapeHtml(item.Kegiatan || 'Kegiatan')}</p>
+        ${item.Tahapan ? `<p class="truncate opacity-80">${escapeHtml(item.Tahapan)}</p>` : ''}
+      </div>
+    `).join('');
+    const moreEvents = dayEvents.length > 3
+      ? `<p class="mt-1 text-[9px] font-bold text-slate-400">+${dayEvents.length - 3} kegiatan</p>`
+      : '';
+    return `
+      <div class="min-h-[115px] border-r border-b border-slate-200 dark:border-slate-700 p-1.5 ${inMonth ? '' : 'bg-slate-50/70 dark:bg-slate-900/40'}">
+        <div class="text-right text-[10px] font-bold ${!inMonth ? 'text-slate-300 dark:text-slate-600' : key === todayKey ? 'text-teal-600' : 'text-slate-500 dark:text-slate-400'}">${date.getDate()}</div>
+        ${eventRows}${moreEvents}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderDashboardHorizontalTimeline(items) {
+  const track = document.getElementById('dashboardTimelineTrack');
+  if (!track) return;
+  const ordered = [...items].sort((a, b) => {
+    const aDate = dateValueForInput(a['Tanggal Mulai'] || a['Start Date'] || a.Tanggal || '');
+    const bDate = dateValueForInput(b['Tanggal Mulai'] || b['Start Date'] || b.Tanggal || '');
+    if (!aDate) return bDate ? 1 : 0;
+    if (!bDate) return -1;
+    return aDate.localeCompare(bDate);
+  });
+  if (!ordered.length) {
+    track.innerHTML = '<div class="w-full text-center py-12 text-xs text-slate-400">Tidak ada tahapan kegiatan ditemukan.</div>';
+    return;
+  }
+  track.innerHTML = ordered.map((item, index) => {
+    const isBottom = index % 2 === 0;
+    const startDate = item.Tanggal || item['Tanggal Mulai'] || item['Start Date'] || '';
+    const dateLabel = startDate;
+    const card = `<div class="w-[215px] min-h-[76px] flex flex-col items-center justify-center text-center p-3 rounded-xl bg-white dark:bg-slate-800 border border-sky-300 dark:border-sky-800 shadow-sm"><div class="text-xs font-extrabold text-teal-700 dark:text-teal-300">${escapeHtml(item.Kegiatan || '')}</div><div class="text-[11px] text-slate-600 dark:text-slate-300 mt-1">${escapeHtml(item.Tahapan || '')}</div></div>`;
+    return `
+      <div class="relative flex flex-col items-center w-[235px] shrink-0 select-none">
+        <div class="h-[105px] flex flex-col items-center justify-end w-full">${!isBottom ? `${card}<div class="w-[2px] h-5 bg-sky-300"></div>` : ''}</div>
+        <div class="relative w-full flex items-center justify-center h-6"><div class="w-full h-[3px] bg-slate-300 dark:bg-slate-600"></div><div class="absolute w-5 h-5 rounded-full bg-white dark:bg-slate-800 border-[3px] border-slate-500 dark:border-slate-300 z-10"></div></div>
+        <div class="mt-1.5 text-xs font-extrabold text-slate-700 dark:text-slate-200">${escapeHtml(dateLabel)}</div>
+        <div class="h-[105px] flex flex-col items-center justify-start w-full">${isBottom ? `<div class="w-[2px] h-5 bg-sky-300 mt-1"></div>${card}` : ''}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 function renderDataPegawai() {
@@ -266,8 +502,8 @@ function renderDataPegawai() {
         <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${String(e.Status || 'Aktif').toLowerCase() === 'aktif' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">${e.Status || 'Aktif'}</span>
       </td>
       <td class="py-3 px-3 text-right whitespace-nowrap space-x-1">
-        ${editable ? `<button onclick='openEmpEdit(${JSON.stringify(e)})' class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-teal-600 transition">Edit</button>` : ''}
-        ${deletable && e._row_num ? `<button onclick="deleteRecord('DB_Pegawai', ${e._row_num}, '${(e['Nama Pegawai'] || '').replace(/'/g, '')}')" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition">Hapus</button>` : ''}
+        ${editable ? `<button type="button" title="Edit pegawai" aria-label="Edit pegawai" onclick='openEmpEdit(${JSON.stringify(e)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-teal-600 transition">${ACTION_ICONS.edit}</button>` : ''}
+        ${deletable && e._row_num ? `<button type="button" title="Hapus pegawai" aria-label="Hapus pegawai" onclick="deleteRecord('DB_Pegawai', ${e._row_num}, '${(e['Nama Pegawai'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition">${ACTION_ICONS.delete}</button>` : ''}
       </td>
     </tr>
   `).join('');
@@ -338,7 +574,7 @@ function renderDialogModule() {
         <td class="py-3 px-3 text-xs">${d.Kehadiran || '-'}</td>
         <td class="py-3 px-3 text-xs font-bold">${d.Keterlaksanaan || '-'}</td>
         <td class="py-3 px-3 whitespace-nowrap">${bestcutCell}</td>
-        <td class="py-3 px-3">${editable && d._row_num ? `<button onclick='openDialogEdit(${JSON.stringify(d)})' class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition">Update</button>` : '-'}</td>
+        <td class="py-3 px-3">${editable && d._row_num ? `<button type="button" title="Update dialog" aria-label="Update dialog" onclick='openDialogEdit(${JSON.stringify(d)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition">${ACTION_ICONS.edit}</button>` : '-'}</td>
       </tr>
     `;
   }).join('');
@@ -493,7 +729,7 @@ function renderMasterRuangan() {
         <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300">${emp?.['Nama Pegawai'] || r.pj_nama || '-'}</td>
         <td class="py-3 px-3 text-xs font-semibold">${emp?.Jabatan || emp?.Posisi || r.pj_jabatan || '-'}</td>
         <td class="py-3 px-3 text-right">
-          ${deletable && rowNum > 1 ? `<button onclick="deleteRecord('DB_Ruangan', ${rowNum}, '${(r['Nama Ruangan'] || '').replace(/'/g, '')}')" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition">Hapus</button>` : '-'}
+          ${deletable && rowNum > 1 ? `<button type="button" title="Hapus ruangan" aria-label="Hapus ruangan" onclick="deleteRecord('DB_Ruangan', ${rowNum}, '${(r['Nama Ruangan'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition">${ACTION_ICONS.delete}</button>` : '-'}
         </td>
       </tr>
     `;
@@ -513,7 +749,7 @@ function renderManageUsers() {
         </div>
       </td>
       <td class="py-3 px-3 text-right">
-        <button onclick='openUserModal(${JSON.stringify(u)})' class="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition">Edit Roles / Pass</button>
+        <button type="button" title="Edit role dan password" aria-label="Edit role dan password" onclick='openUserModal(${JSON.stringify(u)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition">${ACTION_ICONS.edit}</button>
       </td>
     </tr>
   `).join('');
@@ -622,6 +858,70 @@ const SCHEMAS = {
   DB_Stok_Masuk: { title: 'Catat Persediaan Masuk', fields: ['Tanggal', 'Penanggung Jawab', 'Nama Barang', 'Jumlah Masuk', 'Unit', 'Pcs', 'Keterangan'] },
   DB_Stok_Keluar: { title: 'Catat Persediaan Keluar', fields: ['Tanggal', 'Nama Barang', 'Bidang', 'Penerima Barang', 'Jumlah Keluar', 'Unit', 'Pcs', 'Keterangan'] },
 };
+
+function dateValueForInput(value) {
+  const text = String(value || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const parts = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (!parts) return '';
+  let month = Number(parts[1]);
+  let day = Number(parts[2]);
+  const year = Number(parts[3]);
+  if (month > 12) [day, month] = [month, day];
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) return '';
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function openTimelineModal(item = null) {
+  TIMELINE_EDIT_ROW = item;
+  document.getElementById('timelineModalTitle').textContent = item ? 'Edit Kegiatan' : 'Tambah Kegiatan';
+  document.getElementById('timelineActivity').value = item?.Kegiatan || '';
+  document.getElementById('timelinePhase').value = item?.Tahapan || '';
+  document.getElementById('timelineStartDate').value = dateValueForInput(item?.['Tanggal Mulai'] || item?.['Start Date'] || '');
+  document.getElementById('timelineEndDate').value = dateValueForInput(item?.['Tanggal Selesai'] || item?.['End Date'] || '');
+  document.getElementById('timelineDescription').value = item?.Keterangan || '';
+  const modal = document.getElementById('timelineModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function openTimelineModalByRow(rowNum) {
+  const item = (DATA.timeline || []).find(row => Number(row._row_num) === rowNum);
+  if (item) openTimelineModal(item);
+}
+
+function closeTimelineModal() {
+  const modal = document.getElementById('timelineModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.getElementById('timelineForm').reset();
+  TIMELINE_EDIT_ROW = null;
+}
+
+async function submitTimeline(event) {
+  event.preventDefault();
+  const form = event.target;
+  const payload = Object.fromEntries(new FormData(form).entries());
+  if (payload['Tanggal Selesai'] && payload['Tanggal Selesai'] < payload['Tanggal Mulai']) {
+    showToast('Tanggal selesai tidak boleh sebelum tanggal mulai.', 'error');
+    return;
+  }
+  const editing = Boolean(TIMELINE_EDIT_ROW);
+  const url = editing ? '/api/timeline/update' : '/api/add/DB_Timeline';
+  const rowNum = editing ? TIMELINE_EDIT_ROW._row_num : null;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(editing ? { row_num: rowNum, updates: payload } : payload)
+  });
+  const out = await res.json();
+  showToast(out.message, out.ok ? 'success' : 'error');
+  if (out.ok) {
+    closeTimelineModal();
+    await loadDashboard();
+  }
+}
 
 function handleRoomNipLookup(nipInputEl) {
   const clean = String(nipInputEl.value || '').replace(/\D/g, '');

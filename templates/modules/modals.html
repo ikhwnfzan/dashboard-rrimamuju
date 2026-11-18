@@ -114,6 +114,40 @@
   </div>
 </div>
 
+<div id="timelineModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 overflow-y-auto">
+  <div class="bg-white dark:bg-[#111827] rounded-3xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-8">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-extrabold" id="timelineModalTitle">Tambah Kegiatan</h3>
+      <button type="button" onclick="closeTimelineModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+    </div>
+    <form id="timelineForm" onsubmit="submitTimeline(event)" class="space-y-3 text-xs">
+      <div>
+        <label for="timelineActivity" class="block font-bold mb-1">Kegiatan</label>
+        <input id="timelineActivity" name="Kegiatan" type="text" required class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div>
+        <label for="timelinePhase" class="block font-bold mb-1">Tahapan</label>
+        <input id="timelinePhase" name="Tahapan" type="text" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="timelineStartDate" class="block font-bold mb-1">Tanggal Mulai</label>
+          <input id="timelineStartDate" name="Tanggal Mulai" type="date" required class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+        <div>
+          <label for="timelineEndDate" class="block font-bold mb-1">Tanggal Selesai</label>
+          <input id="timelineEndDate" name="Tanggal Selesai" type="date" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+      </div>
+      <div>
+        <label for="timelineDescription" class="block font-bold mb-1">Keterangan</label>
+        <textarea id="timelineDescription" name="Keterangan" rows="3" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></textarea>
+      </div>
+      <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold transition">Simpan Kegiatan</button>
+    </form>
+  </div>
+</div>
+
 <div id="initModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
   <div class="bg-white dark:bg-[#111827] rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
     <div class="flex items-center justify-between">

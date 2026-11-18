@@ -73,6 +73,26 @@ def _has_perm(user, module_key, min_level="view"):
     return LEVEL_RANK.get(cur, 0) >= LEVEL_RANK.get(min_level, 1)
 
 
+def _validate_timeline_data(data):
+    activity = str(data.get("Kegiatan", "")).strip()
+    start_date = str(data.get("Tanggal Mulai", "")).strip()
+    end_date = str(data.get("Tanggal Selesai", "")).strip()
+    if not activity:
+        return "Kegiatan wajib diisi."
+    try:
+        start = datetime.strptime(start_date, "%Y-%m-%d").date()
+    except ValueError:
+        return "Tanggal mulai tidak valid."
+    if end_date:
+        try:
+            end = datetime.strptime(end_date, "%Y-%m-%d").date()
+        except ValueError:
+            return "Tanggal selesai tidak valid."
+        if end < start:
+            return "Tanggal selesai tidak boleh sebelum tanggal mulai."
+    return None
+
+
 @app.context_processor
 def inject_now():
     return {"now": lambda: datetime.now(timezone.utc)}
@@ -260,6 +280,33 @@ def api_update_dialog():
     return jsonify({"ok": ok, "message": msg})
 
 
+@app.route("/api/timeline/update", methods=["POST"])
+def api_update_timeline():
+    user = session.get("user")
+    if not _has_perm(user, "dialog", "update"):
+        return jsonify({"ok": False, "message": "Anda tidak memiliki izin update pada Timeline."}), 403
+
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return jsonify({"ok": False, "message": "Data timeline tidak valid."}), 400
+    row_num = data.get("row_num")
+    updates = data.get("updates")
+    if not row_num or not isinstance(updates, dict):
+        return jsonify({"ok": False, "message": "Baris atau data timeline tidak valid."}), 400
+
+    allowed_fields = {"Kegiatan", "Tahapan", "Tanggal Mulai", "Tanggal Selesai", "Keterangan", "Tanggal"}
+    if not updates or not set(updates).issubset(allowed_fields):
+        return jsonify({"ok": False, "message": "Kolom timeline tidak valid."}), 400
+    validation_error = _validate_timeline_data(updates)
+    if validation_error:
+        return jsonify({"ok": False, "message": validation_error}), 400
+
+    updates = {key: str(value or "").strip() for key, value in updates.items()}
+    updates["Tanggal"] = updates.get("Tanggal Mulai", "")
+    ok, msg = db.update_timeline_row(row_num, updates)
+    return jsonify({"ok": ok, "message": msg})
+
+
 @app.route("/api/add/<target_key>", methods=["POST"])
 def api_add_record(target_key):
     user = session.get("user")
@@ -274,6 +321,15 @@ def api_add_record(target_key):
         return jsonify({"ok": False, "message": f"Role Anda tidak memiliki izin menambah data pada '{mod_key}'."}), 403
 
     row_data = request.get_json(silent=True) or {}
+    if target_key == "DB_Timeline":
+        if not isinstance(row_data, dict):
+            return jsonify({"ok": False, "message": "Data timeline tidak valid."}), 400
+        validation_error = _validate_timeline_data(row_data)
+        if validation_error:
+            return jsonify({"ok": False, "message": validation_error}), 400
+        allowed_fields = {"Kegiatan", "Tahapan", "Tanggal Mulai", "Tanggal Selesai", "Keterangan"}
+        row_data = {key: str(value or "").strip() for key, value in row_data.items() if key in allowed_fields}
+        row_data["Tanggal"] = row_data["Tanggal Mulai"]
     ok, msg = db.append_record(target_key, row_data)
     return jsonify({"ok": ok, "message": msg})
 
