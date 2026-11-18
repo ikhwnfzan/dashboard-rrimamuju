@@ -2,32 +2,34 @@ let DATA = {};
 const PAGE_STATE = {};
 const DEFAULT_PAGE_SIZE = 10;
 
-const FLAT_ICONS = {
-  overview: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
-  info_board: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>',
-  data_pegawai: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-  arsip_sdm: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>',
-  dialog: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>',
-  jadwal_siaran: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>',
-  program_siaran: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
-  konten: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>',
-  jadwal_tmb: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg>',
-  master_barang: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
-  master_persediaan: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>',
-  persediaan_masuk: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>',
-  persediaan_keluar: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>',
-  master_ruangan: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>',
-  bmn_area: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
-  manage_users: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>',
-  manage_modules: '<svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
-  sun: '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>',
-  moon: '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>'
+const ICON_CLASSES = {
+  overview: 'ti-layout-dashboard',
+  info_board: 'ti-speakerphone',
+  data_pegawai: 'ti-users',
+  arsip_sdm: 'ti-folder-open',
+  dialog: 'ti-microphone',
+  jadwal_siaran: 'ti-radio',
+  program_siaran: 'ti-player-play',
+  konten: 'ti-device-mobile',
+  jadwal_tmb: 'ti-chart-bar',
+  master_barang: 'ti-box',
+  master_persediaan: 'ti-chart-line',
+  persediaan_masuk: 'ti-arrow-down',
+  persediaan_keluar: 'ti-arrow-up',
+  master_ruangan: 'ti-building',
+  bmn_area: 'ti-tool',
+  manage_users: 'ti-user-cog',
+  manage_modules: 'ti-shield-check',
+  sun: 'ti-sun',
+  moon: 'ti-moon',
+  edit: 'ti-pencil',
+  delete: 'ti-trash'
 };
 
-const ACTION_ICONS = {
-  edit: '<svg aria-hidden="true" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m16 4 4 4"/><path d="M4 20l4.5-1 11-11a2.12 2.12 0 0 0-3-3l-11 11L4 20z"/></svg>',
-  delete: '<svg aria-hidden="true" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>'
-};
+function icon(name, size = 'w-4 h-4 text-base leading-none') {
+  const iconClass = ICON_CLASSES[name];
+  return iconClass ? `<i aria-hidden="true" class="ti ${iconClass} ${size}"></i>` : '';
+}
 
 let TIMELINE_EDIT_ROW = null;
 let TIMELINE_SORT = { key: 'Tanggal Mulai', direction: 'asc' };
@@ -140,7 +142,7 @@ function canFull(modKey) { return permLevel(modKey) === 'full'; }
 function initTheme() { applyTheme(localStorage.getItem('rri_theme') || 'light'); }
 function applyTheme(mode) {
   document.documentElement.classList.toggle('dark', mode === 'dark');
-  document.getElementById('themeIcon').innerHTML = mode === 'dark' ? FLAT_ICONS.sun : FLAT_ICONS.moon;
+  document.getElementById('themeIcon').innerHTML = icon(mode === 'dark' ? 'sun' : 'moon', 'w-3.5 h-3.5 text-sm leading-none');
   document.getElementById('themeLabel').textContent = mode === 'dark' ? 'Light' : 'Dark';
   localStorage.setItem('rri_theme', mode);
 }
@@ -181,7 +183,7 @@ function buildRoleSidebar() {
       ${items.map(i => `
         <button onclick="switchModule('${i.key}')" data-mod="${i.key}"
           class="nav-pill ${i.key === 'overview' ? 'active' : ''} w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800/70 transition">
-          <span class="flex items-center gap-2.5 truncate">${FLAT_ICONS[i.key] || ''}<span class="truncate">${i.label}</span></span>
+          <span class="flex items-center gap-2.5 truncate">${icon(i.key, 'w-4 h-4 text-base leading-none shrink-0')}<span class="truncate">${i.label}</span></span>
         </button>
       `).join('')}
     </div>
@@ -258,7 +260,7 @@ function renderInfoBoard() {
         <span class="font-extrabold px-2 py-0.5 rounded-full ${String(i.Prioritas).toLowerCase() === 'urgent' ? 'bg-rose-100 text-rose-700' : 'bg-teal-100 text-teal-700'}">${i.Prioritas || 'Info'}</span>
         <div class="flex items-center gap-2">
           <span class="text-slate-400">${i.Tanggal || ''} • ${i['Target Divisi'] || 'Semua'}</span>
-          ${deletable && i._row_num ? `<button type="button" title="Hapus pengumuman" aria-label="Hapus pengumuman" onclick="deleteRecord('DB_Info_Board', ${i._row_num}, '${(i.Judul || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${ACTION_ICONS.delete}</button>` : ''}
+          ${deletable && i._row_num ? `<button type="button" title="Hapus pengumuman" aria-label="Hapus pengumuman" onclick="deleteRecord('DB_Info_Board', ${i._row_num}, '${(i.Judul || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
         </div>
       </div>
       <h4 class="font-extrabold text-sm">${i.Judul || ''}</h4>
@@ -323,10 +325,10 @@ function renderTimelineModule() {
       : startDate || endDate || '-';
     const actions = [
       canEdit && rowNum >= 2
-        ? `<button type="button" title="Edit kegiatan" aria-label="Edit kegiatan" onclick="openTimelineModalByRow(${rowNum})" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${ACTION_ICONS.edit}</button>`
+        ? `<button type="button" title="Edit kegiatan" aria-label="Edit kegiatan" onclick="openTimelineModalByRow(${rowNum})" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>`
         : '',
       canDelete && rowNum >= 2
-        ? `<button type="button" title="Hapus kegiatan" aria-label="Hapus kegiatan" onclick="deleteRecord('DB_Timeline', ${rowNum}, 'kegiatan ini')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${ACTION_ICONS.delete}</button>`
+        ? `<button type="button" title="Hapus kegiatan" aria-label="Hapus kegiatan" onclick="deleteRecord('DB_Timeline', ${rowNum}, 'kegiatan ini')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>`
         : ''
     ].filter(Boolean).join(' ');
     return `
@@ -502,8 +504,8 @@ function renderDataPegawai() {
         <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${String(e.Status || 'Aktif').toLowerCase() === 'aktif' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300'}">${e.Status || 'Aktif'}</span>
       </td>
       <td class="py-3 px-3 text-right whitespace-nowrap space-x-1">
-        ${editable ? `<button type="button" title="Edit pegawai" aria-label="Edit pegawai" onclick='openEmpEdit(${JSON.stringify(e)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${ACTION_ICONS.edit}</button>` : ''}
-        ${deletable && e._row_num ? `<button type="button" title="Hapus pegawai" aria-label="Hapus pegawai" onclick="deleteRecord('DB_Pegawai', ${e._row_num}, '${(e['Nama Pegawai'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${ACTION_ICONS.delete}</button>` : ''}
+        ${editable ? `<button type="button" title="Edit pegawai" aria-label="Edit pegawai" onclick='openEmpEdit(${JSON.stringify(e)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
+        ${deletable && e._row_num ? `<button type="button" title="Hapus pegawai" aria-label="Hapus pegawai" onclick="deleteRecord('DB_Pegawai', ${e._row_num}, '${(e['Nama Pegawai'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
       </td>
     </tr>
   `).join('');
@@ -574,7 +576,7 @@ function renderDialogModule() {
         <td class="py-3 px-3 text-xs">${d.Kehadiran || '-'}</td>
         <td class="py-3 px-3 text-xs font-bold">${d.Keterlaksanaan || '-'}</td>
         <td class="py-3 px-3 whitespace-nowrap">${bestcutCell}</td>
-        <td class="py-3 px-3">${editable && d._row_num ? `<button type="button" title="Update dialog" aria-label="Update dialog" onclick='openDialogEdit(${JSON.stringify(d)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${ACTION_ICONS.edit}</button>` : '-'}</td>
+        <td class="py-3 px-3">${editable && d._row_num ? `<button type="button" title="Update dialog" aria-label="Update dialog" onclick='openDialogEdit(${JSON.stringify(d)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : '-'}</td>
       </tr>
     `;
   }).join('');
@@ -729,7 +731,7 @@ function renderMasterRuangan() {
         <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300">${emp?.['Nama Pegawai'] || r.pj_nama || '-'}</td>
         <td class="py-3 px-3 text-xs font-semibold">${emp?.Jabatan || emp?.Posisi || r.pj_jabatan || '-'}</td>
         <td class="py-3 px-3 text-right">
-          ${deletable && rowNum > 1 ? `<button type="button" title="Hapus ruangan" aria-label="Hapus ruangan" onclick="deleteRecord('DB_Ruangan', ${rowNum}, '${(r['Nama Ruangan'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${ACTION_ICONS.delete}</button>` : '-'}
+          ${deletable && rowNum > 1 ? `<button type="button" title="Hapus ruangan" aria-label="Hapus ruangan" onclick="deleteRecord('DB_Ruangan', ${rowNum}, '${(r['Nama Ruangan'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : '-'}
         </td>
       </tr>
     `;
@@ -749,7 +751,7 @@ function renderManageUsers() {
         </div>
       </td>
       <td class="py-3 px-3 text-right">
-        <button type="button" title="Edit role dan password" aria-label="Edit role dan password" onclick='openUserModal(${JSON.stringify(u)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${ACTION_ICONS.edit}</button>
+        <button type="button" title="Edit role dan password" aria-label="Edit role dan password" onclick='openUserModal(${JSON.stringify(u)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>
       </td>
     </tr>
   `).join('');
