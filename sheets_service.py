@@ -89,7 +89,6 @@ ALL_ROLES = [
     "Perencanaan",
     "KMB",
     "BMN",
-    "Operator BMN",
     "TMB",
     "LPU",
     "Berita",
@@ -157,9 +156,9 @@ TAB_SCHEMAS = {
     "DB_Pegawai": ["No", "Nama Pegawai", "NIP / NIPPK", "Pangkat/ Golongan", "Jabatan", "Status", "Posisi"],
     "Arsip_SDM": ["Nomor Dokumen", "Nama Dokumen", "Tanggal", "Jenis", "Link"],
     "Info_Board": ["Tanggal", "Prioritas", "Judul", "Isi", "Target_Divisi", "Lampiran"],
-    "Planner": ["Tanggal_Tayang", "Platform", "Akun", "Judul_Konten", "Jenis", "Divisi", "PIC", "Status", "Link_Asset"],
+    "DB_Konten": ["Tanggal_Tayang", "Platform", "Akun", "Judul_Konten", "Jenis", "Divisi", "PIC", "Status", "Link_Asset"],
     "Siaran": ["Tanggal", "Shift", "Programa", "Penyiar", "Operator", "Status"],
-    "Program_Siaran": ["Kode_Program", "Programa", "Nama_Program", "Hari", "Jam_Tayang", "Format", "Produser", "Status"],
+    "DB_Program": ["Kode Program", "Programa", "Nama Program", "Hari", "Jam Tayang", "Format", "Produser", "Status"],
     "Jadwal_TMB": ["Tanggal", "Shift", "Lokasi_Pemancar", "Teknisi_TMB", "Tugas", "Status"],
     "DB_Ruangan": ["Nomor Ruangan", "Nama Ruangan", "Lokasi", "Penanggungjawab Ruangan", "Nama", "NIP/ NIPPPK"],
     "DB_Aset": ["Kode Ruang", "Nomor Kode Barang", "Nama Barang", "Merk/ Model", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"],
@@ -203,13 +202,13 @@ DEMO_DATA = {
     "Agenda_Setting": [
         {"No": "1", "Tanggal": "Tuesday, 01 September 2026", "Program": "Dialog Interaktif Pro 1", "Topik/ Isu": "Kesiapan Pelaksanaan RRI Fest & Bintang Radio Mamuju 2026", "Narasumber": "Ketua Panitia RRI Fest Mamuju", "Jabatan/ Instansi": "Koordinator LPU LPP RRI Mamuju", "KET. Kehadiran": "Hadir di Studio", "PIC Narasumber": "Tim Siaran Pro 1", "Flyer": "https://www.instagram.com/rri_mamuju/", "Bestcut": "https://www.youtube.com/@LPPRRIMamuju", "Keterlaksanaan": "Terlaksana", "Kendala": "-"}
     ],
-    "Planner": [
+    "DB_Konten": [
         {"Tanggal_Tayang": "2026-11-17", "Platform": "Instagram & TikTok", "Akun": "@pro2_mamuju", "Judul_Konten": "Teaser Reels Pro 2 Music Live Chat", "Jenis": "Reels / Short Video", "Divisi": "KMB / Pro 2", "PIC": "Tim Kreatif Pro 2", "Status": "Review", "Link_Asset": "https://drive.google.com"}
     ],
     "Siaran": [
         {"Tanggal": "2026-11-17", "Shift": "Pagi (05:00 - 12:00 WITA)", "Programa": "Pro 1 (96.0 FM)", "Penyiar": "Penyiar Shift Pagi A", "Operator": "Operator TMB 1", "Status": "On Duty"}
     ],
-    "Program_Siaran": [
+    "DB_Program": [
         {"Kode_Program": "PRG-P1-01", "Programa": "Pro 1 (96.0 FM)", "Nama_Program": "Mamuju Pagi Ini (Dialog Interaktif)", "Hari": "Senin - Jumat", "Jam_Tayang": "08:00 - 09:00 WITA", "Format": "Dialog & Informasi", "Produser": "Tim Perencanaan & Siaran", "Status": "Aktif"},
         {"Kode_Program": "PRG-P2-01", "Programa": "Pro 2 (89.3 FM)", "Nama_Program": "Pro 2 Music Live Chat", "Hari": "Sabtu", "Jam_Tayang": "16:00 - 17:30 WITA", "Format": "Musik & Talkshow Kreatif", "Produser": "Tim Pro 2 & KMB", "Status": "Aktif"},
     ],
@@ -905,6 +904,6 @@ class SheetsDB:
             row_values = [str(row_dict.get(h, "")) for h in headers]
             ws.append_row(row_values, value_input_option="USER_ENTERED")
             self._sync_snapshot(force=True)
-            return True, f"Data berhasil disimpan ke tab '{ws.title}'!"
+            return True, f"Data berhasil disimpan!'!"
         except Exception as e:
             return False, f"Gagal menyimpan ke '{ws.title}': {e}"

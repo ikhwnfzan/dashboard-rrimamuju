@@ -81,15 +81,55 @@
 
       <!-- Top-Right Actions -->
       <div class="flex items-center gap-2">
-        <!-- Live Pro 1 Stream Button -->
-        <button onclick="toggleAudio()" id="audioBtn"
-          class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-200 text-slate-700 transition">
-          <span id="audioIcon" class="text-teal-700 flex items-center">
-            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-          </span>
-          <span class="hidden sm:inline">Pro 1 96.0 FM</span>
-        </button>
-        <audio id="pro1Audio" preload="none" src="{{ station.streams.pro1.url }}"></audio>
+
+        <!-- Live Stream Selector -->
+        <div class="flex items-center gap-1">
+          <details id="stationMenu" class="relative">
+            <summary id="stationDropdown"
+              class="list-none inline-flex items-center gap-2 h-9 px-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer select-none hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-600"
+              aria-label="Pilih siaran radio">
+              <span id="stationLabel">Pro 1</span>
+              <svg class="w-3 h-3 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </summary>
+            <div class="absolute right-0 mt-1 w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg z-50">
+              <button type="button" onclick="document.getElementById('stationSelect').value='pro1'; document.getElementById('stationLabel').textContent='Pro 1'; changeStation(); document.getElementById('stationMenu').open=false"
+                class="w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                Pro 1
+              </button>
+              <button type="button" onclick="document.getElementById('stationSelect').value='pro2'; document.getElementById('stationLabel').textContent='Pro 2'; changeStation(); document.getElementById('stationMenu').open=false"
+                class="w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                Pro 2
+              </button>
+            </div>
+          </details>
+          <select id="stationSelect" class="hidden" aria-hidden="true" tabindex="-1">
+            <option value="pro1">Pro 1</option>
+            <option value="pro2">Pro 2</option>
+          </select>
+          {% if user %}
+          <button onclick="toggleAudio()" id="audioBtn"
+            class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-200 text-slate-700 transition"
+            title="Play/Pause">
+            <span id="audioIcon" class="text-teal-700 flex items-center">
+              <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            </span>
+          </button>
+          {% else %}
+          <button onclick="openLoginModal()" id="audioBtn"
+            class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-200 text-slate-700 transition"
+            title="Login untuk memutar siaran">
+            <span id="audioIcon" class="text-teal-700 flex items-center">
+              <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            </span>
+          </button>
+          {% endif %}
+        </div>
+        <audio id="pro1Audio" preload="none"
+          data-pro1="{{ station.streams.pro1.url }}"
+          data-pro2="{{ station.streams.pro2.url }}"
+          src="{{ station.streams.pro1.url }}"></audio>
 
         <!-- Refresh Sync -->
         <button onclick="refreshBoard()" title="Sinkronisasi Google Sheets"
@@ -201,8 +241,7 @@
     <!-- SECTION 2: AGENDA SETTING & DIALOG SIARAN -->
     <section id="agenda-dialog" class="space-y-4">
       <div>
-        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Agenda Setting &amp; Dialog Siaran</h2>
-        <p class="text-xs sm:text-sm text-slate-500">Jadwal program dialog, narasumber, kehadiran, flyer, dan rekaman Bestcut</p>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Jadwal Dialog Siaran</h2>
       </div>
 
       <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
@@ -216,7 +255,8 @@
                 <th class="px-4 py-3.5">Narasumber &amp; Instansi</th>
                 <th class="px-4 py-3.5">Kehadiran</th>
                 <th class="px-4 py-3.5">Status</th>
-                <th class="px-4 py-3.5">Flyer &amp; Bestcut</th>
+                <th class="px-4 py-3.5">Flyer</th>
+                <th class="px-4 py-3.5">Bestcut</th>
               </tr>
             </thead>
             <tbody id="dialogTableBody" class="divide-y divide-slate-100"></tbody>
@@ -229,7 +269,6 @@
     <section id="program-siaran" class="space-y-4">
       <div>
         <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Program Siaran LPP RRI Mamuju</h2>
-        <p class="text-xs sm:text-sm text-slate-500">Daftar mata acara unggulan Pro 1 (96.0 FM) dan Pro 2 (89.3 FM)</p>
       </div>
       <div id="programGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </section>
@@ -569,9 +608,9 @@
           <div class="space-y-1.5">
             <div class="flex items-center justify-between text-xs">
               <span class="px-2.5 py-0.5 rounded-md bg-teal-50 text-teal-800 font-bold">${p.Programa || 'RRI Mamuju'}</span>
-              <span class="text-slate-500 font-semibold">${p.Hari || ''} • ${p.Jam_Tayang || ''}</span>
+              <span class="text-slate-500 font-semibold">${p.Hari || ''} • ${p.Jam || ''}</span>
             </div>
-            <h3 class="font-extrabold text-sm text-slate-900">${p.Nama_Program || '-'}</h3>
+            <h3 class="font-extrabold text-sm text-slate-900">${p['Nama Program'] || '-'}</h3>
             <p class="text-xs text-slate-500">${p.Format || ''}</p>
           </div>
           <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
@@ -602,15 +641,58 @@
       `).join('');
     }
 
-    function toggleAudio() {
-      const audio = document.getElementById('pro1Audio');
+    function setAudioIcon(isPlaying) {
       const icon = document.getElementById('audioIcon');
-      if (audio.paused) {
-        audio.play();
-        icon.innerHTML = '<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+      icon.innerHTML = isPlaying
+        ? '<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
+        : '<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+    }
+
+    function changeStation() {
+      const audio = document.getElementById('pro1Audio');
+      const station = document.getElementById('stationSelect').value;
+      const wasPlaying = !audio.paused;
+      audio.pause();
+      audio.src = audio.dataset[station];
+      audio.load();
+      setAudioIcon(false);
+      if (wasPlaying) {
+        audio.play().then(() => setAudioIcon(true)).catch(() => setAudioIcon(false));
+      }
+    }
+
+    async function toggleAudio() {
+      const audio = document.getElementById('pro1Audio');
+      if (toggleAudio.shouldPlay === undefined) toggleAudio.shouldPlay = !audio.paused;
+      const requestId = (toggleAudio.requestId || 0) + 1;
+      toggleAudio.requestId = requestId;
+      toggleAudio.shouldPlay = !toggleAudio.shouldPlay;
+
+      if (toggleAudio.shouldPlay) {
+        try {
+          const station = document.getElementById('stationSelect').value;
+          audio.src = audio.dataset[station];
+          await audio.play();
+          if (toggleAudio.requestId === requestId && toggleAudio.shouldPlay) {
+            setAudioIcon(true);
+          } else if (!toggleAudio.shouldPlay) {
+            audio.pause();
+          }
+        } catch (error) {
+          if (toggleAudio.requestId === requestId) {
+            toggleAudio.shouldPlay = false;
+            audio.pause();
+            audio.removeAttribute('src');
+            audio.load();
+            setAudioIcon(false);
+            showToast('Siaran tidak dapat diputar.');
+          }
+        }
       } else {
         audio.pause();
-        icon.innerHTML = '<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+        audio.removeAttribute('src');
+        audio.load();
+        setAudioIcon(false);
       }
     }
 

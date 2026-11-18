@@ -23,6 +23,12 @@ STATION_INFO = {
             "freq": "96.0 FM",
             "url": "https://stream-node0.rri.co.id/streaming/20/9020/rrimamujupro1.mp3",
             "share": "https://play.rri.co.id/sharing/radio/010461"
+        },
+        "pro2": {
+            "name": "RRI Pro 2 Mamuju",
+            "freq": "89.3 FM",
+            "url": "https://stream-node0.rri.co.id/streaming/20/9020/rrimamujupro2.mp3",
+            "share": "https://play.rri.co.id/sharing/radio/015293"
         }
     },
     "portals": [
@@ -46,9 +52,9 @@ STATION_INFO = {
 TARGET_PERMISSION_MAP = {
     "Timeline": ("dialog", "full"),
     "Agenda_Setting": ("dialog", "full"),
-    "Planner": ("konten", "full"),
+    "DB_Konten": ("konten", "full"),
     "Siaran": ("jadwal_siaran", "full"),
-    "Program_Siaran": ("program_siaran", "full"),
+    "DB_Program": ("program_siaran", "full"),
     "Jadwal_TMB": ("jadwal_tmb", "full"),
     "Arsip": ("info_board", "full"),
     "Info_Board": ("info_board", "full"),
@@ -125,7 +131,7 @@ def api_board():
 
     payload = {
         "connected": db.connected,
-        "status_msg": "Live Google Sheets" if db.connected else (db.last_error or "Mode Demo"),
+        "status_msg": "Database Synced" if db.connected else (db.last_error or "Mode Demo"),
         "server_time": datetime.now().strftime("%d %b %Y • %H:%M WITA"),
         "authenticated": bool(user),
         "user": user,
@@ -138,9 +144,9 @@ def api_board():
         "dialogs": db.get_agenda_setting(),
         "archive": db.get_tab_records("Arsip"),
         "info_board": db.get_tab_records("Info_Board", include_row_num=True) if user else [],
-        "planner": db.get_tab_records("Planner", include_row_num=True) if _has_perm(user, "konten", "view") else [],
+        "content_planner": db.get_tab_records("DB_Konten", include_row_num=True) if _has_perm(user, "konten", "view") else [],
         "siaran": db.get_tab_records("Siaran", include_row_num=True) if _has_perm(user, "jadwal_siaran", "view") else [],
-        "program_siaran": db.get_tab_records("Program_Siaran", include_row_num=True),
+        "program_siaran": db.get_tab_records("DB_Program", include_row_num=True),
         "jadwal_tmb": db.get_tab_records("Jadwal_TMB", include_row_num=True) if _has_perm(user, "jadwal_tmb", "view") else [],
         "arsip_sdm": db.get_tab_records("Arsip_SDM", include_row_num=True) if _has_perm(user, "arsip_sdm", "view") else [],
         "employees": db.get_employees() if (_has_perm(user, "data_pegawai", "view") or _has_perm(user, "master_ruangan", "view") or is_admin) else [],

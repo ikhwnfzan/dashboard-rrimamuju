@@ -471,11 +471,11 @@ function renderProgramSiaran() {
   const rows = paginateArray('program_siaran', DATA.program_siaran || [], 'pagProgramSiaran', 'renderProgramSiaran');
   document.getElementById('tbodyProgramSiaran').innerHTML = rows.map(p => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs text-slate-500">${p.Kode_Program || '-'}</td>
+      <td class="py-3 px-3 font-mono text-xs text-slate-500">${p['Kode Program'] || '-'}</td>
       <td class="py-3 px-3 font-bold text-teal-600">${p.Programa || '-'}</td>
-      <td class="py-3 px-3 font-extrabold">${p.Nama_Program || '-'}</td>
+      <td class="py-3 px-3 font-extrabold">${p['Nama Program'] || '-'}</td>
       <td class="py-3 px-3 text-xs">${p.Hari || '-'}</td>
-      <td class="py-3 px-3 text-xs font-semibold">${p.Jam_Tayang || '-'}</td>
+      <td class="py-3 px-3 text-xs font-semibold">${p.Jam || '-'}</td>
       <td class="py-3 px-3 text-xs">${p.Format || '-'}</td>
       <td class="py-3 px-3 text-xs">${p.Produser || '-'}</td>
       <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600">${p.Status || 'Aktif'}</span></td>
@@ -484,7 +484,7 @@ function renderProgramSiaran() {
 }
 
 function renderKonten() {
-  document.getElementById('gridKonten').innerHTML = (DATA.planner || []).map(p => `
+  document.getElementById('gridKonten').innerHTML = (DATA.content_planner || []).map(p => `
     <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-2 hover:bg-slate-200/40 dark:hover:bg-slate-800/40 transition">
       <div class="flex justify-between text-xs font-bold">
         <span class="text-teal-600">${p.Akun || p.Platform}</span>
@@ -760,7 +760,7 @@ const SCHEMAS = {
   Arsip_SDM: { title: 'Tambah Arsip SDM', fields: ['Nomor Dokumen', 'Nama Dokumen', 'Tanggal', 'Jenis', 'Link'] },
   Agenda_Setting: { title: 'Tambah Agenda Dialog', fields: ['Tanggal', 'Program', 'Topik/ Isu', 'Narasumber', 'Jabatan/ Instansi', 'KET. Kehadiran', 'PIC Narasumber', 'Flyer', 'Bestcut', 'Keterlaksanaan', 'Kendala'] },
   Siaran: { title: 'Tambah Jadwal Siaran', fields: ['Tanggal', 'Shift', 'Programa', 'Penyiar', 'Operator', 'Status'] },
-  Program_Siaran: { title: 'Tambah Program Siaran', fields: ['Kode_Program', 'Programa', 'Nama_Program', 'Hari', 'Jam_Tayang', 'Format', 'Produser', 'Status'] },
+  DB_Program: { title: 'Tambah Program Siaran', fields: ['Kode Program', 'Programa', 'Nama Program', 'Hari', 'Jam', 'Format', 'Produser', 'Status'] },
   Planner: { title: 'Tambah Konten (Planner)', fields: ['Tanggal_Tayang', 'Platform', 'Akun', 'Judul_Konten', 'Jenis', 'Divisi', 'PIC', 'Status', 'Link_Asset'] },
   Jadwal_TMB: { title: 'Tambah Jadwal TMB', fields: ['Tanggal', 'Shift', 'Lokasi_Pemancar', 'Teknisi_TMB', 'Tugas', 'Status'] },
   DB_Aset: { title: 'Tambah Master Barang', fields: ['Kode Ruang', 'Nomor Kode Barang', 'Nama Barang', 'Merk/ Model', 'Tahun', 'NUP', 'Kondisi', 'Tindak Lanjut', 'Keterangan'] },
