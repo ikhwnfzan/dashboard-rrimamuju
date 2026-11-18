@@ -258,7 +258,7 @@ function renderInfoBoard() {
         <span class="font-extrabold px-2 py-0.5 rounded-full ${String(i.Prioritas).toLowerCase() === 'urgent' ? 'bg-rose-100 text-rose-700' : 'bg-teal-100 text-teal-700'}">${i.Prioritas || 'Info'}</span>
         <div class="flex items-center gap-2">
           <span class="text-slate-400">${i.Tanggal || ''} • ${i['Target Divisi'] || 'Semua'}</span>
-          ${deletable && i._row_num ? `<button type="button" title="Hapus pengumuman" aria-label="Hapus pengumuman" onclick="deleteRecord('DB_Info_Board', ${i._row_num}, '${(i.Judul || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition">${ACTION_ICONS.delete}</button>` : ''}
+          ${deletable && i._row_num ? `<button type="button" title="Hapus pengumuman" aria-label="Hapus pengumuman" onclick="deleteRecord('DB_Info_Board', ${i._row_num}, '${(i.Judul || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${ACTION_ICONS.delete}</button>` : ''}
         </div>
       </div>
       <h4 class="font-extrabold text-sm">${i.Judul || ''}</h4>
@@ -323,10 +323,10 @@ function renderTimelineModule() {
       : startDate || endDate || '-';
     const actions = [
       canEdit && rowNum >= 2
-        ? `<button type="button" title="Edit kegiatan" aria-label="Edit kegiatan" onclick="openTimelineModalByRow(${rowNum})" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-teal-600 transition">${ACTION_ICONS.edit}</button>`
+        ? `<button type="button" title="Edit kegiatan" aria-label="Edit kegiatan" onclick="openTimelineModalByRow(${rowNum})" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${ACTION_ICONS.edit}</button>`
         : '',
       canDelete && rowNum >= 2
-        ? `<button type="button" title="Hapus kegiatan" aria-label="Hapus kegiatan" onclick="deleteRecord('DB_Timeline', ${rowNum}, 'kegiatan ini')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition">${ACTION_ICONS.delete}</button>`
+        ? `<button type="button" title="Hapus kegiatan" aria-label="Hapus kegiatan" onclick="deleteRecord('DB_Timeline', ${rowNum}, 'kegiatan ini')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${ACTION_ICONS.delete}</button>`
         : ''
     ].filter(Boolean).join(' ');
     return `
@@ -499,11 +499,11 @@ function renderDataPegawai() {
       <td class="py-3 px-3 text-xs">${e.Jabatan || '-'}</td>
       <td class="py-3 px-3 text-xs font-semibold">${e.Posisi || '-'}</td>
       <td class="py-3 px-3">
-        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${String(e.Status || 'Aktif').toLowerCase() === 'aktif' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">${e.Status || 'Aktif'}</span>
+        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${String(e.Status || 'Aktif').toLowerCase() === 'aktif' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300'}">${e.Status || 'Aktif'}</span>
       </td>
       <td class="py-3 px-3 text-right whitespace-nowrap space-x-1">
-        ${editable ? `<button type="button" title="Edit pegawai" aria-label="Edit pegawai" onclick='openEmpEdit(${JSON.stringify(e)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-teal-600 transition">${ACTION_ICONS.edit}</button>` : ''}
-        ${deletable && e._row_num ? `<button type="button" title="Hapus pegawai" aria-label="Hapus pegawai" onclick="deleteRecord('DB_Pegawai', ${e._row_num}, '${(e['Nama Pegawai'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition">${ACTION_ICONS.delete}</button>` : ''}
+        ${editable ? `<button type="button" title="Edit pegawai" aria-label="Edit pegawai" onclick='openEmpEdit(${JSON.stringify(e)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${ACTION_ICONS.edit}</button>` : ''}
+        ${deletable && e._row_num ? `<button type="button" title="Hapus pegawai" aria-label="Hapus pegawai" onclick="deleteRecord('DB_Pegawai', ${e._row_num}, '${(e['Nama Pegawai'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${ACTION_ICONS.delete}</button>` : ''}
       </td>
     </tr>
   `).join('');
@@ -549,7 +549,7 @@ function renderArsipSdm() {
       <td class="py-3 px-3 font-mono text-xs font-bold">${a['Nomor Dokumen'] || '-'}</td>
       <td class="py-3 px-3 font-bold">${a['Nama Dokumen'] || '-'}</td>
       <td class="py-3 px-3 text-xs text-slate-500">${a.Tanggal || '-'}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-semibold">${a.Jenis || '-'}</span></td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">${a.Jenis || '-'}</span></td>
       <td class="py-3 px-3">${a.Link ? `<a href="${a.Link}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
     </tr>
   `).join('');
@@ -574,7 +574,7 @@ function renderDialogModule() {
         <td class="py-3 px-3 text-xs">${d.Kehadiran || '-'}</td>
         <td class="py-3 px-3 text-xs font-bold">${d.Keterlaksanaan || '-'}</td>
         <td class="py-3 px-3 whitespace-nowrap">${bestcutCell}</td>
-        <td class="py-3 px-3">${editable && d._row_num ? `<button type="button" title="Update dialog" aria-label="Update dialog" onclick='openDialogEdit(${JSON.stringify(d)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition">${ACTION_ICONS.edit}</button>` : '-'}</td>
+        <td class="py-3 px-3">${editable && d._row_num ? `<button type="button" title="Update dialog" aria-label="Update dialog" onclick='openDialogEdit(${JSON.stringify(d)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${ACTION_ICONS.edit}</button>` : '-'}</td>
       </tr>
     `;
   }).join('');
@@ -589,7 +589,7 @@ function renderJadwalSiaran() {
       <td class="py-3 px-3 font-bold text-teal-600">${s.Programa || '-'}</td>
       <td class="py-3 px-3 font-semibold">${s.Penyiar || '-'}</td>
       <td class="py-3 px-3">${s.Operator || '-'}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600">${s.Status || '-'}</span></td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${s.Status || '-'}</span></td>
     </tr>
   `).join('');
 }
@@ -605,7 +605,7 @@ function renderProgramSiaran() {
       <td class="py-3 px-3 text-xs font-semibold">${p.Jam || '-'}</td>
       <td class="py-3 px-3 text-xs">${p.Format || '-'}</td>
       <td class="py-3 px-3 text-xs">${p.Produser || '-'}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600">${p.Status || 'Aktif'}</span></td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${p.Status || 'Aktif'}</span></td>
     </tr>
   `).join('');
 }
@@ -633,7 +633,7 @@ function renderJadwalTmb() {
       <td class="py-3 px-3 font-bold text-indigo-600">${t['Lokasi Pemancar'] || '-'}</td>
       <td class="py-3 px-3 font-semibold">${t['Teknisi TMB'] || '-'}</td>
       <td class="py-3 px-3 text-xs">${t.Tugas || '-'}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600">${t.Status || '-'}</span></td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${t.Status || '-'}</span></td>
     </tr>
   `).join('');
 }
@@ -729,7 +729,7 @@ function renderMasterRuangan() {
         <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300">${emp?.['Nama Pegawai'] || r.pj_nama || '-'}</td>
         <td class="py-3 px-3 text-xs font-semibold">${emp?.Jabatan || emp?.Posisi || r.pj_jabatan || '-'}</td>
         <td class="py-3 px-3 text-right">
-          ${deletable && rowNum > 1 ? `<button type="button" title="Hapus ruangan" aria-label="Hapus ruangan" onclick="deleteRecord('DB_Ruangan', ${rowNum}, '${(r['Nama Ruangan'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition">${ACTION_ICONS.delete}</button>` : '-'}
+          ${deletable && rowNum > 1 ? `<button type="button" title="Hapus ruangan" aria-label="Hapus ruangan" onclick="deleteRecord('DB_Ruangan', ${rowNum}, '${(r['Nama Ruangan'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${ACTION_ICONS.delete}</button>` : '-'}
         </td>
       </tr>
     `;
@@ -749,7 +749,7 @@ function renderManageUsers() {
         </div>
       </td>
       <td class="py-3 px-3 text-right">
-        <button type="button" title="Edit role dan password" aria-label="Edit role dan password" onclick='openUserModal(${JSON.stringify(u)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition">${ACTION_ICONS.edit}</button>
+        <button type="button" title="Edit role dan password" aria-label="Edit role dan password" onclick='openUserModal(${JSON.stringify(u)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${ACTION_ICONS.edit}</button>
       </td>
     </tr>
   `).join('');
