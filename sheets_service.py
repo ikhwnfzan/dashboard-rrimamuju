@@ -141,10 +141,23 @@ DEFAULT_ROLE_PERMISSIONS = {
     "Kasubag TU": {"info_board": "view", "data_pegawai": "view", "master_barang": "view", "master_persediaan": "view"},
 }
 
+APP_CONFIG_DEFAULTS = {
+    "timezone": "Asia/Makassar",
+    "language": "id",
+    "default_theme": "light",
+}
+
+APP_CONFIG_DESCRIPTIONS = {
+    "timezone": "Zona waktu untuk waktu sinkronisasi aplikasi.",
+    "language": "Preferensi bahasa untuk dukungan lokalisasi mendatang.",
+    "default_theme": "Tema dashboard yang digunakan untuk semua pengguna.",
+}
+
 # Unified Database (`DB_*`) & Configuration (`CFG_*`) Schemas with standardized Title Case Headers
 TAB_SCHEMAS = {
     "CFG_Users": ["NIP", "Password", "Role"],
     "CFG_Role_Modules": ["Role"] + [m["key"] for m in ALL_MODULES],
+    "CFG_App": ["Key", "Value", "Description"],
     "DB_Timeline": ["Kegiatan", "Tahapan", "Tanggal Mulai", "Tanggal Selesai", "Keterangan", "Tanggal"],
     "DB_Dialog": ["No", "Tanggal", "Program", "Topik", "Narasumber", "Foto Narasumber", "Jabatan", "Kehadiran", "PIC Narasumber", "Flyer", "Bestcut", "Keterlaksanaan", "Kendala"],
     "DB_Siaran": ["Tanggal", "Shift", "Programa", "Penyiar", "Operator", "Status"],
@@ -440,6 +453,25 @@ class SheetsDB:
                 reset_tabs.append(tab_name)
                 continue
 
+            if key == "cfg_app":
+                default_rows = [
+                    [setting_key, value, APP_CONFIG_DESCRIPTIONS[setting_key]]
+                    for setting_key, value in APP_CONFIG_DEFAULTS.items()
+                ]
+                if key not in self._ws_cache:
+                    ws = self.spreadsheet.add_worksheet(title=tab_name, rows=50, cols=len(target_headers) + 2)
+                    ws.append_row(target_headers, value_input_option="USER_ENTERED")
+                    ws.append_rows(default_rows, value_input_option="USER_ENTERED")
+                    created.append(tab_name)
+                else:
+                    ws = self._ws_cache[key]
+                    cur_vals = self._snapshot.get(key) or ws.get_all_values()
+                    if not cur_vals:
+                        ws.append_row(target_headers, value_input_option="USER_ENTERED")
+                        ws.append_rows(default_rows, value_input_option="USER_ENTERED")
+                        created.append(tab_name)
+                continue
+
             # Ensure CFG_Role_Modules has exact 17 standardized module columns (migrating existing permissions + splitting persediaan_mutasi)
             if key == "cfg_role_modules":
                 if key not in self._ws_cache:
@@ -535,6 +567,90 @@ class SheetsDB:
     # ---------------------------------------------------------
     # ROLE -> MODULE PERMISSIONS MATRIX
     # ---------------------------------------------------------
+    def get_app_settings(self):
+        values = self._get_values_from_snapshot(["CFG_App"])
+        if values is None and self.connected:
+            self._sync_snapshot(force=True)
+            values = self._snapshot.get("cfg_app")
+
+        stored = {}
+        for row in _rows_to_dicts(values):
+            key = str(row.get("key", "")).strip()
+            if key:
+                stored[key.lower()] = row
+
+        settings = []
+        for key, default_value in APP_CONFIG_DEFAULTS.items():
+            saved = stored.pop(key.lower(), {})
+            settings.append({
+                "key": key,
+                "value": str(saved.get("value", "")).strip() or default_value,
+                "description": str(saved.get("description", "")).strip() or APP_CONFIG_DESCRIPTIONS[key],
+            })
+        settings.extend(
+            {
+                "key": str(row.get("key", "")).strip(),
+                "value": str(row.get("value", "")).strip(),
+                "description": str(row.get("description", "")).strip(),
+            }
+            for row in stored.values()
+        )
+        return settings
+
+    def save_app_settings(self, settings):
+        if not self.connected or not self.spreadsheet:
+            return False, "Google Sheet utama belum terhubung; pengaturan tidak disimpan."
+        if not isinstance(settings, dict) or set(settings) != set(APP_CONFIG_DEFAULTS):
+            return False, "Data pengaturan aplikasi tidak lengkap atau tidak valid."
+
+        ws = self._find_ws(["CFG_App"])
+        if not ws:
+            self._sync_snapshot(force=True)
+            ws = self._find_ws(["CFG_App"])
+        if not ws:
+            return False, "Tab CFG_App tidak ditemukan. Jalankan Initial Data sebagai Admin terlebih dahulu."
+
+        try:
+            values = self._get_values_from_snapshot(["CFG_App"]) or ws.get_all_values()
+            if not values:
+                headers = list(TAB_SCHEMAS["CFG_App"])
+                if ws.col_count < len(headers):
+                    ws.resize(rows=max(ws.row_count, 50), cols=len(headers))
+                ws.append_row(headers, value_input_option="USER_ENTERED")
+                values = [headers]
+
+            headers = [str(header).strip() for header in values[0]]
+            columns = {header.lower(): index + 1 for index, header in enumerate(headers) if header}
+            required_columns = {"key", "value", "description"}
+            if not required_columns.issubset(columns):
+                return False, "Header CFG_App harus memiliki kolom Key, Value, dan Description."
+            if ws.col_count < len(headers):
+                ws.resize(rows=max(ws.row_count, 50), cols=len(headers) + 2)
+
+            row_by_key = {}
+            for row_num, row in enumerate(values[1:], start=2):
+                key_index = columns["key"] - 1
+                key = row[key_index].strip().lower() if len(row) > key_index else ""
+                if key:
+                    row_by_key.setdefault(key, row_num)
+
+            for key, value in settings.items():
+                row_num = row_by_key.get(key.lower())
+                if row_num:
+                    ws.update_cell(row_num, columns["value"], value)
+                    ws.update_cell(row_num, columns["description"], APP_CONFIG_DESCRIPTIONS[key])
+                else:
+                    new_row = [""] * len(headers)
+                    new_row[columns["key"] - 1] = key
+                    new_row[columns["value"] - 1] = value
+                    new_row[columns["description"] - 1] = APP_CONFIG_DESCRIPTIONS[key]
+                    ws.append_row(new_row, value_input_option="USER_ENTERED")
+
+            self._sync_snapshot(force=True)
+            return True, "Pengaturan aplikasi berhasil disimpan ke tab CFG_App."
+        except Exception as e:
+            return False, f"Gagal menyimpan pengaturan ke CFG_App: {e}"
+
     def get_role_matrix(self):
         matrix = {r: dict(DEFAULT_ROLE_PERMISSIONS.get(r, {})) for r in ALL_ROLES}
         vals = self._get_values_from_snapshot(["CFG_Role_Modules", "Role_Modules"])

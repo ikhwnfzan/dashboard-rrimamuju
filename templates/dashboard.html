@@ -135,8 +135,10 @@
   <div id="toastContainer" class="fixed top-5 right-5 z-[60] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <script id="user-data" type="application/json">{{ user | tojson }}</script>
+  <script id="app-config" type="application/json">{{ app_config | tojson }}</script>
   <script>
     const USER = JSON.parse(document.getElementById('user-data').textContent);
+    const APP_CONFIG = JSON.parse(document.getElementById('app-config').textContent);
     function toggleUserMenu() {
       document.getElementById('userMenu').classList.toggle('hidden');
     }

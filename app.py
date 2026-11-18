@@ -1,8 +1,14 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, request, jsonify, session, send_from_directory, redirect, url_for
 from dotenv import load_dotenv
-from sheets_service import SheetsDB, TAB_SCHEMAS, ALL_MODULES, ALL_ROLES
+from sheets_service import (
+    APP_CONFIG_DEFAULTS,
+    SheetsDB,
+    TAB_SCHEMAS,
+    ALL_MODULES,
+    ALL_ROLES,
+)
 from media_service import MediaFeedService
 
 load_dotenv()
@@ -12,6 +18,36 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "rri-mamuju-digital-board-secret-
 
 db = SheetsDB()
 media_feed = MediaFeedService()
+
+APP_CONFIG_CHOICES = {
+    "timezone": ("Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura", "UTC"),
+    "language": ("id", "en"),
+    "default_theme": ("light", "dark"),
+}
+APP_TIMEZONES = {
+    "Asia/Jakarta": timezone(timedelta(hours=7), "WIB"),
+    "Asia/Makassar": timezone(timedelta(hours=8), "WITA"),
+    "Asia/Jayapura": timezone(timedelta(hours=9), "WIT"),
+    "UTC": timezone.utc,
+}
+
+
+def _is_admin(user):
+    return bool(user and any(r.lower() == "admin" for r in user.get("roles", [])))
+
+
+def _get_app_config():
+    config = dict(APP_CONFIG_DEFAULTS)
+    for setting in db.get_app_settings():
+        key = str(setting.get("key", "")).strip()
+        if key in config:
+            config[key] = str(setting.get("value", "")).strip()
+
+    for key, options in APP_CONFIG_CHOICES.items():
+        if config[key] not in options:
+            app.logger.warning("Ignoring invalid CFG_App value for %s: %r", key, config[key])
+            config[key] = APP_CONFIG_DEFAULTS[key]
+    return config
 
 STATION_INFO = {
     "name": "RRI Mamuju.",
@@ -117,6 +153,7 @@ def dashboard():
         user=user,
         all_roles=ALL_ROLES,
         all_modules=ALL_MODULES,
+        app_config=_get_app_config(),
     )
 
 
@@ -134,6 +171,7 @@ def api_board():
     if user:
         user["permissions"] = db.compute_effective_permissions(user.get("roles", []))
         session["user"] = user
+    app_config = _get_app_config()
 
     can_see_stock = bool(user and (
         _has_perm(user, "master_persediaan", "view") or
@@ -144,12 +182,13 @@ def api_board():
     existing_tabs = db.get_existing_tab_names() if user else []
     missing_tabs = [t for t in TAB_SCHEMAS.keys() if t.lower() not in {x.lower() for x in existing_tabs}] if db.connected else list(TAB_SCHEMAS.keys())
 
-    is_admin = bool(user and any(r.lower() == "admin" for r in user.get("roles", [])))
+    is_admin = _is_admin(user)
 
     payload = {
         "connected": db.connected,
         "status_msg": "Database Synced" if db.connected else (db.last_error or "Mode Demo"),
-        "server_time": datetime.now().strftime("%d %b %Y • %H:%M WITA"),
+        "server_time": datetime.now(timezone.utc).astimezone(APP_TIMEZONES[app_config["timezone"]]).strftime("%d %b %Y • %H:%M %Z"),
+        "app_config": app_config,
         "authenticated": bool(user),
         "user": user,
         "all_roles": ALL_ROLES,
@@ -212,7 +251,7 @@ def api_refresh():
 def api_init_data():
     user = session.get("user")
     if not user or not any(r.lower() == "admin" for r in user.get("roles", [])):
-        return jsonify({"ok": False, "message": "Hanya Admin yang dapat menjalankan Initial Data."}), 403
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
     data = request.get_json(silent=True) or {}
     include_samples = bool(data.get("include_samples", True))
@@ -224,7 +263,7 @@ def api_init_data():
 def api_admin_save_user():
     user = session.get("user")
     if not user or not any(r.lower() == "admin" for r in user.get("roles", [])):
-        return jsonify({"ok": False, "message": "Hanya Admin yang dapat mengelola akun user."}), 403
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
     data = request.get_json(silent=True) or {}
     nip = data.get("nip", "")
@@ -234,11 +273,33 @@ def api_admin_save_user():
     return jsonify({"ok": ok, "message": msg})
 
 
+@app.route("/api/admin/settings", methods=["POST"])
+def api_admin_save_settings():
+    user = session.get("user")
+    if not _is_admin(user):
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
+
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return jsonify({"ok": False, "message": "Invalid data format!"}), 400
+    settings = data.get("settings")
+    if not isinstance(settings, dict) or set(settings) != set(APP_CONFIG_CHOICES):
+        return jsonify({"ok": False, "message": "Invalid data format!"}), 400
+    for key, value in settings.items():
+        if value not in APP_CONFIG_CHOICES[key]:
+            return jsonify({"ok": False, "message": f"'{key}' data is invalid!"}), 400
+
+    ok, msg = db.save_app_settings(settings)
+    if not ok:
+        return jsonify({"ok": False, "message": msg})
+    return jsonify({"ok": True, "message": msg, "app_config": _get_app_config()})
+
+
 @app.route("/api/admin/role-modules", methods=["POST"])
 def api_admin_update_role_module():
     user = session.get("user")
     if not user or not any(r.lower() == "admin" for r in user.get("roles", [])):
-        return jsonify({"ok": False, "message": "Hanya Admin yang dapat mengatur hak akses modul."}), 403
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
     data = request.get_json(silent=True) or {}
     role_name = data.get("role", "")
@@ -252,13 +313,13 @@ def api_admin_update_role_module():
 def api_update_employee():
     user = session.get("user")
     if not _has_perm(user, "data_pegawai", "update"):
-        return jsonify({"ok": False, "message": "Anda tidak memiliki izin edit pada modul Data Pegawai."}), 403
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
     data = request.get_json(silent=True) or {}
     row_num = data.get("row_num")
     updates = data.get("updates") or {}
     if not row_num:
-        return jsonify({"ok": False, "message": "Baris pegawai tidak ditemukan."}), 400
+        return jsonify({"ok": False, "message": "Invalid row number!"}), 400
 
     ok, msg = db.update_employee_row(row_num, updates)
     return jsonify({"ok": ok, "message": msg})
@@ -268,13 +329,13 @@ def api_update_employee():
 def api_update_dialog():
     user = session.get("user")
     if not _has_perm(user, "dialog", "update"):
-        return jsonify({"ok": False, "message": "Anda tidak memiliki izin update pada modul Dialog."}), 403
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
     data = request.get_json(silent=True) or {}
     row_num = data.get("row_num")
     updates = data.get("updates") or {}
     if not row_num:
-        return jsonify({"ok": False, "message": "Baris Dialog tidak ditemukan."}), 400
+        return jsonify({"ok": False, "message": "Invalid row number!"}), 400
 
     ok, msg = db.update_dialog_row(row_num, updates)
     return jsonify({"ok": ok, "message": msg})
@@ -284,19 +345,19 @@ def api_update_dialog():
 def api_update_timeline():
     user = session.get("user")
     if not _has_perm(user, "dialog", "update"):
-        return jsonify({"ok": False, "message": "Anda tidak memiliki izin update pada Timeline."}), 403
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
     data = request.get_json(silent=True) or {}
     if not isinstance(data, dict):
-        return jsonify({"ok": False, "message": "Data timeline tidak valid."}), 400
+        return jsonify({"ok": False, "message": "Invalid data format!"}), 400
     row_num = data.get("row_num")
     updates = data.get("updates")
     if not row_num or not isinstance(updates, dict):
-        return jsonify({"ok": False, "message": "Baris atau data timeline tidak valid."}), 400
+        return jsonify({"ok": False, "message": "Invalid row number or timeline data!"}), 400
 
     allowed_fields = {"Kegiatan", "Tahapan", "Tanggal Mulai", "Tanggal Selesai", "Keterangan", "Tanggal"}
     if not updates or not set(updates).issubset(allowed_fields):
-        return jsonify({"ok": False, "message": "Kolom timeline tidak valid."}), 400
+        return jsonify({"ok": False, "message": "Invalid timeline columns!"}), 400
     validation_error = _validate_timeline_data(updates)
     if validation_error:
         return jsonify({"ok": False, "message": validation_error}), 400
@@ -311,19 +372,19 @@ def api_update_timeline():
 def api_add_record(target_key):
     user = session.get("user")
     if not user:
-        return jsonify({"ok": False, "message": "Silakan login terlebih dahulu."}), 401
+        return jsonify({"ok": False, "message": "Restricted access!"}), 401
 
     if target_key not in TARGET_PERMISSION_MAP:
-        return jsonify({"ok": False, "message": "Target modul tidak valid."}), 400
+        return jsonify({"ok": False, "message": "Invalid target module!"}), 400
 
     mod_key, req_lvl = TARGET_PERMISSION_MAP[target_key]
     if not _has_perm(user, mod_key, req_lvl):
-        return jsonify({"ok": False, "message": f"Role Anda tidak memiliki izin menambah data pada '{mod_key}'."}), 403
+        return jsonify({"ok": False, "message": f"You need permission to access '{mod_key}'."}), 403
 
     row_data = request.get_json(silent=True) or {}
     if target_key == "DB_Timeline":
         if not isinstance(row_data, dict):
-            return jsonify({"ok": False, "message": "Data timeline tidak valid."}), 400
+            return jsonify({"ok": False, "message": "Invalid data format!"}), 400
         validation_error = _validate_timeline_data(row_data)
         if validation_error:
             return jsonify({"ok": False, "message": validation_error}), 400
@@ -338,19 +399,19 @@ def api_add_record(target_key):
 def api_delete_record(target_key):
     user = session.get("user")
     if not user:
-        return jsonify({"ok": False, "message": "Silakan login terlebih dahulu."}), 401
+        return jsonify({"ok": False, "message": "Restricted access!"}), 401
 
     if target_key not in TARGET_PERMISSION_MAP:
-        return jsonify({"ok": False, "message": "Target modul tidak valid."}), 400
+        return jsonify({"ok": False, "message": "Invalid target module!"}), 400
 
     mod_key, req_lvl = TARGET_PERMISSION_MAP[target_key]
     if not _has_perm(user, mod_key, req_lvl):
-        return jsonify({"ok": False, "message": f"Role Anda tidak memiliki izin menghapus data pada '{mod_key}'."}), 403
+        return jsonify({"ok": False, "message": f"You need permission to access '{mod_key}'."}), 403
 
     data = request.get_json(silent=True) or {}
     row_num = data.get("row_num")
     if not row_num:
-        return jsonify({"ok": False, "message": "Nomor baris tidak valid."}), 400
+        return jsonify({"ok": False, "message": "Invalid row number!"}), 400
 
     ok, msg = db.delete_record(target_key, row_num)
     return jsonify({"ok": ok, "message": msg})

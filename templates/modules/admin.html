@@ -41,3 +41,44 @@
     </table>
   </div>
 </section>
+
+{% if 'Admin' in user.roles %}
+<section id="mod-app_settings" class="mod-section hidden space-y-5">
+  <div>
+    <h2 class="text-xl font-extrabold">App Setting</h2>
+  </div>
+
+  <form onsubmit="submitAppSettings(event)" class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-5">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <label class="space-y-1.5">
+        <span class="block text-xs font-bold">Zona waktu</span>
+        <select id="appTimezone" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+          <option value="Asia/Jakarta">WIB — Asia/Jakarta</option>
+          <option value="Asia/Makassar">WITA — Asia/Makassar</option>
+          <option value="Asia/Jayapura">WIT — Asia/Jayapura</option>
+          <option value="UTC">UTC</option>
+        </select>
+      </label>
+      <label class="space-y-1.5">
+        <span class="block text-xs font-bold">Bahasa</span>
+        <select id="appLanguage" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+          <option value="id">Bahasa Indonesia</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <label class="space-y-1.5">
+        <span class="block text-xs font-bold">Tema dashboard</span>
+        <select id="appDefaultTheme" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+          <option value="light">Terang</option>
+          <option value="dark">Gelap</option>
+        </select>
+      </label>
+    </div>
+    <div class="flex justify-end">
+      <button id="btnSaveAppSettings" type="submit" class="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold transition">
+        Simpan Pengaturan
+      </button>
+    </div>
+  </form>
+</section>
+{% endif %}

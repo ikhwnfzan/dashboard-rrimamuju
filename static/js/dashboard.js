@@ -22,6 +22,7 @@ const ICON_CLASSES = {
   manage_modules: 'ti-shield-check',
   sun: 'ti-sun',
   moon: 'ti-moon',
+  app_settings: 'ti-settings',
   edit: 'ti-pencil',
   delete: 'ti-trash'
 };
@@ -54,6 +55,7 @@ const MODULE_NAV_CONFIG = [
   { key: 'bmn_area', label: 'BMN AREA', group: 'BMN' },
   { key: 'manage_users', label: 'Manage User', group: 'Admin' },
   { key: 'manage_modules', label: 'Manage Module', group: 'Admin' },
+  { key: 'app_settings', label: 'Pengaturan Aplikasi', group: 'Admin', adminOnly: true },
 ];
 
 function showToast(message, type = 'success') {
@@ -138,13 +140,14 @@ function permLevel(modKey) {
 function canView(modKey) { return ['view', 'update', 'full'].includes(permLevel(modKey)); }
 function canUpdate(modKey) { return ['update', 'full'].includes(permLevel(modKey)); }
 function canFull(modKey) { return permLevel(modKey) === 'full'; }
+function isAdmin() { return (USER.roles || []).some(role => role.toLowerCase() === 'admin'); }
 
-function initTheme() { applyTheme(localStorage.getItem('rri_theme') || 'light'); }
+function initTheme() { applyTheme(APP_CONFIG.default_theme || 'dark'); }
 function applyTheme(mode) {
   document.documentElement.classList.toggle('dark', mode === 'dark');
-  document.getElementById('themeIcon').innerHTML = icon(mode === 'dark' ? 'sun' : 'moon', 'w-3.5 h-3.5 text-sm leading-none');
-  document.getElementById('themeLabel').textContent = mode === 'dark' ? 'Light' : 'Dark';
-  localStorage.setItem('rri_theme', mode);
+  document.documentElement.classList.toggle('light', mode !== 'dark');
+  document.getElementById('themeIcon').innerHTML = icon(mode === 'light' ? 'sun' : 'moon', 'w-3.5 h-3.5 text-sm leading-none');
+  document.getElementById('themeLabel').textContent = mode === 'dark' ? 'Dark' : 'Light';
 }
 function toggleTheme() { applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark'); }
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
@@ -156,6 +159,7 @@ function openUserProfile() {
 async function loadDashboard() {
   const res = await fetch('/api/board');
   DATA = await res.json();
+  if (DATA.app_config?.default_theme) applyTheme(DATA.app_config.default_theme);
   buildRoleSidebar();
   populateNipDatalist();
   applyActionButtonVisibility();
@@ -172,8 +176,11 @@ function populateNipDatalist() {
 }
 
 function buildRoleSidebar() {
-  const visibleItems = MODULE_NAV_CONFIG.filter(item => item.always || canView(item.key));
-  document.getElementById('statAccessibleMods').textContent = visibleItems.length - 1;
+  const visibleItems = MODULE_NAV_CONFIG.filter(item =>
+    item.always || (item.adminOnly ? isAdmin() : canView(item.key))
+  );
+  document.getElementById('statAccessibleMods').textContent =
+    visibleItems.filter(item => !item.always && !item.adminOnly).length;
   const groups = {};
   visibleItems.forEach(item => { (groups[item.group] = groups[item.group] || []).push(item); });
 
@@ -237,6 +244,43 @@ function renderAllModules() {
   if (canView('master_ruangan')) renderMasterRuangan();
   if (canFull('manage_users')) renderManageUsers();
   if (canFull('manage_modules')) renderManageModules();
+  if (isAdmin()) renderAppSettings();
+}
+
+function renderAppSettings() {
+  const config = DATA.app_config || APP_CONFIG;
+  document.getElementById('appTimezone').value = config.timezone || 'Asia/Makassar';
+  document.getElementById('appLanguage').value = config.language || 'id';
+  document.getElementById('appDefaultTheme').value = config.default_theme || 'light';
+}
+
+async function submitAppSettings(event) {
+  event.preventDefault();
+  const button = document.getElementById('btnSaveAppSettings');
+  button.disabled = true;
+  const settings = {
+    timezone: document.getElementById('appTimezone').value,
+    language: document.getElementById('appLanguage').value,
+    default_theme: document.getElementById('appDefaultTheme').value
+  };
+  try {
+    const response = await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings })
+    });
+    const result = await response.json();
+    showToast(result.message, result.ok ? 'success' : 'error');
+    if (result.ok) {
+      DATA.app_config = result.app_config;
+      applyTheme(result.app_config.default_theme);
+      await loadDashboard();
+    }
+  } catch (error) {
+    showToast(`Gagal menyimpan pengaturan: ${error.message}`, 'error');
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function deleteRecord(targetKey, rowNum, label = 'data ini') {
