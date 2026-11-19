@@ -49,10 +49,10 @@
   </div>
 
   <form onsubmit="submitAppSettings(event)" class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-5">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <label class="space-y-1.5">
         <span class="block text-xs font-bold">Zona waktu</span>
-        <select id="appTimezone" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+        <select id="appTimezone" name="timezone" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
           <option value="Asia/Jakarta">WIB — Asia/Jakarta</option>
           <option value="Asia/Makassar">WITA — Asia/Makassar</option>
           <option value="Asia/Jayapura">WIT — Asia/Jayapura</option>
@@ -61,16 +61,25 @@
       </label>
       <label class="space-y-1.5">
         <span class="block text-xs font-bold">Bahasa</span>
-        <select id="appLanguage" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+        <select id="appLanguage" name="language" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
           <option value="id">Bahasa Indonesia</option>
           <option value="en">English</option>
         </select>
       </label>
       <label class="space-y-1.5">
         <span class="block text-xs font-bold">Tema dashboard</span>
-        <select id="appDefaultTheme" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+        <select id="appDefaultTheme" name="default_theme" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
           <option value="light">Terang</option>
           <option value="dark">Gelap</option>
+        </select>
+      </label>
+      <label class="space-y-1.5">
+        <span class="block text-xs font-bold">Tahun aktif</span>
+        <select id="appActiveYear" name="active_year" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+          {% set start_year = now().year %}
+          {% for year in range(start_year, start_year - 5, -1) %}
+          <option value="{{ year }}">{{ year }}</option>
+          {% endfor %}
         </select>
       </label>
     </div>

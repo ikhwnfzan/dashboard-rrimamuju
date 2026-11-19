@@ -364,10 +364,28 @@
     }
 
     function renderAllSections() {
-      renderHorizontalTimeline();
-      renderDialogTable();
-      renderProgramSiaranPublic();
-      renderMediaShowcase();
+      const activeYear = String(BOARD_DATA.app_config?.active_year || new Date().getFullYear());
+      const hasActiveYear = row => {
+        const values = [row['Tanggal Mulai'], row['Start Date'], row.Tanggal, row['Tanggal Selesai'], row['End Date']];
+        const year = values.map(value => String(value || '').match(/(?:19|20)\d{2}/)?.[0]).find(Boolean);
+        return year === activeYear;
+      };
+      const timeline = BOARD_DATA.timeline;
+      const dialogs = BOARD_DATA.dialogs;
+      try {
+        BOARD_DATA.timeline = (timeline || []).filter(hasActiveYear);
+        BOARD_DATA.dialogs = (dialogs || []).filter(hasActiveYear);
+        const title = document.querySelector('#hero-timeline h1');
+        if (title) title.textContent = `Timeline RRI Mamuju ${activeYear}`;
+        buildCategoryChips();
+        renderHorizontalTimeline();
+        renderDialogTable();
+        renderProgramSiaranPublic();
+        renderMediaShowcase();
+      } finally {
+        BOARD_DATA.timeline = timeline;
+        BOARD_DATA.dialogs = dialogs;
+      }
     }
 
     function renderMediaShowcase() {
@@ -388,7 +406,12 @@
       const q = (document.getElementById('timelineSearch')?.value || '').trim().toLowerCase();
       const items = (BOARD_DATA.timeline || []).filter(ev => (CATEGORY_FILTER === 'ALL' || (ev.Kegiatan || '').trim() === CATEGORY_FILTER) && matchesQuery(ev, q));
       const track = document.getElementById('horizontalTimelineTrack');
-      if (!items.length) { track.innerHTML = `<div class="w-full text-center py-12 text-xs text-slate-400">Tidak ada tahapan kegiatan ditemukan.</div>`; return; }
+      const scroller = document.getElementById('horizontalTimelineScroll');
+      if (!items.length) {
+        track.innerHTML = `<div class="w-full text-center py-12 text-xs text-slate-400">Tidak ada tahapan kegiatan ditemukan.</div>`;
+        if (scroller) scroller.scrollLeft = scroller.scrollWidth;
+        return;
+      }
       track.innerHTML = items.map((ev, idx) => {
         const isBottom = idx % 2 === 0;
         const cardHtml = `<div class="htl-card"><div class="text-xs font-extrabold text-teal-700">${ev.Kegiatan || ''}</div><div class="text-[11px] text-slate-600 mt-1">${ev.Tahapan || ''}</div></div>`;
@@ -401,6 +424,10 @@
           </div>
         `;
       }).join('');
+
+      if (scroller) requestAnimationFrame(() => {
+        scroller.scrollLeft = scroller.scrollWidth;
+      });
     }
 
     function renderDialogTable() {

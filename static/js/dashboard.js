@@ -326,6 +326,7 @@ function renderAppSettings() {
   document.getElementById('appTimezone').value = config.timezone || 'Asia/Makassar';
   document.getElementById('appLanguage').value = config.language || 'id';
   document.getElementById('appDefaultTheme').value = config.default_theme || 'light';
+  document.getElementById('appActiveYear').value = config.active_year || APP_CONFIG.active_year;
 }
 
 async function submitAppSettings(event) {
@@ -335,7 +336,8 @@ async function submitAppSettings(event) {
   const settings = {
     timezone: document.getElementById('appTimezone').value,
     language: document.getElementById('appLanguage').value,
-    default_theme: document.getElementById('appDefaultTheme').value
+    default_theme: document.getElementById('appDefaultTheme').value,
+    active_year: document.getElementById('appActiveYear').value
   };
   try {
     const result = await processWithLoading(async () => {

@@ -146,16 +146,18 @@ APP_CONFIG_DEFAULTS = {
     "timezone": "Asia/Makassar",
     "language": "id",
     "default_theme": "light",
+    "active_year": str(time.localtime().tm_year),
 }
 
 APP_CONFIG_DESCRIPTIONS = {
     "timezone": "Zona waktu untuk waktu sinkronisasi aplikasi.",
     "language": "Preferensi bahasa untuk dukungan lokalisasi mendatang.",
     "default_theme": "Tema dashboard yang digunakan untuk semua pengguna.",
+    "active_year": "Tahun aktif untuk data dan laporan.",
 }
 
 # Unified Database (`DB_*`) & Configuration (`CFG_*`) Schemas with standardized Title Case Headers
-TAB_SCHEMAS = {
+DB_SCHEMAS = {
     "CFG_Users": ["NIP", "Password", "Role"],
     "CFG_Role_Modules": ["Role"] + [m["key"] for m in ALL_MODULES],
     "CFG_App": ["Key", "Value", "Description"],
@@ -179,43 +181,9 @@ AUTO_ID_FIELDS = {
     "DB_Pegawai": ("No", ""),
     "DB_Dialog": ("No", ""),
     "DB_Konten": ("ID", "CNT-"),
+    "DB_Program": ("Kode Program", "PRG-"),
 }
 AUTO_ID_LOCK = threading.Lock()
-
-# Maps legacy tab titles -> new standardized tab titles for automatic migration on Initial Data
-LEGACY_TAB_RENAMES = {
-    "sheet1": "DB_Timeline",
-    "agenda setting": "DB_Dialog",
-    "siaran": "DB_Siaran",
-    "jadwal_tmb": "DB_Jadwal_TMB",
-    "arsip_sdm": "DB_Arsip_SDM",
-    "info_board": "DB_Info_Board",
-    "users": "CFG_Users",
-    "role_modules": "CFG_Role_Modules",
-}
-
-# Maps legacy column header aliases -> standardized Title Case header
-HEADER_ALIASES = {
-    "start date": "Tanggal Mulai",
-    "end date": "Tanggal Selesai",
-    "topik/ isu": "Topik",
-    "jabatan/ instansi": "Jabatan",
-    "ket. kehadiran": "Kehadiran",
-    "tanggal_tayang": "Tanggal Tayang",
-    "judul_konten": "Judul Konten",
-    "link_asset": "Link Asset",
-    "jam_tayang": "Jam",
-    "kode_program": "Kode Program",
-    "nama_program": "Nama Program",
-    "lokasi_pemancar": "Lokasi Pemancar",
-    "teknisi_tmb": "Teknisi TMB",
-    "nip / nippk": "NIP",
-    "nip / nippk": "NIP",
-    "pangkat/ golongan": "Pangkat Golongan",
-    "target_divisi": "Target Divisi",
-    "penanggungjawab ruangan": "NIP Penanggung Jawab",
-    "merk/ model": "Merk Model",
-}
 
 DEMO_DATA = {
     "CFG_Users": [
@@ -413,164 +381,52 @@ class SheetsDB:
         return None
 
     # ---------------------------------------------------------
-    # ADMIN INITIAL DATA (REFACTOR + NON-DESTRUCTIVE MIGRATION):
-    # 1. Renames legacy tabs (`Sheet1` -> `DB_Timeline`, `Agenda Setting` -> `DB_Dialog`, etc.) if target `DB_*`/`CFG_*` doesn't exist yet.
-    # 2. Normalizes Row 1 headers across all `DB_*` & `CFG_*` tabs to clean Title Case (keeping all existing data rows intact!).
-    # 3. Resets ONLY `CFG_Users` to default accounts (never touches `DB_Pegawai` or any `DB_*` data).
-    # 4. Syncs `CFG_Role_Modules` columns (`program_siaran`, `persediaan_masuk`, `persediaan_keluar`).
+    # ADMIN INITIAL DATA: create missing standardized tabs and their initial data.
     # ---------------------------------------------------------
     def init_database_tabs(self, include_sample_rows=True):
         if not self.connected or not self.spreadsheet:
             return False, "Google Sheet utama belum terhubung."
 
         self._sync_snapshot(force=True)
-        migrated = []
         created = []
-        reset_tabs = []
-
-        # Step 1: Migrate legacy tab names to standardized `DB_*` / `CFG_*` names
-        for old_lower, new_title in LEGACY_TAB_RENAMES.items():
-            new_lower = new_title.lower()
-            if old_lower in self._ws_cache and new_lower not in self._ws_cache:
-                try:
-                    ws = self._ws_cache[old_lower]
-                    ws.update_title(new_title)
-                    del self._ws_cache[old_lower]
-                    self._ws_cache[new_lower] = ws
-                    migrated.append(f"{old_lower}→{new_title}")
-                except Exception as e:
-                    print(f"[InitData] Rename warning ({old_lower} -> {new_title}):", e)
-
-        self._sync_snapshot(force=True)
-
-        # Step 2: Ensure every standardized tab exists and has clean Title Case Row 1 headers
-        for tab_name, target_headers in TAB_SCHEMAS.items():
+        for tab_name, target_headers in DB_SCHEMAS.items():
             key = tab_name.lower()
-
-            # Reset ONLY CFG_Users
-            if key == "cfg_users":
-                if key in self._ws_cache:
-                    ws = self._ws_cache[key]
-                    ws.clear()
-                else:
-                    ws = self.spreadsheet.add_worksheet(title=tab_name, rows=200, cols=len(target_headers) + 2)
-                ws.append_row(target_headers, value_input_option="USER_ENTERED")
-                default_users = [[str(u.get(h, "")) for h in target_headers] for u in DEMO_DATA["CFG_Users"]]
-                if default_users:
-                    ws.append_rows(default_users, value_input_option="USER_ENTERED")
-                reset_tabs.append(tab_name)
+            if key in self._ws_cache:
                 continue
 
-            if key == "cfg_app":
-                default_rows = [
+            rows = 300
+            initial_rows = []
+            if key == "cfg_users":
+                rows = 200
+                initial_rows = [[str(user.get(header, "")) for header in target_headers]
+                                for user in DEMO_DATA["CFG_Users"]]
+            elif key == "cfg_app":
+                initial_rows = [
                     [setting_key, value, APP_CONFIG_DESCRIPTIONS[setting_key]]
                     for setting_key, value in APP_CONFIG_DEFAULTS.items()
                 ]
-                if key not in self._ws_cache:
-                    ws = self.spreadsheet.add_worksheet(title=tab_name, rows=50, cols=len(target_headers) + 2)
-                    ws.append_row(target_headers, value_input_option="USER_ENTERED")
-                    ws.append_rows(default_rows, value_input_option="USER_ENTERED")
-                    created.append(tab_name)
-                else:
-                    ws = self._ws_cache[key]
-                    cur_vals = self._snapshot.get(key) or ws.get_all_values()
-                    if not cur_vals:
-                        ws.append_row(target_headers, value_input_option="USER_ENTERED")
-                        ws.append_rows(default_rows, value_input_option="USER_ENTERED")
-                        created.append(tab_name)
-                continue
+            elif key == "cfg_role_modules":
+                initial_rows = [
+                    [role] + [DEFAULT_ROLE_PERMISSIONS.get(role, {}).get(module["key"], "none")
+                              for module in ALL_MODULES]
+                    for role in ALL_ROLES
+                ]
+            elif include_sample_rows and tab_name in DEMO_DATA:
+                initial_rows = [
+                    [str(sample.get(header, "")) for header in target_headers]
+                    for sample in DEMO_DATA[tab_name]
+                ]
 
-            # Ensure CFG_Role_Modules has exact 17 standardized module columns (migrating existing permissions + splitting persediaan_mutasi)
-            if key == "cfg_role_modules":
-                if key not in self._ws_cache:
-                    ws = self.spreadsheet.add_worksheet(title=tab_name, rows=50, cols=len(target_headers) + 4)
-                    ws.append_row(target_headers, value_input_option="USER_ENTERED")
-                    perm_rows = []
-                    for r_name in ALL_ROLES:
-                        perms = DEFAULT_ROLE_PERMISSIONS.get(r_name, {})
-                        perm_rows.append([r_name] + [perms.get(m["key"], "none") for m in ALL_MODULES])
-                    ws.append_rows(perm_rows, value_input_option="USER_ENTERED")
-                    created.append(tab_name)
-                else:
-                    ws = self._ws_cache[key]
-                    cur_vals = self._snapshot.get(key) or ws.get_all_values()
-                    existing_by_role = {}
-                    if cur_vals and len(cur_vals) > 1:
-                        old_hdrs = [h.strip() for h in cur_vals[0]]
-                        for row in cur_vals[1:]:
-                            if not row or not row[0].strip():
-                                continue
-                            r_name = row[0].strip()
-                            row_dict = {old_hdrs[i]: row[i].strip().lower() for i in range(min(len(old_hdrs), len(row))) if old_hdrs[i]}
-                            # Migrate legacy persediaan_mutasi -> persediaan_masuk & persediaan_keluar
-                            if "persediaan_mutasi" in row_dict:
-                                row_dict.setdefault("persediaan_masuk", row_dict["persediaan_mutasi"])
-                                row_dict.setdefault("persediaan_keluar", row_dict["persediaan_mutasi"])
-                            existing_by_role[r_name] = row_dict
-
-                    # Ensure grid has enough columns before writing
-                    if ws.col_count < len(target_headers):
-                        ws.resize(rows=max(ws.row_count, 50), cols=len(target_headers) + 4)
-
-                    rebuilt_matrix = [target_headers]
-                    seen_roles = set()
-                    for r_name in ALL_ROLES:
-                        seen_roles.add(r_name.lower())
-                        saved_map = existing_by_role.get(r_name, {})
-                        def_map = DEFAULT_ROLE_PERMISSIONS.get(r_name, {})
-                        rebuilt_matrix.append([
-                            r_name
-                        ] + [
-                            saved_map.get(m["key"]) or def_map.get(m["key"], "none")
-                            for m in ALL_MODULES
-                        ])
-                    # Preserve any custom roles that existed in the sheet
-                    for r_name, saved_map in existing_by_role.items():
-                        if r_name.lower() not in seen_roles:
-                            rebuilt_matrix.append([r_name] + [saved_map.get(m["key"], "none") for m in ALL_MODULES])
-
-                    ws.clear()
-                    ws.update("A1", rebuilt_matrix, value_input_option="USER_ENTERED")
-                continue
-
-            # Existing DB_* tab: standardize Row 1 header names in-place without touching data rows!
-            if key in self._ws_cache:
-                ws = self._ws_cache[key]
-                cur_vals = self._snapshot.get(key) or []
-                if cur_vals:
-                    cur_row1 = cur_vals[0]
-                    updated_row1 = []
-                    changed_hdr = False
-                    for h in cur_row1:
-                        h_clean = str(h).strip()
-                        mapped = HEADER_ALIASES.get(h_clean.lower(), h_clean)
-                        if mapped != h_clean:
-                            changed_hdr = True
-                        updated_row1.append(mapped)
-                    if changed_hdr:
-                        ws.update("1:1", [updated_row1], value_input_option="USER_ENTERED")
-                continue
-
-            # Create missing DB_* tab
-            ws = self.spreadsheet.add_worksheet(title=tab_name, rows=300, cols=len(target_headers) + 2)
+            ws = self.spreadsheet.add_worksheet(title=tab_name, rows=rows, cols=len(target_headers) + 2)
             ws.append_row(target_headers, value_input_option="USER_ENTERED")
-            if include_sample_rows and tab_name in DEMO_DATA:
-                rows_to_insert = [[str(sample.get(h, "")) for h in target_headers] for sample in DEMO_DATA[tab_name]]
-                if rows_to_insert:
-                    ws.append_rows(rows_to_insert, value_input_option="USER_ENTERED")
+            if initial_rows:
+                ws.append_rows(initial_rows, value_input_option="USER_ENTERED")
             created.append(tab_name)
 
         self.clear_cache()
-        parts = []
-        if reset_tabs:
-            parts.append(f"Tabel {', '.join(reset_tabs)} di-reset")
-        if migrated:
-            parts.append(f"Tabel direfaktor: {', '.join(migrated)}")
-        if created:
-            parts.append(f"Tabel baru dibuat: {', '.join(created)}")
-        if not parts:
-            return True, "Tabel Users di-reset & header seluruh tabel sudah terstandarisasi"
-        return True, " • ".join(parts) + "."
+        if not created:
+            return True, "Semua tabel initial data sudah tersedia."
+        return True, f"Tabel initial data dibuat: {', '.join(created)}."
 
     # ---------------------------------------------------------
     # ROLE -> MODULE PERMISSIONS MATRIX
@@ -616,12 +472,12 @@ class SheetsDB:
             self._sync_snapshot(force=True)
             ws = self._find_ws(["CFG_App"])
         if not ws:
-            return False, "Tab CFG_App tidak ditemukan. Jalankan Initial Data sebagai Admin terlebih dahulu."
+            return False, "Tabel config tidak ditemukan. Jalankan Initial Data sebagai Admin terlebih dahulu."
 
         try:
             values = self._get_values_from_snapshot(["CFG_App"]) or ws.get_all_values()
             if not values:
-                headers = list(TAB_SCHEMAS["CFG_App"])
+                headers = list(DB_SCHEMAS["CFG_App"])
                 if ws.col_count < len(headers):
                     ws.resize(rows=max(ws.row_count, 50), cols=len(headers))
                 ws.append_row(headers, value_input_option="USER_ENTERED")

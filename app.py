@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from sheets_service import (
     APP_CONFIG_DEFAULTS,
     SheetsDB,
-    TAB_SCHEMAS,
+    DB_SCHEMAS,
     ALL_MODULES,
     ALL_ROLES,
 )
@@ -23,6 +23,14 @@ APP_CONFIG_CHOICES = {
     "timezone": ("Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura", "UTC"),
     "language": ("id", "en"),
     "default_theme": ("light", "dark"),
+    "active_year": tuple(
+        str(year)
+        for year in range(
+            int(APP_CONFIG_DEFAULTS["active_year"]),
+            int(APP_CONFIG_DEFAULTS["active_year"]) - 5,
+            -1,
+        )
+    ),
 }
 APP_TIMEZONES = {
     "Asia/Jakarta": timezone(timedelta(hours=7), "WIB"),
@@ -180,7 +188,7 @@ def api_board():
     ))
     stock_bundle = db.get_stock_bundle() if can_see_stock else {"master": [], "in_list": [], "out_list": []}
     existing_tabs = db.get_existing_tab_names() if user else []
-    missing_tabs = [t for t in TAB_SCHEMAS.keys() if t.lower() not in {x.lower() for x in existing_tabs}] if db.connected else list(TAB_SCHEMAS.keys())
+    missing_tabs = [t for t in DB_SCHEMAS.keys() if t.lower() not in {x.lower() for x in existing_tabs}] if db.connected else list(DB_SCHEMAS.keys())
 
     is_admin = _is_admin(user)
 
