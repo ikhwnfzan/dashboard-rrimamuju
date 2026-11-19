@@ -511,6 +511,10 @@ function setTimelineView(view) {
       tab.classList.toggle('dark:border-slate-700', !active);
     }
     if (panel) panel.classList.toggle('hidden', !active);
+    if (TIMELINE_VIEW === 'horizontal') { 
+      const scroller = document.getElementById('dashboardTimelineScroll');
+      if (scroller) scroller.scrollTo({ left: scroller.scrollWidth, behavior: 'smooth' });
+    }
   });
 }
 
