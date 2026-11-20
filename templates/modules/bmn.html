@@ -1,12 +1,26 @@
+<!-- ========================================================= -->
+<!-- BMN ASET 1: MASTER ASSETS (KIR)                           -->
+<!-- ========================================================= -->
 <section id="mod-master_barang" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h2 class="text-xl font-extrabold">Master Barang (KIR)</h2>
-      <p class="text-xs text-slate-400">Inventaris barang BMN per ruangan</p>
+      <h2 class="text-xl font-extrabold">Master Assets (KIR)</h2>
+      <p class="text-xs text-slate-400">Inventaris BMN per ruangan &amp; tindak lanjut (Penggunaan, Penyewaan, Peminjaman, Penghapusan, Pemeliharaan, Pengadaan, Reklas BMN)</p>
     </div>
-    <div class="flex items-center gap-2">
-      <input type="text" id="searchBarang" oninput="renderMasterBarang()" placeholder="Cari"
-        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
+    <div class="flex flex-wrap items-center gap-2">
+      <select id="filterAsetKategori" onchange="renderMasterBarang()"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold">
+        <option value="all">Semua Tindak Lanjut</option>
+        <option value="Penggunaan">Penggunaan</option>
+        <option value="Penyewaan">Penyewaan</option>
+        <option value="Peminjaman">Peminjaman</option>
+        <option value="Penghapusan">Penghapusan</option>
+        <option value="Pemeliharaan">Pemeliharaan</option>
+        <option value="Pengadaan">Pengadaan</option>
+        <option value="Reklas BMN">Reklas BMN</option>
+      </select>
+      <input type="text" id="searchBarang" oninput="renderMasterBarang()" placeholder="Cari barang, kode, ruangan..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
       <button id="btnAddBarang" onclick="openAddModal('DB_Aset')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
         + Tambah Barang
       </button>
@@ -18,6 +32,7 @@
         <tr>
           <th class="py-3 px-3">Ruangan</th>
           <th class="py-3 px-3">Nomor Kode Barang</th>
+          <th class="py-3 px-3">Tipe</th>
           <th class="py-3 px-3">Nama Barang</th>
           <th class="py-3 px-3">Merk Model</th>
           <th class="py-3 px-3">Tahun</th>
@@ -32,109 +47,17 @@
   </div>
 </section>
 
-<section id="mod-master_persediaan" class="mod-section hidden space-y-5">
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <div>
-      <h2 class="text-xl font-extrabold">Master Persediaan (Stok ATK &amp; Operasional)</h2>
-    </div>
-    <button id="btnAddPersediaan" onclick="openAddModal('DB_Stok_Master')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      + Tambah Master Persediaan
-    </button>
-  </div>
-  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
-      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
-        <tr>
-          <th class="py-3 px-3">Kode Barang</th>
-          <th class="py-3 px-3">Nama Barang</th>
-          <th class="py-3 px-3">Unit</th>
-          <th class="py-3 px-3 text-right">Stok Awal</th>
-          <th class="py-3 px-3 text-right">Masuk</th>
-          <th class="py-3 px-3 text-right">Keluar</th>
-          <th class="py-3 px-3 text-right">Stok Akhir</th>
-        </tr>
-      </thead>
-      <tbody id="tbodyPersediaan" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-    </table>
-    <div id="pagPersediaan" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
-  </div>
-</section>
-
-<section id="mod-persediaan_masuk" class="mod-section hidden space-y-5">
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <div>
-      <h2 class="text-xl font-extrabold">Persediaan Masuk</h2>
-      <p class="text-xs text-slate-400">Pencatatan penerimaan &amp; penambahan barang persediaan</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <input type="text" id="searchStokIn" oninput="renderPersediaanMasuk()" placeholder="Cari"
-        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
-      <button id="btnAddStokMasuk" onclick="openAddModal('DB_Stok_Masuk')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition">
-        + Catat Barang Masuk
-      </button>
-    </div>
-  </div>
-  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
-      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
-        <tr>
-          <th class="py-3 px-3">Tanggal</th>
-          <th class="py-3 px-3">Penanggung Jawab</th>
-          <th class="py-3 px-3">Nama Barang</th>
-          <th class="py-3 px-3 text-right">Jumlah Masuk</th>
-          <th class="py-3 px-3">Unit</th>
-          <th class="py-3 px-3 text-right">Total Pcs</th>
-          <th class="py-3 px-3">Keterangan</th>
-        </tr>
-      </thead>
-      <tbody id="tbodyStokIn" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-    </table>
-    <div id="pagStokIn" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
-  </div>
-</section>
-
-<section id="mod-persediaan_keluar" class="mod-section hidden space-y-5">
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <div>
-      <h2 class="text-xl font-extrabold">Persediaan Keluar</h2>
-      <p class="text-xs text-slate-400">Distribusi &amp; pengambilan barang persediaan per bidang/pegawai</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <input type="text" id="searchStokOut" oninput="renderPersediaanKeluar()" placeholder="Cari"
-        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
-      <button id="btnAddStokKeluar" onclick="openAddModal('DB_Stok_Keluar')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition">
-        - Catat Barang Keluar
-      </button>
-    </div>
-  </div>
-  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
-      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
-        <tr>
-          <th class="py-3 px-3">Tanggal</th>
-          <th class="py-3 px-3">Nama Barang</th>
-          <th class="py-3 px-3">Bidang</th>
-          <th class="py-3 px-3">Penerima Barang</th>
-          <th class="py-3 px-3 text-right">Jumlah Keluar</th>
-          <th class="py-3 px-3">Unit</th>
-          <th class="py-3 px-3 text-right">Total Pcs</th>
-          <th class="py-3 px-3">Keterangan</th>
-        </tr>
-      </thead>
-      <tbody id="tbodyStokOut" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-    </table>
-    <div id="pagStokOut" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
-  </div>
-</section>
-
+<!-- ========================================================= -->
+<!-- BMN ASET 2: MASTER ROOM (DBR)                             -->
+<!-- ========================================================= -->
 <section id="mod-master_ruangan" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h2 class="text-xl font-extrabold">Master Ruangan (DBR)</h2>
+      <h2 class="text-xl font-extrabold">Master Room (DBR)</h2>
       <p class="text-xs text-slate-400">Daftar ruangan &amp; penanggung jawab terhubung otomatis via NIP Pegawai</p>
     </div>
     <div class="flex items-center gap-2">
-      <input type="text" id="searchRuangan" oninput="renderMasterRuangan()" placeholder="Cari"
+      <input type="text" id="searchRuangan" oninput="renderMasterRuangan()" placeholder="Cari ruangan, NIP, PJ..."
         class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
       <button id="btnAddRuangan" onclick="openAddModal('DB_Ruangan')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
         + Tambah Ruangan
@@ -160,12 +83,579 @@
   </div>
 </section>
 
-<section id="mod-bmn_area" class="mod-section hidden">
-  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-10 text-center max-w-xl mx-auto space-y-4">
-    <span class="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">Coming Soon</span>
-    <h2 class="text-xl font-extrabold">BMN AREA — BAST, Upload Dokumen &amp; Pelaporan</h2>
+<!-- ========================================================= -->
+<!-- BMN ASET 3: BAST OTOMATIS                                 -->
+<!-- ========================================================= -->
+<section id="mod-bast_otomatis" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">BAST Otomatis</h2>
+      <p class="text-xs text-slate-400">Relasi otomatis Master Assets (Tipe) + Master Room + Employee untuk Berita Acara Serah Terima</p>
+    </div>
+    <a href="https://docs.google.com/spreadsheets/d/1Cj7Mu7ceb8RFVY3X22DAMNoutobrRE8I-oeZX01XDZg/edit?usp=sharing" target="_blank" rel="noopener"
+      class="text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+      Buka Sheet BAST Otomatis ↗
+    </a>
+  </div>
+
+  <div class="grid lg:grid-cols-12 gap-6">
+    <div class="lg:col-span-5 bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3 text-xs">
+      <h3 class="text-sm font-extrabold">Generator Draft BAST</h3>
+      <div>
+        <label class="block font-bold mb-1">Nomor BAST</label>
+        <input type="text" id="bastNomor" oninput="updateBastPreview()" value="BAST-001/BMN/RRI-MMJ/2026" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Pilih Ruangan (DBR)</label>
+        <select id="bastRuanganSelect" onchange="updateBastPreview()" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></select>
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Pilih Aset BMN (KIR)</label>
+        <select id="bastAsetSelect" onchange="updateBastPreview()" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></select>
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Pegawai Penerima (DB_Pegawai)</label>
+        <select id="bastPegawaiSelect" onchange="updateBastPreview()" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></select>
+      </div>
+      <button type="button" onclick="printBastDraft()" class="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-teal-600 text-white font-bold hover:opacity-90 transition">
+        Cetak / Simpan PDF BAST
+      </button>
+    </div>
+
+    <div id="bastPreviewBox" class="lg:col-span-7 bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 space-y-4 text-xs leading-relaxed">
+      <div class="text-center border-b border-slate-200 dark:border-slate-700 pb-3">
+        <p class="font-extrabold text-sm uppercase">Berita Acara Serah Terima (BAST) Penggunaan BMN</p>
+        <p class="font-mono text-slate-500" id="prevBastNomor">Nomor: BAST-001/BMN/RRI-MMJ/2026</p>
+      </div>
+      <p id="prevBastBody" class="text-slate-600 dark:text-slate-300">Pilih ruangan, aset, dan pegawai penerima untuk menyusun naskah BAST otomatis.</p>
+      <div class="grid grid-cols-2 gap-6 pt-8 text-center">
+        <div>
+          <p class="font-bold">PIHAK PERTAMA (Pengelola BMN)</p>
+          <p class="mt-12 font-extrabold underline">Operator BMN LPP RRI Mamuju</p>
+        </div>
+        <div>
+          <p class="font-bold">PIHAK KEDUA (Penanggung Jawab)</p>
+          <p class="mt-12 font-extrabold underline" id="prevBastPenerima">-</p>
+          <p class="text-[11px] font-mono text-slate-400" id="prevBastNip">-</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- BMN ASET 4: TUTUP BUKU (INVOICE & BAST)                   -->
+<!-- ========================================================= -->
+<section id="mod-aset_tutup_buku" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">Tutup Buku — BMN Aset</h2>
+      <p class="text-xs text-slate-400">Kelengkapan dokumen tutup buku BMN Aset: <strong>Invoice</strong> &amp; <strong>BAST</strong></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="text" id="filterAsetTutupBukuPeriode" oninput="renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku')"
+        placeholder="Filter Periode (mis. Semester II 2026)..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
+      <button id="btnAddAsetTutupBuku" onclick="openBmnDokModal('Aset', 'Tutup Buku', ['Invoice', 'BAST'])"
+        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Upload Invoice / BAST
+      </button>
+    </div>
+  </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Periode</th>
+          <th class="py-3 px-3">Kategori (Invoice / BAST)</th>
+          <th class="py-3 px-3">Judul Dokumen</th>
+          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Keterangan</th>
+          <th class="py-3 px-3">File</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyAsetTutupBuku" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagAsetTutupBuku" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- BMN ASET 5: CALBMN (18 KELENGKAPAN • SEMESTER)            -->
+<!-- ========================================================= -->
+<section id="mod-aset_calbmn" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">CALBMN (Catatan atas Laporan BMN)</h2>
+      <p class="text-xs text-slate-400">18 Kelengkapan Dokumen Semesteran (Sampul s.d. Rekon Internal)</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="text" id="filterCalbmnPeriode" oninput="renderBmnDokumenView('Aset', 'CALBMN', 'filterCalbmnPeriode', 'tbodyCalbmn', 'pagCalbmn')"
+        placeholder="Filter Semester (mis. Semester I 2026)..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
+      <button id="btnAddCalbmn" onclick="openBmnDokModal('Aset', 'CALBMN', ['1. Sampul', '2. Pengantar', '3. Pernyataan Tanggung Jawab', '4. Ringkasan', '5. Daftar Isi', '6. Neraca Percobaan', '7. LBMN Intrakomptabel', '8. LBMN Ekstrakomptabel', '9. LBMN Gabungan', '10. Aset Tetap Dihentikan', '11. Aset Tak Berwujud', '12. Konstruksi Dalam Pengerjaan', '13. BPYBDS', '14. Persediaan', '15. Penyusutan', '16. Penyisihan Piutang', '17. CRBMN', '18. Rekon Internal'])"
+        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Upload Dokumen CALBMN
+      </button>
+    </div>
+  </div>
+
+  <details class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 text-xs">
+    <summary class="font-extrabold text-teal-700 dark:text-teal-300 cursor-pointer">Lihat Daftar 18 Kelengkapan CALBMN</summary>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-3 text-slate-600 dark:text-slate-300">
+      <div>1. Sampul</div><div>7. LBMN Intrakomptabel</div><div>13. BPYBDS</div>
+      <div>2. Pengantar</div><div>8. LBMN Ekstrakomptabel</div><div>14. Persediaan</div>
+      <div>3. Pernyataan Tanggung Jawab</div><div>9. LBMN Gabungan</div><div>15. Penyusutan</div>
+      <div>4. Ringkasan</div><div>10. Aset Tetap Dihentikan</div><div>16. Penyisihan Piutang</div>
+      <div>5. Daftar Isi</div><div>11. Aset Tak Berwujud</div><div>17. CRBMN</div>
+      <div>6. Neraca Percobaan</div><div>12. Konstruksi Dalam Pengerjaan</div><div>18. Rekon Internal</div>
+    </div>
+  </details>
+
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Semester / Periode</th>
+          <th class="py-3 px-3">Item Kelengkapan</th>
+          <th class="py-3 px-3">Judul Dokumen</th>
+          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Keterangan</th>
+          <th class="py-3 px-3">File</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyCalbmn" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagCalbmn" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- BMN ASET 6: WASDAL (7 KELENGKAPAN • SEMESTER)             -->
+<!-- ========================================================= -->
+<section id="mod-aset_wasdal" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">WASDAL (Pengawasan &amp; Pengendalian BMN)</h2>
+      <p class="text-xs text-slate-400">7 Kelengkapan Laporan Wasdal per Semester</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="text" id="filterWasdalPeriode" oninput="renderBmnDokumenView('Aset', 'WASDAL', 'filterWasdalPeriode', 'tbodyWasdal', 'pagWasdal')"
+        placeholder="Filter Semester (mis. Semester I 2026)..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
+      <button id="btnAddWasdal" onclick="openBmnDokModal('Aset', 'WASDAL', ['1. BA Pemantauan Periodik', '2. Laporan Periodik A-GH', '3. Laporan Insidentil A-GH', '4. Laporan Penertiban', '5. Surat Pengantar Laporan Wasdal', '6. Laporan Wasdal', '7. Surat Tugas Wasdal'])"
+        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Upload Dokumen WASDAL
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 text-xs">
+    <p class="font-extrabold text-indigo-700 dark:text-indigo-300 mb-2">7 Kelengkapan WASDAL:</p>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-1.5 text-slate-600 dark:text-slate-300">
+      <div>1. BA Pemantauan Periodik</div>
+      <div>2. Laporan Periodik A-GH</div>
+      <div>3. Laporan Insidentil A-GH</div>
+      <div>4. Laporan Penertiban</div>
+      <div>5. Surat Pengantar Laporan Wasdal</div>
+      <div>6. Laporan Wasdal</div>
+      <div>7. Surat Tugas Wasdal</div>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Semester / Periode</th>
+          <th class="py-3 px-3">Item Kelengkapan</th>
+          <th class="py-3 px-3">Judul Dokumen</th>
+          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Keterangan</th>
+          <th class="py-3 px-3">File</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyWasdal" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagWasdal" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- BMN ASET 7: RKBMN (9 KELENGKAPAN • TAHUNAN)               -->
+<!-- ========================================================= -->
+<section id="mod-aset_rkbmn" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">RKBMN (Rencana Kebutuhan BMN)</h2>
+      <p class="text-xs text-slate-400">9 Kelengkapan Dokumen Perencanaan Tahunan</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="text" id="filterRkbmnPeriode" oninput="renderBmnDokumenView('Aset', 'RKBMN', 'filterRkbmnPeriode', 'tbodyRkbmn', 'pagRkbmn')"
+        placeholder="Filter Tahun (mis. 2026 / 2027)..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
+      <button id="btnAddRkbmn" onclick="openBmnDokModal('Aset', 'RKBMN', ['1. Rencana Pemanfaatan', '2. Rencana Pemeliharaan', '3. Rencana Pemindahtanganan', '4. Rencana Pengadaan', '5. Rencana Penggunaan', '6. Rencana Penghapusan', '7. SPTJM', '8. Surat Pengantar RKBMN', '9. Surat Pernyataan Tusi LPP RRI'])"
+        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Upload Dokumen RKBMN
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 text-xs">
+    <p class="font-extrabold text-sky-700 dark:text-sky-300 mb-2">9 Kelengkapan RKBMN:</p>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5 text-slate-600 dark:text-slate-300">
+      <div>1. Rencana Pemanfaatan</div>
+      <div>2. Rencana Pemeliharaan</div>
+      <div>3. Rencana Pemindahtanganan</div>
+      <div>4. Rencana Pengadaan</div>
+      <div>5. Rencana Penggunaan</div>
+      <div>6. Rencana Penghapusan</div>
+      <div>7. SPTJM</div>
+      <div>8. Surat Pengantar RKBMN</div>
+      <div>9. Surat Pernyataan Tusi LPP RRI</div>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Tahun / Periode</th>
+          <th class="py-3 px-3">Item Kelengkapan</th>
+          <th class="py-3 px-3">Judul Dokumen</th>
+          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Keterangan</th>
+          <th class="py-3 px-3">File</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyRkbmn" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagRkbmn" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- BMN ASET 8: MANAJEMEN RISIKO (TAHUNAN)                    -->
+<!-- ========================================================= -->
+<section id="mod-aset_manajemen_risiko" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">Manajemen Risiko BMN</h2>
+      <p class="text-xs text-slate-400">Upload &amp; arsip dokumen Manajemen Risiko pengelolaan aset per Tahun</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="text" id="filterManRisikoPeriode" oninput="renderBmnDokumenView('Aset', 'Manajemen Risiko', 'filterManRisikoPeriode', 'tbodyManRisiko', 'pagManRisiko')"
+        placeholder="Filter Tahun (mis. 2026)..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
+      <button id="btnAddManRisiko" onclick="openBmnDokModal('Aset', 'Manajemen Risiko', ['Register Risiko BMN', 'Rencana Tindak Pengendalian', 'Laporan Pemantauan Risiko'])"
+        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Upload Manajemen Risiko
+      </button>
+    </div>
+  </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Tahun</th>
+          <th class="py-3 px-3">Kategori Dokumen</th>
+          <th class="py-3 px-3">Judul Dokumen</th>
+          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Keterangan</th>
+          <th class="py-3 px-3">File</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyManRisiko" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagManRisiko" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- BMN ASET 9: SISPORJA (TAHUNAN)                            -->
+<!-- ========================================================= -->
+<section id="mod-aset_sisporja" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">SISPORJA</h2>
+      <p class="text-xs text-slate-400">Sistem Pelaporan Pertanggungjawaban BMN per Tahun</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="text" id="filterSisporjaPeriode" oninput="renderBmnDokumenView('Aset', 'SISPORJA', 'filterSisporjaPeriode', 'tbodySisporja', 'pagSisporja')"
+        placeholder="Filter Tahun (mis. 2026)..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
+      <button id="btnAddSisporja" onclick="openBmnDokModal('Aset', 'SISPORJA', ['Laporan SISPORJA Tahunan', 'Lampiran Pertanggungjawaban'])"
+        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Upload Dokumen SISPORJA
+      </button>
+    </div>
+  </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Tahun</th>
+          <th class="py-3 px-3">Kategori Dokumen</th>
+          <th class="py-3 px-3">Judul Dokumen</th>
+          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Keterangan</th>
+          <th class="py-3 px-3">File</th>
+        </tr>
+      </thead>
+      <tbody id="tbodySisporja" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagSisporja" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- BMN ASET 10: DOKUMEN BMN (SURAT & NODIN)                  -->
+<!-- ========================================================= -->
+<section id="mod-bmn_arsip" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">Dokumen BMN (Surat &amp; Nota Dinas)</h2>
+      <p class="text-xs text-slate-400">Arsip Surat Menyurat, Nota Dinas, SK Tim BMN, dan berita acara</p>
+    </div>
+    <button id="btnAddBmnArsip" onclick="openAddModal('DB_BMN_Arsip')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+      + Tambah Dokumen BMN
+    </button>
+  </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Nomor Dokumen</th>
+          <th class="py-3 px-3">Jenis</th>
+          <th class="py-3 px-3">Judul Dokumen</th>
+          <th class="py-3 px-3">Tanggal</th>
+          <th class="py-3 px-3">Keterangan</th>
+          <th class="py-3 px-3">Link</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyBmnArsip" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagBmnArsip" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- BMN ASET 11: MONITORING PEMELIHARAAN ASET (2 DB)          -->
+<!-- ========================================================= -->
+<section id="mod-pemeliharaan_aset" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">Monitoring Pemeliharaan Aset</h2>
+      <p class="text-xs text-slate-400">Relasi 2 Tabel: <code>DB_Pemeliharaan_Header</code> &amp; <code>DB_Pemeliharaan_Detail</code></p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="https://docs.google.com/spreadsheets/d/1OObd6dYCJuB9TcKbrj_sy4RkIeywuC8EARGZkAJVrEo/edit?usp=sharing" target="_blank" rel="noopener"
+        class="text-xs font-bold px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-200 transition">
+        Sheet Pemeliharaan ↗
+      </a>
+      <button id="btnAddPemeliharaanHeader" onclick="openAddModal('DB_Pemeliharaan_Header')" class="hidden text-xs font-bold px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Jadwal Pemeliharaan
+      </button>
+      <button id="btnAddPemeliharaanDetail" onclick="openAddModal('DB_Pemeliharaan_Detail')" class="hidden text-xs font-bold px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition">
+        + Item Aset Dipelihara
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3 overflow-x-auto">
+    <h3 class="text-sm font-extrabold text-teal-700 dark:text-teal-300">1. Jadwal &amp; Header Pemeliharaan (DB_Pemeliharaan_Header)</h3>
+    <table class="w-full text-left text-xs">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-2.5 px-3">ID Jadwal</th>
+          <th class="py-2.5 px-3">Tanggal</th>
+          <th class="py-2.5 px-3">Judul Pemeliharaan</th>
+          <th class="py-2.5 px-3">Lokasi</th>
+          <th class="py-2.5 px-3">Teknisi / Vendor</th>
+          <th class="py-2.5 px-3">Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyPemeliharaanHeader" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3 overflow-x-auto">
+    <h3 class="text-sm font-extrabold text-indigo-700 dark:text-indigo-300">2. Detail Aset yang Dipelihara (DB_Pemeliharaan_Detail)</h3>
+    <table class="w-full text-left text-xs">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-2.5 px-3">ID Jadwal</th>
+          <th class="py-2.5 px-3">Kode Barang</th>
+          <th class="py-2.5 px-3">Nama Barang</th>
+          <th class="py-2.5 px-3">NUP</th>
+          <th class="py-2.5 px-3">Kondisi Sebelum</th>
+          <th class="py-2.5 px-3">Tindakan</th>
+          <th class="py-2.5 px-3">Kondisi Sesudah</th>
+          <th class="py-2.5 px-3 text-right">Biaya</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyPemeliharaanDetail" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- PERSEDIAAN 1: MONITORING PERSEDIAAN (HEAD + POPUP DETAIL) -->
+<!-- ========================================================= -->
+<section id="mod-master_persediaan" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">Monitoring Persediaan</h2>
+      <p class="text-xs text-slate-400">Klik baris barang untuk membuka pop-up detail transaksi Masuk/Keluar (<code>DB_Stok_Detail</code>)</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <input type="text" id="searchPersediaan" oninput="renderMasterPersediaan()" placeholder="Cari kode atau nama barang..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
+      <a href="https://docs.google.com/spreadsheets/d/1KG0V97oTRunwUeMJrLJZjHt8ciG5BzDyVgL-Bf1TSa8/edit?usp=sharing" target="_blank" rel="noopener"
+        class="text-xs font-bold px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-200 transition">
+        Sheet Stock ↗
+      </a>
+      <button id="btnAddPersediaan" onclick="openAddModal('DB_Stok_Master')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Persediaan
+      </button>
+    </div>
+  </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Kode Barang</th>
+          <th class="py-3 px-3">Nama Barang</th>
+          <th class="py-3 px-3">Unit</th>
+          <th class="py-3 px-3 text-right">Stok Awal</th>
+          <th class="py-3 px-3 text-right">Masuk</th>
+          <th class="py-3 px-3 text-right">Keluar</th>
+          <th class="py-3 px-3 text-right">Stok Akhir</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyPersediaan" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagPersediaan" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- PERSEDIAAN 2: TUTUP BUKU (6 KELENGKAPAN • BULANAN)        -->
+<!-- ========================================================= -->
+<section id="mod-persediaan_tutup_buku" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">Tutup Buku — Persediaan (Bulanan)</h2>
+      <p class="text-xs text-slate-400">6 Kelengkapan Bulanan: Transaksi Masuk, Transaksi Keluar, Opname, Reklas, Invoice, Surat Pengajuan Bidang</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="text" id="filterPersediaanTutupBukuPeriode" oninput="renderBmnDokumenView('Persediaan', 'Tutup Buku', 'filterPersediaanTutupBukuPeriode', 'tbodyPersediaanTutupBuku', 'pagPersediaanTutupBuku')"
+        placeholder="Filter Bulan (mis. November 2026)..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
+      <button id="btnAddPersediaanTutupBuku" onclick="openBmnDokModal('Persediaan', 'Tutup Buku', ['1. Transaksi Masuk', '2. Transaksi Keluar', '3. Opname', '4. Reklas', '5. Invoice', '6. Surat Pengajuan Bidang'])"
+        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Upload Kelengkapan
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 text-xs">
+    <p class="font-extrabold text-emerald-700 dark:text-emerald-300 mb-2">6 Kelengkapan Tutup Buku Persediaan (Bulanan):</p>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5 text-slate-600 dark:text-slate-300">
+      <div>1. Transaksi Masuk</div>
+      <div>2. Transaksi Keluar</div>
+      <div>3. Opname</div>
+      <div>4. Reklas</div>
+      <div>5. Invoice</div>
+      <div>6. Surat Pengajuan Bidang</div>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Bulan / Periode</th>
+          <th class="py-3 px-3">Item Kelengkapan</th>
+          <th class="py-3 px-3">Judul Dokumen</th>
+          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Keterangan</th>
+          <th class="py-3 px-3">File</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyPersediaanTutupBuku" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagPersediaanTutupBuku" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- PERSEDIAAN 3: FORM PENGAJUAN                              -->
+<!-- ========================================================= -->
+<section id="mod-persediaan_form_pengajuan" class="mod-section hidden space-y-5">
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-8 max-w-2xl mx-auto text-center space-y-4">
+    <span class="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">Google Form Resmi</span>
+    <h2 class="text-xl font-extrabold">Form Pengajuan Barang Persediaan</h2>
     <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-      Modul khusus Pembuatan BAST Otomatis, Upload Dokumen PDF, dan Laporan KIR/Persediaan akan diaktifkan setelah tim Operator BMN menyelesaikan pengisian data awal.
+      Setiap bidang/tim kerja mengajukan permintaan ATK dan kebutuhan operasional melalui formulir resmi berikut sebelum dicatat pada transaksi keluar persediaan.
     </p>
+    <div class="pt-2">
+      <a href="https://forms.gle/CNNbu8FHkUFqJnuZ7" target="_blank" rel="noopener"
+        class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold shadow-xs transition">
+        Buka Form Pengajuan Persediaan ↗
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================= -->
+<!-- PERSEDIAAN 4: PIPK (8 KELENGKAPAN)                        -->
+<!-- ========================================================= -->
+<section id="mod-persediaan_pipk" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">PIPK — Persediaan</h2>
+      <p class="text-xs text-slate-400">8 Kelengkapan Pengendalian Intern atas Pelaporan Keuangan (SK Tim s.d. Laporan PIPK)</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="text" id="filterPipkPeriode" oninput="renderBmnDokumenView('Persediaan', 'PIPK', 'filterPipkPeriode', 'tbodyPipk', 'pagPipk')"
+        placeholder="Filter Tahun / Periode..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
+      <button id="btnAddPipk" onclick="openBmnDokModal('Persediaan', 'PIPK', ['1. SK Tim', '2. Tabel A', '3. Tabel B', '4. Tabel C', '5. Tabel D', '6. Tabel E', '7. Matriks Pengujian', '8. Laporan PIPK'])"
+        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Upload Dokumen PIPK
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 text-xs">
+    <p class="font-extrabold text-amber-700 dark:text-amber-300 mb-2">8 Kelengkapan PIPK:</p>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-1.5 text-slate-600 dark:text-slate-300">
+      <div>1. SK Tim</div>
+      <div>2. Tabel A</div>
+      <div>3. Tabel B</div>
+      <div>4. Tabel C</div>
+      <div>5. Tabel D</div>
+      <div>6. Tabel E</div>
+      <div>7. Matriks Pengujian</div>
+      <div>8. Laporan PIPK</div>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Periode</th>
+          <th class="py-3 px-3">Item Kelengkapan</th>
+          <th class="py-3 px-3">Judul Dokumen</th>
+          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Keterangan</th>
+          <th class="py-3 px-3">File</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyPipk" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagPipk" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
   </div>
 </section>

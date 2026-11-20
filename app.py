@@ -89,18 +89,24 @@ STATION_INFO = {
 TARGET_PERMISSION_MAP = {
     "DB_Timeline": ("dialog", "full"),
     "DB_Dialog": ("dialog", "full"),
+    "DB_Produksi_Paket": ("produksi_paket", "full"),
     "DB_Konten": ("konten", "full"),
+    "DB_Socmed_Analytics": ("socmed_analytics", "full"),
     "DB_Siaran": ("jadwal_siaran", "full"),
     "DB_Program": ("program_siaran", "full"),
     "DB_Jadwal_TMB": ("jadwal_tmb", "full"),
+    "DB_Monitoring_Produksi": ("monitoring_produksi", "full"),
     "DB_Info_Board": ("info_board", "full"),
     "DB_Arsip_SDM": ("arsip_sdm", "full"),
     "DB_Pegawai": ("data_pegawai", "full"),
     "DB_Aset": ("master_barang", "full"),
     "DB_Ruangan": ("master_ruangan", "full"),
+    "DB_Pemeliharaan_Header": ("pemeliharaan_aset", "full"),
+    "DB_Pemeliharaan_Detail": ("pemeliharaan_aset", "full"),
+    "DB_BMN_Arsip": ("bmn_arsip", "full"),
+    "DB_BMN_Dokumen": ("aset_tutup_buku", "full"),
     "DB_Stok_Master": ("master_persediaan", "full"),
-    "DB_Stok_Masuk": ("persediaan_masuk", "full"),
-    "DB_Stok_Keluar": ("persediaan_keluar", "full"),
+    "DB_Stok_Detail": ("master_persediaan", "full"),
 }
 
 LEVEL_RANK = {"none": 0, "view": 1, "update": 2, "full": 3}
@@ -181,12 +187,8 @@ def api_board():
         session["user"] = user
     app_config = _get_app_config()
 
-    can_see_stock = bool(user and (
-        _has_perm(user, "master_persediaan", "view") or
-        _has_perm(user, "persediaan_masuk", "view") or
-        _has_perm(user, "persediaan_keluar", "view")
-    ))
-    stock_bundle = db.get_stock_bundle() if can_see_stock else {"master": [], "in_list": [], "out_list": []}
+    can_see_stock = bool(user and _has_perm(user, "master_persediaan", "view"))
+    stock_bundle = db.get_stock_bundle() if can_see_stock else {"master": [], "details": []}
     existing_tabs = db.get_existing_tab_names() if user else []
     missing_tabs = [t for t in DB_SCHEMAS.keys() if t.lower() not in {x.lower() for x in existing_tabs}] if db.connected else list(DB_SCHEMAS.keys())
 
@@ -206,19 +208,28 @@ def api_board():
         "missing_tabs": missing_tabs,
         "timeline": db.get_timeline(),
         "dialogs": db.get_agenda_setting(),
+        "produksi_paket": db.get_tab_records(["DB_Produksi_Paket"], include_row_num=True) if _has_perm(user, "produksi_paket", "view") else [],
         "info_board": db.get_tab_records(["DB_Info_Board", "Info_Board"], include_row_num=True) if user else [],
         "content_planner": db.get_tab_records(["DB_Konten"], include_row_num=True) if _has_perm(user, "konten", "view") else [],
+        "socmed_analytics": db.get_tab_records(["DB_Socmed_Analytics"], include_row_num=True) if _has_perm(user, "socmed_analytics", "view") else [],
         "siaran": db.get_tab_records(["DB_Siaran", "Siaran"], include_row_num=True) if _has_perm(user, "jadwal_siaran", "view") else [],
         "program_siaran": db.get_tab_records(["DB_Program"], include_row_num=True),
         "jadwal_tmb": db.get_tab_records(["DB_Jadwal_TMB", "Jadwal_TMB"], include_row_num=True) if _has_perm(user, "jadwal_tmb", "view") else [],
+        "monitoring_produksi": db.get_tab_records(["DB_Monitoring_Produksi"], include_row_num=True) if _has_perm(user, "monitoring_produksi", "view") else [],
         "arsip_sdm": db.get_tab_records(["DB_Arsip_SDM", "Arsip_SDM"], include_row_num=True) if _has_perm(user, "arsip_sdm", "view") else [],
-        "employees": db.get_employees() if (_has_perm(user, "data_pegawai", "view") or _has_perm(user, "master_ruangan", "view") or is_admin) else [],
+        "employees": db.get_employees() if (_has_perm(user, "data_pegawai", "view") or _has_perm(user, "master_ruangan", "view") or _has_perm(user, "bast_otomatis", "view") or is_admin) else [],
         "users_list": db.get_users_list() if is_admin else [],
-        "assets": db.get_assets() if _has_perm(user, "master_barang", "view") else [],
-        "rooms": db.get_rooms() if (_has_perm(user, "master_ruangan", "view") or _has_perm(user, "master_barang", "view")) else [],
+        "assets": db.get_assets() if (_has_perm(user, "master_barang", "view") or _has_perm(user, "bast_otomatis", "view") or _has_perm(user, "pemeliharaan_aset", "view")) else [],
+        "rooms": db.get_rooms() if (_has_perm(user, "master_ruangan", "view") or _has_perm(user, "master_barang", "view") or _has_perm(user, "bast_otomatis", "view")) else [],
+        "pemeliharaan_header": db.get_tab_records(["DB_Pemeliharaan_Header"], include_row_num=True) if _has_perm(user, "pemeliharaan_aset", "view") else [],
+        "pemeliharaan_detail": db.get_tab_records(["DB_Pemeliharaan_Detail"], include_row_num=True) if _has_perm(user, "pemeliharaan_aset", "view") else [],
+        "bmn_arsip": db.get_tab_records(["DB_BMN_Arsip"], include_row_num=True) if _has_perm(user, "bmn_arsip", "view") else [],
+        "bmn_dokumen": db.get_tab_records(["DB_BMN_Dokumen"], include_row_num=True) if any(_has_perm(user, mk, "view") for mk in [
+            "aset_tutup_buku", "aset_calbmn", "aset_wasdal", "aset_rkbmn", "aset_manajemen_risiko", "aset_sisporja",
+            "persediaan_tutup_buku", "persediaan_pipk"
+        ]) else [],
         "stock_master": stock_bundle["master"],
-        "stock_in": stock_bundle["in_list"],
-        "stock_out": stock_bundle["out_list"],
+        "stock_details": stock_bundle["details"],
         "youtube_feed": media_feed.get_youtube_feed(),
         "drive_flyers": media_feed.get_drive_flyers(),
     }
@@ -253,18 +264,6 @@ def api_refresh():
     db.clear_cache()
     media_feed.clear_cache()
     return jsonify({"ok": True, "message": "Cache diperbarui."})
-
-
-@app.route("/api/init-data", methods=["POST"])
-def api_init_data():
-    user = session.get("user")
-    if not user or not any(r.lower() == "admin" for r in user.get("roles", [])):
-        return jsonify({"ok": False, "message": "Restricted access!"}), 403
-
-    data = request.get_json(silent=True) or {}
-    include_samples = bool(data.get("include_samples", True))
-    ok, msg = db.init_database_tabs(include_sample_rows=include_samples)
-    return jsonify({"ok": ok, "message": msg})
 
 
 @app.route("/api/admin/users", methods=["POST"])
@@ -376,6 +375,22 @@ def api_update_timeline():
     return jsonify({"ok": ok, "message": msg})
 
 
+@app.route("/api/stok-detail/update", methods=["POST"])
+def api_update_stok_detail():
+    user = session.get("user")
+    if not _has_perm(user, "master_persediaan", "update"):
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
+
+    data = request.get_json(silent=True) or {}
+    row_num = data.get("row_num")
+    updates = data.get("updates") or {}
+    if not row_num:
+        return jsonify({"ok": False, "message": "Invalid row number!"}), 400
+
+    ok, msg = db.update_stok_detail_row(row_num, updates)
+    return jsonify({"ok": ok, "message": msg})
+
+
 @app.route("/api/add/<target_key>", methods=["POST"])
 def api_add_record(target_key):
     user = session.get("user")
@@ -386,7 +401,13 @@ def api_add_record(target_key):
         return jsonify({"ok": False, "message": "Invalid target module!"}), 400
 
     mod_key, req_lvl = TARGET_PERMISSION_MAP[target_key]
-    if not _has_perm(user, mod_key, req_lvl):
+    allowed = _has_perm(user, mod_key, req_lvl) or (
+        target_key == "DB_BMN_Dokumen" and any(_has_perm(user, mk, "full") for mk in [
+            "aset_tutup_buku", "aset_calbmn", "aset_wasdal", "aset_rkbmn", "aset_manajemen_risiko", "aset_sisporja",
+            "persediaan_tutup_buku", "persediaan_pipk"
+        ])
+    )
+    if not allowed:
         display_key = mod_key.replace("DB_", "Data")
         return jsonify({"ok": False, "message": f"You need permission to access '{display_key}'."}), 403
 
@@ -414,7 +435,13 @@ def api_delete_record(target_key):
         return jsonify({"ok": False, "message": "Invalid target module!"}), 400
 
     mod_key, req_lvl = TARGET_PERMISSION_MAP[target_key]
-    if not _has_perm(user, mod_key, req_lvl):
+    allowed = _has_perm(user, mod_key, req_lvl) or (
+        target_key == "DB_BMN_Dokumen" and any(_has_perm(user, mk, "full") for mk in [
+            "aset_tutup_buku", "aset_calbmn", "aset_wasdal", "aset_rkbmn", "aset_manajemen_risiko", "aset_sisporja",
+            "persediaan_tutup_buku", "persediaan_pipk"
+        ])
+    )
+    if not allowed:
         return jsonify({"ok": False, "message": f"You need permission to access '{mod_key}'."}), 403
 
     data = request.get_json(silent=True) or {}

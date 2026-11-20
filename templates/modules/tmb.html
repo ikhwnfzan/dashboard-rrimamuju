@@ -1,3 +1,4 @@
+<!-- TMB: JADWAL TMB -->
 <section id="mod-jadwal_tmb" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
@@ -23,5 +24,35 @@
       <tbody id="tbodyTmb" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
     </table>
     <div id="pagTmb" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+</section>
+
+<!-- TMB: MONITORING PRODUKSI -->
+<section id="mod-monitoring_produksi" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">Monitoring Produksi</h2>
+      <p class="text-xs text-slate-400">Log kualitas audio studio, status stream RRI Digital, dan catatan teknis</p>
+    </div>
+    <button id="btnAddMonitoringProd" onclick="openAddModal('DB_Monitoring_Produksi')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+      + Catat Monitoring
+    </button>
+  </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">Tanggal</th>
+          <th class="py-3 px-3">Program</th>
+          <th class="py-3 px-3">Studio</th>
+          <th class="py-3 px-3">Operator TMB</th>
+          <th class="py-3 px-3">Kualitas Audio</th>
+          <th class="py-3 px-3">Stream Status</th>
+          <th class="py-3 px-3">Kendala / Tindak Lanjut</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyMonitoringProd" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagMonitoringProd" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
   </div>
 </section>

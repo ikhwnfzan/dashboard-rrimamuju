@@ -17,8 +17,23 @@ const ICON_CLASSES = {
   master_persediaan: 'ti-chart-line',
   persediaan_masuk: 'ti-arrow-down',
   persediaan_keluar: 'ti-arrow-up',
+  produksi_paket: 'ti-package',
+  bestcut_monitoring: 'ti-scissors',
+  socmed_analytics: 'ti-chart-pie',
+  monitoring_produksi: 'ti-activity-heartbeat',
   master_ruangan: 'ti-building',
-  bmn_area: 'ti-tool',
+  bast_otomatis: 'ti-file-certificate',
+  aset_tutup_buku: 'ti-book-2',
+  aset_calbmn: 'ti-report-analytics',
+  aset_wasdal: 'ti-shield-check',
+  aset_rkbmn: 'ti-clipboard-list',
+  aset_manajemen_risiko: 'ti-alert-triangle',
+  aset_sisporja: 'ti-file-spreadsheet',
+  pemeliharaan_aset: 'ti-tool',
+  bmn_arsip: 'ti-archive',
+  persediaan_tutup_buku: 'ti-book-2',
+  persediaan_form_pengajuan: 'ti-forms',
+  persediaan_pipk: 'ti-checklist',
   manage_users: 'ti-user-cog',
   manage_modules: 'ti-shield-check',
   sun: 'ti-sun',
@@ -43,17 +58,30 @@ const MODULE_NAV_CONFIG = [
   { key: 'info_board', label: 'Info Board', group: 'Utama' },
   { key: 'data_pegawai', label: 'Data Pegawai', group: 'SDM' },
   { key: 'arsip_sdm', label: 'Arsip SDM', group: 'SDM' },
-  { key: 'dialog', label: 'Dialog', group: 'Siaran & Perencanaan' },
-  { key: 'jadwal_siaran', label: 'Jadwal Siaran', group: 'Siaran & Perencanaan' },
-  { key: 'program_siaran', label: 'Program Siaran', group: 'Siaran & Perencanaan' },
+  { key: 'jadwal_siaran', label: 'Jadwal Penyiar', group: 'Siaran' },
+  { key: 'produksi_paket', label: 'Produksi Paket', group: 'Perencanaan' },
+  { key: 'dialog', label: 'Jadwal Dialog', group: 'Perencanaan' },
+  { key: 'program_siaran', label: 'Program Siaran', group: 'Perencanaan' },
   { key: 'konten', label: 'Content Planner', group: 'KMB' },
+  { key: 'bestcut_monitoring', label: 'Bestcut Monitoring', group: 'KMB' },
+  { key: 'socmed_analytics', label: 'Social Media Analytics', group: 'KMB' },
   { key: 'jadwal_tmb', label: 'Jadwal TMB', group: 'TMB' },
-  { key: 'master_barang', label: 'Master Barang', group: 'BMN' },
-  { key: 'master_persediaan', label: 'Master Persediaan', group: 'BMN' },
-  { key: 'persediaan_masuk', label: 'Persediaan Masuk', group: 'BMN' },
-  { key: 'persediaan_keluar', label: 'Persediaan Keluar', group: 'BMN' },
-  { key: 'master_ruangan', label: 'Master Ruangan', group: 'BMN' },
-  { key: 'bmn_area', label: 'BMN AREA', group: 'BMN' },
+  { key: 'monitoring_produksi', label: 'Monitoring Produksi', group: 'TMB' },
+  { key: 'master_barang', label: 'Master Assets (KIR)', group: 'BMN', section: 'ASET' },
+  { key: 'master_ruangan', label: 'Master Room (DBR)', group: 'BMN', section: 'ASET' },
+  { key: 'bast_otomatis', label: 'BAST Otomatis', group: 'BMN', section: 'ASET' },
+  { key: 'aset_tutup_buku', label: 'Tutup Buku', group: 'BMN', section: 'ASET' },
+  { key: 'aset_calbmn', label: 'CALBMN', group: 'BMN', section: 'ASET' },
+  { key: 'aset_wasdal', label: 'WASDAL', group: 'BMN', section: 'ASET' },
+  { key: 'aset_rkbmn', label: 'RKBMN', group: 'BMN', section: 'ASET' },
+  { key: 'aset_manajemen_risiko', label: 'Manajemen Risiko', group: 'BMN', section: 'ASET' },
+  { key: 'aset_sisporja', label: 'SISPORJA', group: 'BMN', section: 'ASET' },
+  { key: 'bmn_arsip', label: 'Dokumen BMN', group: 'BMN', section: 'ASET' },
+  { key: 'pemeliharaan_aset', label: 'Monitoring Pemeliharaan Aset', group: 'BMN', section: 'ASET' },
+  { key: 'master_persediaan', label: 'Monitoring Persediaan', group: 'BMN', section: 'Persediaan' },
+  { key: 'persediaan_tutup_buku', label: 'Tutup Buku', group: 'BMN', section: 'Persediaan' },
+  { key: 'persediaan_form_pengajuan', label: 'Form Pengajuan', group: 'BMN', section: 'Persediaan' },
+  { key: 'persediaan_pipk', label: 'PIPK', group: 'BMN', section: 'Persediaan' },
   { key: 'manage_users', label: 'Manage User', group: 'Admin' },
   { key: 'manage_modules', label: 'Manage Module', group: 'Admin' },
   { key: 'app_settings', label: 'Pengaturan Aplikasi', group: 'Admin', adminOnly: true },
@@ -249,25 +277,80 @@ function populateNipDatalist() {
   }
 }
 
-function buildRoleSidebar() {
-  const visibleItems = MODULE_NAV_CONFIG.filter(item =>
-    item.always || (item.adminOnly ? isAdmin() : canView(item.key))
-  );
-  document.getElementById('statAccessibleMods').textContent =
-    visibleItems.filter(item => !item.always && !item.adminOnly).length;
-  const groups = {};
-  visibleItems.forEach(item => { (groups[item.group] = groups[item.group] || []).push(item); });
+let ACTIVE_SIDEBAR_SECTION = '';
 
-  document.getElementById('dynamicSidebarMenu').innerHTML = Object.entries(groups).map(([grp, items]) => `
-    <div class="space-y-1">
-      <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">${grp}</p>
-      ${items.map(i => `
-        <button onclick="switchModule('${i.key}')" data-mod="${i.key}"
-          class="nav-pill ${i.key === 'overview' ? 'active' : ''} w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800/70 transition">
-          <span class="flex items-center gap-2.5 truncate">${icon(i.key, 'w-4 h-4 text-base leading-none shrink-0')}<span class="truncate">${i.label}</span></span>
-        </button>
-      `).join('')}
-    </div>
+function toggleSidebarSection(sectionKey) {
+  const safeId = 'acc-section-' + sectionKey.replace(/[^a-zA-Z0-9]/g, '_');
+  const body = document.getElementById(safeId);
+  const icon = document.getElementById(safeId + '-icon');
+  if (!body) return;
+
+  const isCurrentlyHidden = body.classList.contains('hidden');
+  document.querySelectorAll('.sidebar-acc-body').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.sidebar-acc-icon').forEach(el => el.classList.remove('rotate-180'));
+
+  if (isCurrentlyHidden) {
+    body.classList.remove('hidden');
+    if (icon) icon.classList.add('rotate-180');
+    ACTIVE_SIDEBAR_SECTION = sectionKey;
+  } else {
+    ACTIVE_SIDEBAR_SECTION = '';
+  }
+}
+
+function buildRoleSidebar() {
+  const visibleItems = MODULE_NAV_CONFIG.filter(item => item.always || canView(item.key));
+  document.getElementById('statAccessibleMods').textContent = visibleItems.length - 1;
+
+  const groups = {};
+  visibleItems.forEach(item => {
+    groups[item.group] = groups[item.group] || { items: [], sections: {} };
+    if (item.section) {
+      groups[item.group].sections[item.section] = groups[item.group].sections[item.section] || [];
+      groups[item.group].sections[item.section].push(item);
+    } else {
+      groups[item.group].items.push(item);
+    }
+  });
+
+  const activeMod = document.querySelector('.nav-pill.active')?.dataset?.mod || 'overview';
+  const activeItemObj = visibleItems.find(i => i.key === activeMod);
+  const activeSectionKey = activeItemObj?.section
+    ? `${activeItemObj.group}__${activeItemObj.section}`
+    : '';
+  const sectionKeys = Object.entries(groups).flatMap(([group, groupData]) =>
+    Object.keys(groupData.sections).map(section => `${group}__${section}`)
+  );
+  const openSection = activeSectionKey || (sectionKeys.includes(ACTIVE_SIDEBAR_SECTION) ? ACTIVE_SIDEBAR_SECTION : '');
+  const renderModuleLink = item => `
+    <button onclick="switchModule('${item.key}')" data-mod="${item.key}"
+      class="nav-pill ${item.key === activeMod ? 'active' : ''} w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800/70 transition">
+      ${icon(item.key)}<span class="truncate">${item.label}</span>
+    </button>
+  `;
+
+  document.getElementById('dynamicSidebarMenu').innerHTML = Object.entries(groups).map(([group, groupData]) => `
+    <section class="space-y-1">
+      <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">${group}</p>
+      ${groupData.items.map(renderModuleLink).join('')}
+      ${Object.entries(groupData.sections).map(([section, items]) => {
+        const sectionKey = `${group}__${section}`;
+        const safeId = 'acc-section-' + sectionKey.replace(/[^a-zA-Z0-9]/g, '_');
+        const isOpen = sectionKey === openSection;
+        return `
+          <div class="rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/30 overflow-hidden">
+            <button type="button" onclick="toggleSidebarSection('${sectionKey.replace(/'/g, "\\'")}')"
+              class="w-full flex items-center justify-between px-3 py-2.5 text-left text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 transition">
+              <span class="truncate">${section}</span>
+              <i id="${safeId}-icon" class="ti ti-chevron-down sidebar-acc-icon text-xs transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}"></i>
+            </button>
+            <div id="${safeId}" class="sidebar-acc-body ${isOpen ? '' : 'hidden'} px-1.5 pb-2 pt-0.5 space-y-1">
+              ${items.map(renderModuleLink).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </section>
   `).join('');
 }
 
@@ -278,20 +361,43 @@ function applyActionButtonVisibility() {
   toggle('btnAddInfoBoard', canFull('info_board'));
   toggle('btnAddPegawai', canFull('data_pegawai'));
   toggle('btnAddArsipSdm', canFull('arsip_sdm'));
+  toggle('btnAddProduksiPaket', canFull('produksi_paket'));
   toggle('btnAddDialog', canFull('dialog'));
   toggle('btnAddSiaran', canFull('jadwal_siaran'));
   toggle('btnAddProgramSiaran', canFull('program_siaran'));
   toggle('btnAddKonten', canFull('konten'));
+  toggle('btnAddSocmed', canFull('socmed_analytics'));
   toggle('btnAddTmb', canFull('jadwal_tmb'));
+  toggle('btnAddMonitoringProd', canFull('monitoring_produksi'));
   toggle('btnAddBarang', canFull('master_barang'));
+  toggle('btnAddPemeliharaanHeader', canFull('pemeliharaan_aset'));
+  toggle('btnAddPemeliharaanDetail', canFull('pemeliharaan_aset'));
+  toggle('btnAddBmnArsip', canFull('bmn_arsip'));
+  toggle('btnAddAsetTutupBuku', canFull('aset_tutup_buku'));
+  toggle('btnAddCalbmn', canFull('aset_calbmn'));
+  toggle('btnAddWasdal', canFull('aset_wasdal'));
+  toggle('btnAddRkbmn', canFull('aset_rkbmn'));
+  toggle('btnAddManRisiko', canFull('aset_manajemen_risiko'));
+  toggle('btnAddSisporja', canFull('aset_sisporja'));
   toggle('btnAddPersediaan', canFull('master_persediaan'));
-  toggle('btnAddStokMasuk', canFull('persediaan_masuk'));
-  toggle('btnAddStokKeluar', canFull('persediaan_keluar'));
+  toggle('btnAddStokTransaksi', canFull('master_persediaan'));
+  toggle('btnModalAddTrxForItem', canFull('master_persediaan'));
+  toggle('btnAddPersediaanTutupBuku', canFull('persediaan_tutup_buku'));
+  toggle('btnAddPipk', canFull('persediaan_pipk'));
   toggle('btnAddRuangan', canFull('master_ruangan'));
 }
 
 function switchModule(modKey) {
   document.querySelectorAll('.nav-pill').forEach(b => b.classList.toggle('active', b.dataset.mod === modKey));
+  const itemObj = MODULE_NAV_CONFIG.find(i => i.key === modKey);
+  if (itemObj?.section) {
+    const sectionKey = `${itemObj.group}__${itemObj.section}`;
+    const safeId = 'acc-section-' + sectionKey.replace(/[^a-zA-Z0-9]/g, '_');
+    const body = document.getElementById(safeId);
+    if (body && body.classList.contains('hidden')) {
+      toggleSidebarSection(sectionKey);
+    }
+  }
   document.querySelectorAll('.mod-section').forEach(s => s.classList.add('hidden'));
   document.getElementById(`mod-${modKey}`)?.classList.remove('hidden');
   if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full');
@@ -306,15 +412,28 @@ function renderAllModules() {
   renderInfoBoard();
   if (canView('data_pegawai')) renderDataPegawai();
   if (canView('arsip_sdm')) renderArsipSdm();
+  if (canView('produksi_paket')) renderProduksiPaket();
   if (canView('dialog')) renderDialogModule();
   if (canView('jadwal_siaran')) renderJadwalSiaran();
   if (canView('program_siaran')) renderProgramSiaran();
   if (canView('konten')) renderKonten();
+  if (canView('bestcut_monitoring')) renderBestcutMonitoring();
+  if (canView('socmed_analytics')) renderSocmedAnalytics();
   if (canView('jadwal_tmb')) renderJadwalTmb();
+  if (canView('monitoring_produksi')) renderMonitoringProduksi();
   if (canView('master_barang')) renderMasterBarang();
+  if (canView('bast_otomatis')) initBastSelectors();
+  if (canView('pemeliharaan_aset')) renderPemeliharaanAset();
+  if (canView('bmn_arsip')) renderBmnArsip();
+  if (canView('aset_tutup_buku')) renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku');
+  if (canView('aset_calbmn')) renderBmnDokumenView('Aset', 'CALBMN', 'filterCalbmnPeriode', 'tbodyCalbmn', 'pagCalbmn');
+  if (canView('aset_wasdal')) renderBmnDokumenView('Aset', 'WASDAL', 'filterWasdalPeriode', 'tbodyWasdal', 'pagWasdal');
+  if (canView('aset_rkbmn')) renderBmnDokumenView('Aset', 'RKBMN', 'filterRkbmnPeriode', 'tbodyRkbmn', 'pagRkbmn');
+  if (canView('aset_manajemen_risiko')) renderBmnDokumenView('Aset', 'Manajemen Risiko', 'filterManRisikoPeriode', 'tbodyManRisiko', 'pagManRisiko');
+  if (canView('aset_sisporja')) renderBmnDokumenView('Aset', 'SISPORJA', 'filterSisporjaPeriode', 'tbodySisporja', 'pagSisporja');
   if (canView('master_persediaan')) renderMasterPersediaan();
-  if (canView('persediaan_masuk')) renderPersediaanMasuk();
-  if (canView('persediaan_keluar')) renderPersediaanKeluar();
+  if (canView('persediaan_tutup_buku')) renderBmnDokumenView('Persediaan', 'Tutup Buku', 'filterPersediaanTutupBukuPeriode', 'tbodyPersediaanTutupBuku', 'pagPersediaanTutupBuku');
+  if (canView('persediaan_pipk')) renderBmnDokumenView('Persediaan', 'PIPK', 'filterPipkPeriode', 'tbodyPipk', 'pagPipk');
   if (canView('master_ruangan')) renderMasterRuangan();
   if (canFull('manage_users')) renderManageUsers();
   if (canFull('manage_modules')) renderManageModules();
@@ -777,12 +896,18 @@ function renderJadwalTmb() {
 
 function renderMasterBarang() {
   const q = (document.getElementById('searchBarang')?.value || '').toLowerCase();
-  const filtered = (DATA.assets || []).filter(a => Object.values(a).some(v => String(v).toLowerCase().includes(q)));
+  const cat = (document.getElementById('filterAsetKategori')?.value || 'all').toLowerCase();
+  const filtered = (DATA.assets || []).filter(a => {
+    const matchText = Object.values(a).some(v => String(v).toLowerCase().includes(q));
+    const matchCat = cat === 'all' || String(a['Tindak Lanjut'] || '').toLowerCase().includes(cat);
+    return matchText && matchCat;
+  });
   const rows = paginateArray('barang', filtered, 'pagBarang', 'renderMasterBarang');
   document.getElementById('tbodyBarang').innerHTML = rows.map(a => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
       <td class="py-3 px-3 font-bold">${a['Kode Ruang'] || '-'} <span class="block text-[10px] text-slate-400">${a['Nama Ruangan'] || ''}</span></td>
       <td class="py-3 px-3 font-mono text-slate-500">${a['Nomor Kode Barang'] || '-'}</td>
+      <td class="py-3 px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400">${a.Tipe || '-'}</td>
       <td class="py-3 px-3 font-bold">${a['Nama Barang'] || '-'}</td>
       <td class="py-3 px-3">${a['Merk Model'] || '-'}</td>
       <td class="py-3 px-3">${a.Tahun || '-'}</td>
@@ -793,54 +918,198 @@ function renderMasterBarang() {
   `).join('');
 }
 
+let CURRENT_STOK_ITEM = null;
+
 function renderMasterPersediaan() {
-  const rows = paginateArray('persediaan', DATA.stock_master || [], 'pagPersediaan', 'renderMasterPersediaan');
-  document.getElementById('tbodyPersediaan').innerHTML = rows.map(s => `
-    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs text-slate-400">${s['Kode Barang'] || '-'}</td>
-      <td class="py-3 px-3 font-bold">${s['Nama Barang']}</td>
-      <td class="py-3 px-3 text-slate-400">${s.Unit || '-'}</td>
-      <td class="py-3 px-3 text-right">${s['Stok Awal']}</td>
-      <td class="py-3 px-3 text-right text-emerald-600 font-bold">+${s['Barang Masuk']}</td>
-      <td class="py-3 px-3 text-right text-amber-600 font-bold">-${s['Barang Keluar']}</td>
-      <td class="py-3 px-3 text-right font-extrabold">${s['Stok Akhir']}</td>
-    </tr>
-  `).join('');
+  const q = (document.getElementById('searchPersediaan')?.value || '').toLowerCase();
+  const filtered = (DATA.stock_master || []).filter(s =>
+    String(s['Kode Barang'] || '').toLowerCase().includes(q) ||
+    String(s['Nama Barang'] || '').toLowerCase().includes(q)
+  );
+  const rows = paginateArray('persediaan', filtered, 'pagPersediaan', 'renderMasterPersediaan');
+  document.getElementById('tbodyPersediaan').innerHTML = rows.map(s => {
+    const safeItem = encodeURIComponent(JSON.stringify(s));
+    return `
+      <tr onclick="openStokItemDetailModal(JSON.parse(decodeURIComponent('${safeItem}')))"
+        class="cursor-pointer hover:bg-teal-50/60 dark:hover:bg-slate-800/70 transition">
+        <td class="py-3 px-3 font-mono text-xs text-slate-400">${escapeHtml(s['Kode Barang'] || '-')}</td>
+        <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300 underline decoration-dotted underline-offset-4">${escapeHtml(s['Nama Barang'])}</td>
+        <td class="py-3 px-3 text-slate-400">${escapeHtml(s.Unit || '-')}</td>
+        <td class="py-3 px-3 text-right">${escapeHtml(String(s['Stok Awal']))}</td>
+        <td class="py-3 px-3 text-right text-emerald-600 font-bold">+${escapeHtml(String(s['Barang Masuk']))}</td>
+        <td class="py-3 px-3 text-right text-amber-600 font-bold">-${escapeHtml(String(s['Barang Keluar']))}</td>
+        <td class="py-3 px-3 text-right font-extrabold">${escapeHtml(String(s['Stok Akhir']))}</td>
+        <td class="py-3 px-3 text-right">
+          <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300">Detail Mutasi</span>
+        </td>
+      </tr>
+    `;
+  }).join('') || `<tr><td colspan="8" class="py-8 text-center text-xs text-slate-400">Belum ada data persediaan.</td></tr>`;
 }
 
-function renderPersediaanMasuk() {
-  const q = (document.getElementById('searchStokIn')?.value || '').toLowerCase();
-  const filtered = (DATA.stock_in || []).filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(q)));
-  const rows = paginateArray('stok_in', filtered, 'pagStokIn', 'renderPersediaanMasuk');
-  document.getElementById('tbodyStokIn').innerHTML = rows.map(r => `
-    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 whitespace-nowrap">${r.Tanggal || '-'}</td>
-      <td class="py-3 px-3 text-slate-500">${r['Penanggung Jawab'] || '-'}</td>
-      <td class="py-3 px-3 font-bold">${r['Nama Barang'] || '-'}</td>
-      <td class="py-3 px-3 text-right font-bold text-emerald-600">+${r['Jumlah Masuk'] || 0}</td>
-      <td class="py-3 px-3">${r.Unit || '-'}</td>
-      <td class="py-3 px-3 text-right font-bold">${r.Pcs || r['Jumlah Masuk'] || 0}</td>
-      <td class="py-3 px-3 text-xs text-slate-400">${r.Keterangan || '-'}</td>
-    </tr>
-  `).join('');
+function openStokItemDetailModal(itemObj) {
+  CURRENT_STOK_ITEM = itemObj;
+  document.getElementById('detailStokKode').textContent = itemObj['Kode Barang'] || 'PERSEDIAAN';
+  document.getElementById('detailStokNama').textContent = itemObj['Nama Barang'] || 'Detail Persediaan';
+  document.getElementById('detailStokSummary').textContent =
+    `Stok Awal: ${itemObj['Stok Awal']} ${itemObj.Unit || ''}  •  Masuk: +${itemObj['Barang Masuk']}  •  Keluar: -${itemObj['Barang Keluar']}  •  Stok Akhir: ${itemObj['Stok Akhir']} ${itemObj.Unit || ''}`;
+
+  renderStokItemDetailRows();
+  const m = document.getElementById('stokItemDetailModal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
 }
 
-function renderPersediaanKeluar() {
-  const q = (document.getElementById('searchStokOut')?.value || '').toLowerCase();
-  const filtered = (DATA.stock_out || []).filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(q)));
-  const rows = paginateArray('stok_out', filtered, 'pagStokOut', 'renderPersediaanKeluar');
-  document.getElementById('tbodyStokOut').innerHTML = rows.map(r => `
-    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 whitespace-nowrap">${r.Tanggal || '-'}</td>
-      <td class="py-3 px-3 font-bold">${r['Nama Barang'] || '-'}</td>
-      <td class="py-3 px-3 text-slate-500">${r.Bidang || '-'}</td>
-      <td class="py-3 px-3 font-semibold">${r['Penerima Barang'] || '-'}</td>
-      <td class="py-3 px-3 text-right font-bold text-amber-600">-${r['Jumlah Keluar'] || 0}</td>
-      <td class="py-3 px-3">${r.Unit || '-'}</td>
-      <td class="py-3 px-3 text-right font-bold">${r.Pcs || r['Jumlah Keluar'] || 0}</td>
-      <td class="py-3 px-3 text-xs text-slate-400">${r.Keterangan || '-'}</td>
-    </tr>
-  `).join('');
+function closeStokItemDetailModal() {
+  CURRENT_STOK_ITEM = null;
+  const m = document.getElementById('stokItemDetailModal');
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+}
+
+function renderStokItemDetailRows() {
+  if (!CURRENT_STOK_ITEM) return;
+  const targetName = String(CURRENT_STOK_ITEM['Nama Barang'] || '').trim().toLowerCase();
+  const editable = canUpdate('master_persediaan');
+  const deletable = canFull('master_persediaan');
+
+  const txList = (DATA.stock_details || []).filter(tx =>
+    String(tx['Nama Barang'] || '').trim().toLowerCase() === targetName
+  );
+
+  const tbody = document.getElementById('tbodyStokItemDetails');
+  tbody.innerHTML = txList.map(tx => {
+    const isMasuk = String(tx['Jenis'] || '').toLowerCase() !== 'keluar';
+    const safeTx = encodeURIComponent(JSON.stringify(tx));
+    return `
+      <tr class="hover:bg-slate-100/70 dark:hover:bg-slate-800/50 transition">
+        <td class="py-2.5 px-3 font-mono text-slate-400">${escapeHtml(tx['ID Transaksi'] || '-')}</td>
+        <td class="py-2.5 px-3 whitespace-nowrap font-semibold">${escapeHtml(tx.Tanggal || '-')}</td>
+        <td class="py-2.5 px-3">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isMasuk ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">
+            ${isMasuk ? 'Masuk' : 'Keluar'}
+          </span>
+        </td>
+        <td class="py-2.5 px-3 text-right font-extrabold ${isMasuk ? 'text-emerald-600' : 'text-amber-600'}">
+          ${isMasuk ? '+' : '-'}${escapeHtml(String(tx.Jumlah || tx.Pcs || 0))}
+        </td>
+        <td class="py-2.5 px-3 text-slate-400">${escapeHtml(tx.Unit || '-')}</td>
+        <td class="py-2.5 px-3">${escapeHtml(tx.Bidang || '-')}</td>
+        <td class="py-2.5 px-3 font-semibold">${escapeHtml(tx['Penanggung Jawab'] || '-')}</td>
+        <td class="py-2.5 px-3 text-slate-400">${escapeHtml(tx.Keterangan || '-')}</td>
+        <td class="py-2.5 px-3 text-right whitespace-nowrap space-x-1">
+          ${editable && tx._row_num ? `<button onclick="openStokTransaksiModal(JSON.parse(decodeURIComponent('${safeTx}')))" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 font-bold">Edit</button>` : ''}
+          ${deletable && tx._row_num ? `<button onclick="deleteStokDetailRow(${tx._row_num}, '${escapeHtml(tx['ID Transaksi'] || 'transaksi ini')}')" class="px-2 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold">Hapus</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('') || `<tr><td colspan="9" class="py-8 text-center text-xs text-slate-400">Belum ada riwayat transaksi untuk barang ini.</td></tr>`;
+}
+
+function openStokTransaksiForCurrentItem() {
+  openStokTransaksiModal(null, CURRENT_STOK_ITEM ? CURRENT_STOK_ITEM['Nama Barang'] : null);
+}
+
+function openStokTransaksiModal(existingTx = null, presetItemName = null) {
+  const sel = document.getElementById('stokTrxBarangSelect');
+  const items = DATA.stock_master || [];
+  sel.innerHTML = items.map(it =>
+    `<option value="${escapeHtml(it['Nama Barang'])}" data-kode="${escapeHtml(it['Kode Barang'] || '')}" data-unit="${escapeHtml(it.Unit || 'Pcs')}">${escapeHtml(it['Kode Barang'] || '-')} — ${escapeHtml(it['Nama Barang'])}</option>`
+  ).join('');
+
+  document.getElementById('stokTrxModalTitle').textContent = existingTx ? 'Edit Transaksi Persediaan' : 'Catat Transaksi Persediaan';
+  document.getElementById('stokTrxRowNum').value = existingTx?._row_num || '';
+  document.getElementById('stokTrxId').value = existingTx?.['ID Transaksi'] || '';
+  document.getElementById('stokTrxTanggal').value = existingTx?.Tanggal || new Date().toISOString().slice(0, 10);
+  document.getElementById('stokTrxJenis').value = existingTx?.['Jenis'] || 'Masuk';
+
+  if (existingTx?.['Nama Barang']) {
+    sel.value = existingTx['Nama Barang'];
+  } else if (presetItemName) {
+    sel.value = presetItemName;
+  }
+
+  document.getElementById('stokTrxJumlah').value = existingTx?.Jumlah || '';
+  document.getElementById('stokTrxUnit').value = existingTx?.Unit || sel.selectedOptions[0]?.dataset?.unit || 'Pcs';
+  document.getElementById('stokTrxPcs').value = existingTx?.Pcs || existingTx?.Jumlah || '';
+  document.getElementById('stokTrxBidang').value = existingTx?.Bidang || '';
+  document.getElementById('stokTrxPic').value = existingTx?.['Penanggung Jawab'] || '';
+  document.getElementById('stokTrxKet').value = existingTx?.Keterangan || '';
+
+  const m = document.getElementById('stokTransaksiModal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+}
+
+function closeStokTransaksiModal() {
+  const m = document.getElementById('stokTransaksiModal');
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+}
+
+function syncStokTrxItemMeta() {
+  const sel = document.getElementById('stokTrxBarangSelect');
+  const unit = sel?.selectedOptions[0]?.dataset?.unit;
+  if (unit) document.getElementById('stokTrxUnit').value = unit;
+}
+
+async function submitStokTransaksi(e) {
+  e.preventDefault();
+  const rowNum = document.getElementById('stokTrxRowNum').value;
+  const sel = document.getElementById('stokTrxBarangSelect');
+  const kodeBarang = sel?.selectedOptions[0]?.dataset?.kode || '';
+  const namaBarang = sel?.value || '';
+
+  const payload = {
+    'ID Transaksi': document.getElementById('stokTrxId').value,
+    'Tanggal': document.getElementById('stokTrxTanggal').value,
+    'Jenis': document.getElementById('stokTrxJenis').value,
+    'Kode Barang': kodeBarang,
+    'Nama Barang': namaBarang,
+    'Jumlah': document.getElementById('stokTrxJumlah').value,
+    'Unit': document.getElementById('stokTrxUnit').value,
+    'Pcs': document.getElementById('stokTrxPcs').value,
+    'Bidang': document.getElementById('stokTrxBidang').value,
+    'Penanggung Jawab': document.getElementById('stokTrxPic').value,
+    'Keterangan': document.getElementById('stokTrxKet').value,
+  };
+
+  const url = rowNum ? '/api/stok-detail/update' : '/api/add/DB_Stok_Detail';
+  const body = rowNum ? { row_num: rowNum, updates: payload } : payload;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const out = await res.json();
+  showToast(out.message, out.ok ? 'success' : 'error');
+  if (out.ok) {
+    closeStokTransaksiModal();
+    await loadDashboard();
+    if (CURRENT_STOK_ITEM) {
+      const refreshed = (DATA.stock_master || []).find(s => s['Nama Barang'] === CURRENT_STOK_ITEM['Nama Barang']);
+      if (refreshed) openStokItemDetailModal(refreshed);
+    }
+  }
+}
+
+async function deleteStokDetailRow(rowNum, label) {
+  if (!confirm(`Hapus transaksi ${label}?`)) return;
+  const res = await fetch('/api/delete/DB_Stok_Detail', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ row_num: rowNum })
+  });
+  const out = await res.json();
+  showToast(out.message, out.ok ? 'success' : 'error');
+  if (out.ok) {
+    await loadDashboard();
+    if (CURRENT_STOK_ITEM) {
+      const refreshed = (DATA.stock_master || []).find(s => s['Nama Barang'] === CURRENT_STOK_ITEM['Nama Barang']);
+      if (refreshed) openStokItemDetailModal(refreshed);
+    }
+  }
 }
 
 function renderMasterRuangan() {
@@ -997,11 +1266,18 @@ const SCHEMAS = {
   DB_Program: { title: 'Tambah Program Siaran', fields: ['Kode Program', 'Programa', 'Nama Program', 'Hari', 'Jam', 'Format', 'Produser', 'Status'] },
   DB_Konten: { title: 'Tambah Konten (Planner)', fields: ['Tanggal Tayang', 'Platform', 'Akun', 'Judul Konten', 'Jenis', 'Divisi', 'PIC', 'Status', 'Link Asset'] },
   DB_Jadwal_TMB: { title: 'Tambah Jadwal TMB', fields: ['Tanggal', 'Shift', 'Lokasi Pemancar', 'Teknisi TMB', 'Tugas', 'Status'] },
-  DB_Aset: { title: 'Tambah Master Barang', fields: ['Nomor Kode Barang', 'Kode Ruang', 'Nama Barang', 'Merk Model', 'Tahun', 'NUP', 'Kondisi', 'Tindak Lanjut', 'Keterangan'] },
+  DB_Aset: { title: 'Tambah Persediaan', fields: ['Nomor Kode Barang', 'Kode Ruang', 'Tipe', 'Nama Barang', 'Merk Model', 'Tahun', 'NUP', 'Kondisi', 'Tindak Lanjut', 'Keterangan'] },
   DB_Ruangan: { title: 'Tambah Master Ruangan', fields: ['Nomor Ruangan', 'Nama Ruangan', 'Lokasi', 'NIP Penanggung Jawab', 'Nama', 'Jabatan'] },
   DB_Stok_Master: { title: 'Tambah Master Persediaan', fields: ['Kode Barang', 'Nama Barang', 'Unit', 'Stok Awal', 'Keterangan'] },
   DB_Stok_Masuk: { title: 'Catat Persediaan Masuk', fields: ['Tanggal', 'Penanggung Jawab', 'Nama Barang', 'Jumlah Masuk', 'Unit', 'Pcs', 'Keterangan'] },
   DB_Stok_Keluar: { title: 'Catat Persediaan Keluar', fields: ['Tanggal', 'Nama Barang', 'Bidang', 'Penerima Barang', 'Jumlah Keluar', 'Unit', 'Pcs', 'Keterangan'] },
+  DB_Produksi_Paket: { title: 'Tambah Produksi Paket', fields: ['Tanggal', 'Program', 'Judul Paket', 'Jenis Paket', 'Produser', 'Reporter', 'Editor', 'Status', 'Link File'] },
+  DB_Socmed_Analytics: { title: 'Input Laporan Analitik', fields: ['Periode', 'Platform', 'Akun', 'Followers', 'Reach', 'Engagement', 'Top Konten', 'Catatan'] },
+  DB_Monitoring_Produksi: { title: 'Catat Monitoring Produksi', fields: ['Tanggal', 'Program', 'Studio', 'Operator TMB', 'Kualitas Audio', 'Stream Status', 'Kendala Teknis', 'Tindak Lanjut'] },
+  DB_Pemeliharaan_Header: { title: 'Tambah Jadwal Pemeliharaan Aset', fields: ['Tanggal', 'Judul Pemeliharaan', 'Lokasi', 'Teknisi Vendor', 'Status', 'Keterangan'] },
+  DB_Pemeliharaan_Detail: { title: 'Tambah Detail Aset Dipelihara', fields: ['ID Jadwal', 'Nomor Kode Barang', 'Nama Barang', 'NUP', 'Kondisi Sebelum', 'Tindakan', 'Kondisi Sesudah', 'Biaya'] },
+  DB_BMN_Arsip: { title: 'Tambah Arsip BMN (Surat & Nodin)', fields: ['Nomor Dokumen', 'Jenis', 'Judul Dokumen', 'Tanggal', 'Keterangan', 'Link'] },
+  DB_BMN_Dokumen: { title: 'Upload Dokumen Pelaporan BMN', fields: ['Group', 'Sub Menu', 'Periode', 'Kategori Item', 'Judul Dokumen', 'Tanggal Upload', 'Link File', 'Keterangan'] },
 };
 
 function dateValueForInput(value) {
@@ -1119,25 +1395,6 @@ async function submitGenericRecord(e) {
   if (out) showToast(out.message, out.ok ? 'success' : 'error');
 }
 
-function openInitModal() { const m = document.getElementById('initModal'); m.classList.remove('hidden'); m.classList.add('flex'); }
-function closeInitModal() { const m = document.getElementById('initModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
-async function runInitData() {
-  const btn = document.getElementById('btnRunInit');
-  btn.disabled = true;
-  const include_samples = document.getElementById('initIncludeSamples').checked;
-  try {
-    const out = await processWithLoading(async () => {
-      const res = await fetch('/api/init-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ include_samples }) });
-      const out = await res.json();
-      if (out.ok) { closeInitModal(); await loadDashboard(); }
-      return out;
-    }, 'Gagal menjalankan inisialisasi');
-    if (out) showToast(out.message, out.ok ? 'success' : 'error');
-  } finally {
-    btn.disabled = false;
-  }
-}
-
 async function refreshAll() {
   const result = await processWithLoading(async () => {
     const response = await fetch('/api/refresh', { method: 'POST' });
@@ -1155,6 +1412,291 @@ async function logoutUser() {
     if (!result.ok) throw new Error(result.message || 'Logout gagal.');
     window.location.href = '/';
   }, 'Gagal keluar');
+}
+
+
+// =========================================================
+// NEW MODULES: PRODUKSI PAKET, BESTCUT, SOCMED, TMB MON, BMN TOOLS
+// =========================================================
+let PAKET_VIEW = 'table';
+let PAKET_CAL_MONTH = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+function setPaketView(mode) {
+  PAKET_VIEW = mode;
+  document.getElementById('paketTableView')?.classList.toggle('hidden', mode !== 'table');
+  document.getElementById('paketCalendarView')?.classList.toggle('hidden', mode !== 'calendar');
+  renderProduksiPaket();
+}
+
+function changePaketMonth(delta) {
+  PAKET_CAL_MONTH = new Date(PAKET_CAL_MONTH.getFullYear(), PAKET_CAL_MONTH.getMonth() + delta, 1);
+  renderProduksiPaket();
+}
+
+function renderProduksiPaket() {
+  const q = (document.getElementById('searchProduksiPaket')?.value || '').toLowerCase();
+  const filtered = (DATA.produksi_paket || []).filter(p => Object.values(p).some(v => String(v).toLowerCase().includes(q)));
+
+  if (PAKET_VIEW === 'calendar') {
+    const year = PAKET_CAL_MONTH.getFullYear();
+    const month = PAKET_CAL_MONTH.getMonth();
+    const titleEl = document.getElementById('paketCalendarMonth');
+    if (titleEl) titleEl.textContent = PAKET_CAL_MONTH.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    let cells = '';
+    for (let i = 0; i < firstDay; i++) {
+      cells += `<div class="min-h-[96px] p-2 border-r border-b border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/30"></div>`;
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayItems = filtered.filter(p => String(p.Tanggal || '').startsWith(iso));
+      cells += `
+        <div class="min-h-[96px] p-2 border-r border-b border-slate-200 dark:border-slate-700 space-y-1">
+          <div class="text-[11px] font-extrabold text-slate-400">${d}</div>
+          ${dayItems.map(it => `<div class="px-2 py-1 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-800 dark:text-teal-200 text-[10px] font-bold truncate" title="${escapeHtml(it['Judul Paket'])}">${escapeHtml(it.Program)}: ${escapeHtml(it['Judul Paket'])}</div>`).join('')}
+        </div>`;
+    }
+    const grid = document.getElementById('paketCalendarGrid');
+    if (grid) grid.innerHTML = cells;
+    return;
+  }
+
+  const rows = paginateArray('produksi_paket', filtered, 'pagProduksiPaket', 'renderProduksiPaket');
+  const tbody = document.getElementById('tbodyProduksiPaket');
+  if (!tbody) return;
+  tbody.innerHTML = rows.map(p => `
+    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+      <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(p.ID || '-')}</td>
+      <td class="py-3 px-3 font-bold whitespace-nowrap">${escapeHtml(p.Tanggal || '-')}</td>
+      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(p.Program || '-')}</td>
+      <td class="py-3 px-3 font-extrabold">${escapeHtml(p['Judul Paket'] || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(p['Jenis Paket'] || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(p.Produser || '-')}</td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-sky-50 dark:bg-sky-950 text-sky-700">${escapeHtml(p.Status || '-')}</span></td>
+      <td class="py-3 px-3">${p['Link File'] ? `<a href="${escapeHtml(p['Link File'])}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderBestcutMonitoring() {
+  const filter = document.getElementById('filterBestcutStatus')?.value || 'all';
+  const allDialogs = DATA.dialogs || [];
+  const withBestcut = allDialogs.filter(d => String(d.Bestcut || '').trim().startsWith('http'));
+  if (document.getElementById('statBestcutTotal')) document.getElementById('statBestcutTotal').textContent = allDialogs.length;
+  if (document.getElementById('statBestcutDone')) document.getElementById('statBestcutDone').textContent = withBestcut.length;
+  if (document.getElementById('statBestcutPending')) document.getElementById('statBestcutPending').textContent = allDialogs.length - withBestcut.length;
+
+  const filtered = allDialogs.filter(d => {
+    const hasLink = String(d.Bestcut || '').trim().startsWith('http');
+    if (filter === 'ready') return hasLink;
+    if (filter === 'missing') return !hasLink;
+    return true;
+  });
+  const rows = paginateArray('bestcut', filtered, 'pagBestcut', 'renderBestcutMonitoring');
+  const tbody = document.getElementById('tbodyBestcut');
+  if (!tbody) return;
+  tbody.innerHTML = rows.map(d => {
+    const hasLink = String(d.Bestcut || '').trim().startsWith('http');
+    return `
+      <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+        <td class="py-3 px-3 text-xs font-bold whitespace-nowrap">${escapeHtml(d.Tanggal || '-')}</td>
+        <td class="py-3 px-3 text-xs font-bold text-sky-600">${escapeHtml(d.Program || '-')}</td>
+        <td class="py-3 px-3 text-xs font-semibold max-w-xs">${escapeHtml(d.Topik || '-')}</td>
+        <td class="py-3 px-3 text-xs">${escapeHtml(d.Narasumber || '-')}</td>
+        <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${hasLink ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${hasLink ? 'Tersedia' : 'Belum Upload'}</span></td>
+        <td class="py-3 px-3">${hasLink ? `<a href="${escapeHtml(d.Bestcut)}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka Bestcut ↗</a>` : '-'}</td>
+        <td class="py-3 px-3 text-right">${d._row_num ? `<button onclick='openDialogEdit(${JSON.stringify(d)})' class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition">Set Link</button>` : '-'}</td>
+      </tr>`;
+  }).join('');
+}
+
+function renderSocmedAnalytics() {
+  const list = DATA.socmed_analytics || [];
+  const cardsEl = document.getElementById('socmedCardsGrid');
+  if (cardsEl) {
+    cardsEl.innerHTML = list.slice(0, 4).map(s => `
+      <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-1">
+        <div class="flex justify-between text-xs font-bold text-teal-600"><span>${escapeHtml(s.Platform)}</span><span>${escapeHtml(s.Periode)}</span></div>
+        <p class="text-sm font-extrabold">${escapeHtml(s.Akun)}</p>
+        <p class="text-2xl font-extrabold pt-1">${escapeHtml(s.Followers)} <span class="text-xs font-normal text-slate-400">followers</span></p>
+        <p class="text-[11px] text-slate-400">Reach: ${escapeHtml(s.Reach)} • ER: ${escapeHtml(s.Engagement)}</p>
+      </div>
+    `).join('');
+  }
+  const rows = paginateArray('socmed', list, 'pagSocmed', 'renderSocmedAnalytics');
+  const tbody = document.getElementById('tbodySocmed');
+  if (!tbody) return;
+  tbody.innerHTML = rows.map(s => `
+    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+      <td class="py-3 px-3 font-bold">${escapeHtml(s.Periode || '-')}</td>
+      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(s.Platform || '-')}</td>
+      <td class="py-3 px-3 font-mono text-xs">${escapeHtml(s.Akun || '-')}</td>
+      <td class="py-3 px-3 text-right font-bold">${escapeHtml(s.Followers || '0')}</td>
+      <td class="py-3 px-3 text-right">${escapeHtml(s.Reach || '0')}</td>
+      <td class="py-3 px-3 text-right font-bold text-emerald-600">${escapeHtml(s.Engagement || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(s['Top Konten'] || '-')}</td>
+      <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(s.Catatan || '-')}</td>
+    </tr>
+  `).join('');
+}
+
+function renderMonitoringProduksi() {
+  const rows = paginateArray('mon_prod', DATA.monitoring_produksi || [], 'pagMonitoringProd', 'renderMonitoringProduksi');
+  const tbody = document.getElementById('tbodyMonitoringProd');
+  if (!tbody) return;
+  tbody.innerHTML = rows.map(m => `
+    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+      <td class="py-3 px-3 font-bold whitespace-nowrap">${escapeHtml(m.Tanggal || '-')}</td>
+      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(m.Program || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(m.Studio || '-')}</td>
+      <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(m['Operator TMB'] || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(m['Kualitas Audio'] || '-')}</td>
+      <td class="py-3 px-3 text-xs font-bold text-emerald-600">${escapeHtml(m['Stream Status'] || '-')}</td>
+      <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(m['Kendala Teknis'] || '-')} (${escapeHtml(m['Tindak Lanjut'] || '-')})</td>
+    </tr>
+  `).join('');
+}
+
+function initBastSelectors() {
+  const rSel = document.getElementById('bastRuanganSelect');
+  const aSel = document.getElementById('bastAsetSelect');
+  const pSel = document.getElementById('bastPegawaiSelect');
+  if (!rSel || !aSel || !pSel) return;
+
+  rSel.innerHTML = (DATA.rooms || []).map((r, i) => `<option value="${i}">${escapeHtml(r['Nomor Ruangan'])} — ${escapeHtml(r['Nama Ruangan'])}</option>`).join('');
+  aSel.innerHTML = (DATA.assets || []).map((a, i) => `<option value="${i}">${escapeHtml(a['Nomor Kode Barang'])} • ${escapeHtml(a['Nama Barang'])} (NUP ${escapeHtml(a.NUP)})</option>`).join('');
+  pSel.innerHTML = (DATA.employees || []).map((e, i) => `<option value="${i}">${escapeHtml(e['Nama Pegawai'])} (${escapeHtml(e.NIP)})</option>`).join('');
+  updateBastPreview();
+}
+
+function updateBastPreview() {
+  const r = (DATA.rooms || [])[document.getElementById('bastRuanganSelect')?.value || 0] || {};
+  const a = (DATA.assets || [])[document.getElementById('bastAsetSelect')?.value || 0] || {};
+  const e = (DATA.employees || [])[document.getElementById('bastPegawaiSelect')?.value || 0] || {};
+  const nomor = document.getElementById('bastNomor')?.value || 'BAST-001/BMN/RRI-MMJ/2026';
+
+  if (document.getElementById('prevBastNomor')) document.getElementById('prevBastNomor').textContent = `Nomor: ${nomor}`;
+  if (document.getElementById('prevBastPenerima')) document.getElementById('prevBastPenerima').textContent = e['Nama Pegawai'] || '-';
+  if (document.getElementById('prevBastNip')) document.getElementById('prevBastNip').textContent = `NIP: ${e.NIP || '-'}`;
+  if (document.getElementById('prevBastBody')) {
+    document.getElementById('prevBastBody').innerHTML = `
+      Pada hari ini telah dilakukan serah terima penggunaan Barang Milik Negara (BMN) pada ruangan <strong>${escapeHtml(r['Nama Ruangan'] || '-')} (${escapeHtml(r['Nomor Ruangan'] || '-')})</strong> berupa:<br><br>
+      • <strong>Tipe / Kategori Aset:</strong> ${escapeHtml(a.Tipe || '-')}<br>
+      • <strong>Nama Barang:</strong> ${escapeHtml(a['Nama Barang'] || '-')} (${escapeHtml(a['Merk Model'] || '-')})<br>
+      • <strong>Kode Barang / NUP:</strong> ${escapeHtml(a['Nomor Kode Barang'] || '-')} / NUP ${escapeHtml(a.NUP || '-')}<br>
+      • <strong>Kondisi:</strong> ${escapeHtml(a.Kondisi || 'Baik')}<br><br>
+      Barang tersebut diserahkan kepada <strong>${escapeHtml(e['Nama Pegawai'] || '-')}</strong> (${escapeHtml(e.Jabatan || '-')}) untuk dipergunakan dan dipelihara sesuai ketentuan pengelolaan BMN LPP RRI Mamuju.
+    `;
+  }
+}
+
+function printBastDraft() {
+  const content = document.getElementById('bastPreviewBox')?.innerHTML || '';
+  const win = window.open('', '_blank', 'width=800,height=650');
+  win.document.write(`<html><head><title>Cetak BAST BMN</title><style>body{font-family:sans-serif;padding:40px;line-height:1.6;}</style></head><body>${content}</body></html>`);
+  win.document.close();
+  win.print();
+}
+
+function renderPemeliharaanAset() {
+  const th = document.getElementById('tbodyPemeliharaanHeader');
+  const td = document.getElementById('tbodyPemeliharaanDetail');
+  if (th) {
+    th.innerHTML = (DATA.pemeliharaan_header || []).map(h => `
+      <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+        <td class="py-2.5 px-3 font-mono font-bold text-teal-600">${escapeHtml(h['ID Jadwal'] || '-')}</td>
+        <td class="py-2.5 px-3 font-bold">${escapeHtml(h.Tanggal || '-')}</td>
+        <td class="py-2.5 px-3 font-extrabold">${escapeHtml(h['Judul Pemeliharaan'] || '-')}</td>
+        <td class="py-2.5 px-3">${escapeHtml(h.Lokasi || '-')}</td>
+        <td class="py-2.5 px-3">${escapeHtml(h['Teknisi Vendor'] || '-')}</td>
+        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700">${escapeHtml(h.Status || '-')}</span></td>
+      </tr>
+    `).join('');
+  }
+  if (td) {
+    td.innerHTML = (DATA.pemeliharaan_detail || []).map(d => `
+      <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+        <td class="py-2.5 px-3 font-mono font-bold text-indigo-600">${escapeHtml(d['ID Jadwal'] || '-')}</td>
+        <td class="py-2.5 px-3 font-mono">${escapeHtml(d['Nomor Kode Barang'] || '-')}</td>
+        <td class="py-2.5 px-3 font-bold">${escapeHtml(d['Nama Barang'] || '-')}</td>
+        <td class="py-2.5 px-3">${escapeHtml(d.NUP || '-')}</td>
+        <td class="py-2.5 px-3">${escapeHtml(d['Kondisi Sebelum'] || '-')}</td>
+        <td class="py-2.5 px-3">${escapeHtml(d.Tindakan || '-')}</td>
+        <td class="py-2.5 px-3 font-bold text-emerald-600">${escapeHtml(d['Kondisi Sesudah'] || '-')}</td>
+        <td class="py-2.5 px-3 text-right">${escapeHtml(d.Biaya || '0')}</td>
+      </tr>
+    `).join('');
+  }
+}
+
+function renderBmnArsip() {
+  const rows = paginateArray('bmn_arsip', DATA.bmn_arsip || [], 'pagBmnArsip', 'renderBmnArsip');
+  const tbody = document.getElementById('tbodyBmnArsip');
+  if (!tbody) return;
+  tbody.innerHTML = rows.map(a => `
+    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+      <td class="py-3 px-3 font-mono text-xs font-bold">${escapeHtml(a['Nomor Dokumen'] || '-')}</td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold">${escapeHtml(a.Jenis || '-')}</span></td>
+      <td class="py-3 px-3 font-bold">${escapeHtml(a['Judul Dokumen'] || '-')}</td>
+      <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(a.Tanggal || '-')}</td>
+      <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(a.Keterangan || '-')}</td>
+      <td class="py-3 px-3">${a.Link ? `<a href="${escapeHtml(a.Link)}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
+    </tr>
+  `).join('');
+}
+
+function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
+  openAddModal('DB_BMN_Dokumen');
+  document.getElementById('genericModalTitle').textContent = `Upload Dokumen ${subMenuName || groupName}`;
+  const form = document.getElementById('genericAddForm');
+  if (!form) return;
+
+  const grpInput = form.querySelector('input[name="Group"]');
+  if (grpInput) { grpInput.value = groupName; grpInput.readOnly = true; }
+
+  const subInput = form.querySelector('input[name="Sub Menu"]');
+  if (subInput && subMenuName) { subInput.value = subMenuName; subInput.readOnly = true; }
+
+  const tglInput = form.querySelector('input[name="Tanggal Upload"]');
+  if (tglInput && !tglInput.value) tglInput.value = new Date().toISOString().slice(0, 10);
+
+  if (categoryOptions && categoryOptions.length) {
+    const catInput = form.querySelector('input[name="Kategori Item"]');
+    if (catInput) {
+      const sel = document.createElement('select');
+      sel.name = 'Kategori Item';
+      sel.className = catInput.className;
+      sel.innerHTML = categoryOptions.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('');
+      catInput.replaceWith(sel);
+    }
+  }
+}
+
+function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pagId) {
+  const per = (document.getElementById(filterInputId)?.value || '').toLowerCase();
+  const list = (DATA.bmn_dokumen || []).filter(d => {
+    if (String(d.Group || '').toLowerCase() !== groupName.toLowerCase()) return false;
+    if (String(d['Sub Menu'] || '').toLowerCase() !== subMenuName.toLowerCase()) return false;
+    if (per && !String(d.Periode || '').toLowerCase().includes(per)) return false;
+    return true;
+  });
+
+  const pagKey = `${groupName}_${subMenuName}`.replace(/[^a-zA-Z0-9]/g, '_');
+  const rows = paginateArray(pagKey, list, pagId, () => renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pagId));
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+
+  tbody.innerHTML = rows.map(d => `
+    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+      <td class="py-3 px-3 text-xs font-bold text-teal-600 whitespace-nowrap">${escapeHtml(d.Periode || '-')}</td>
+      <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(d['Kategori Item'] || '-')}</td>
+      <td class="py-3 px-3 font-bold">${escapeHtml(d['Judul Dokumen'] || '-')}</td>
+      <td class="py-3 px-3 text-xs text-slate-400 whitespace-nowrap">${escapeHtml(d['Tanggal Upload'] || '-')}</td>
+      <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(d.Keterangan || '-')}</td>
+      <td class="py-3 px-3">${d['Link File'] ? `<a href="${escapeHtml(d['Link File'])}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="6" class="py-8 text-center text-xs text-slate-400">Belum ada dokumen ${escapeHtml(subMenuName)} yang diunggah.</td></tr>`;
 }
 
 initTheme();

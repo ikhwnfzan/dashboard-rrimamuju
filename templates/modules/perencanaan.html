@@ -1,3 +1,63 @@
+<!-- PERENCANAAN: PRODUKSI PAKET -->
+<section id="mod-produksi_paket" class="mod-section hidden space-y-5">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold">Produksi Paket</h2>
+      <p class="text-xs text-slate-400">Agenda Setting &amp; perencanaan produksi paket siaran (Tabel &amp; Kalender)</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-xs font-bold">
+        <button type="button" id="btnPaketTableView" onclick="setPaketView('table')"
+          class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs transition">Tabel</button>
+        <button type="button" id="btnPaketCalendarView" onclick="setPaketView('calendar')"
+          class="px-3 py-1.5 rounded-lg text-slate-500 dark:text-slate-300 hover:text-slate-900 transition">Kalender</button>
+      </div>
+      <input type="text" id="searchProduksiPaket" oninput="renderProduksiPaket()" placeholder="Cari paket, program..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
+      <button id="btnAddProduksiPaket" onclick="openAddModal('DB_Produksi_Paket')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Tambah Paket
+      </button>
+    </div>
+  </div>
+
+  <div id="paketTableView" class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs sm:text-sm">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-3 px-3">ID</th>
+          <th class="py-3 px-3">Tanggal</th>
+          <th class="py-3 px-3">Program</th>
+          <th class="py-3 px-3">Judul Paket</th>
+          <th class="py-3 px-3">Jenis Paket</th>
+          <th class="py-3 px-3">Produser</th>
+          <th class="py-3 px-3">Status</th>
+          <th class="py-3 px-3">Link File</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyProduksiPaket" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagProduksiPaket" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+
+  <div id="paketCalendarView" class="hidden bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-4">
+    <div class="flex items-center justify-between">
+      <button type="button" onclick="changePaketMonth(-1)" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-200 font-bold">←</button>
+      <h3 id="paketCalendarMonth" class="text-sm font-extrabold capitalize"></h3>
+      <button type="button" onclick="changePaketMonth(1)" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-200 font-bold">→</button>
+    </div>
+    <div class="overflow-x-auto">
+      <div class="min-w-[700px]">
+        <div class="grid grid-cols-7 text-center text-[10px] font-extrabold uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+          <div class="py-2">Min</div><div class="py-2">Sen</div><div class="py-2">Sel</div>
+          <div class="py-2">Rab</div><div class="py-2">Kam</div><div class="py-2">Jum</div><div class="py-2">Sab</div>
+        </div>
+        <div id="paketCalendarGrid" class="grid grid-cols-7 border-l border-slate-200 dark:border-slate-700"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PERENCANAAN: JADWAL DIALOG -->
 <section id="mod-dialog" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
@@ -23,7 +83,7 @@
           <th class="py-3 px-3">Kehadiran</th>
           <th class="py-3 px-3">Status</th>
           <th class="py-3 px-3">Bestcut</th>
-          <th class="py-3 px-3">Aksi</th>
+          <th class="py-3 px-3 text-right">Aksi</th>
         </tr>
       </thead>
       <tbody id="tbodyDialog" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
@@ -32,14 +92,15 @@
   </div>
 </section>
 
+<!-- SIARAN: JADWAL PENYIAR -->
 <section id="mod-jadwal_siaran" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h2 class="text-xl font-extrabold">Jadwal Siaran</h2>
+      <h2 class="text-xl font-extrabold">Jadwal Penyiar</h2>
       <p class="text-xs text-slate-400">Jadwal penyiar &amp; operator siaran Pro 1 / Pro 2</p>
     </div>
     <button id="btnAddSiaran" onclick="openAddModal('DB_Siaran')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      + Tambah Jadwal Siaran
+      + Tambah Jadwal Penyiar
     </button>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
@@ -60,6 +121,7 @@
   </div>
 </section>
 
+<!-- PERENCANAAN: PROGRAM SIARAN -->
 <section id="mod-program_siaran" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>

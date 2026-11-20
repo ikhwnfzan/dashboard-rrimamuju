@@ -66,20 +66,33 @@ def _rows_to_dicts(all_values, include_row_num=False):
 
 
 ALL_MODULES = [
-    {"key": "info_board", "label": "Info Board", "group": "Publik & Internal"},
-    {"key": "data_pegawai", "label": "Data Pegawai", "group": "SDM"},
-    {"key": "arsip_sdm", "label": "Arsip SDM", "group": "SDM"},
-    {"key": "dialog", "label": "Dialog", "group": "Siaran & Perencanaan"},
-    {"key": "jadwal_siaran", "label": "Jadwal Siaran", "group": "Siaran & Perencanaan"},
-    {"key": "program_siaran", "label": "Program Siaran", "group": "Siaran & Perencanaan"},
+    {"key": "info_board", "label": "Info Board", "group": "SDM"},
+    {"key": "data_pegawai", "label": "Employee", "group": "SDM"},
+    {"key": "arsip_sdm", "label": "Archive SDM", "group": "SDM"},
+    {"key": "jadwal_siaran", "label": "Jadwal Penyiar", "group": "Siaran"},
+    {"key": "produksi_paket", "label": "Produksi Paket", "group": "Perencanaan"},
+    {"key": "dialog", "label": "Jadwal Dialog", "group": "Perencanaan"},
+    {"key": "program_siaran", "label": "Program Siaran", "group": "Perencanaan"},
     {"key": "konten", "label": "Content Planner", "group": "KMB"},
+    {"key": "bestcut_monitoring", "label": "Bestcut Monitoring", "group": "KMB"},
+    {"key": "socmed_analytics", "label": "Social Media Analytics", "group": "KMB"},
     {"key": "jadwal_tmb", "label": "Jadwal TMB", "group": "TMB"},
-    {"key": "master_barang", "label": "Master Barang", "group": "BMN"},
-    {"key": "master_persediaan", "label": "Master Persediaan", "group": "BMN"},
-    {"key": "persediaan_masuk", "label": "Persediaan Masuk", "group": "BMN"},
-    {"key": "persediaan_keluar", "label": "Persediaan Keluar", "group": "BMN"},
-    {"key": "master_ruangan", "label": "Master Ruangan", "group": "BMN"},
-    {"key": "bmn_area", "label": "BMN AREA", "group": "BMN"},
+    {"key": "monitoring_produksi", "label": "Monitoring Produksi", "group": "TMB"},
+    {"key": "master_barang", "label": "Master Assets (KIR)", "group": "BMN • ASET"},
+    {"key": "master_ruangan", "label": "Master Room (DBR)", "group": "BMN • ASET"},
+    {"key": "bast_otomatis", "label": "BAST Otomatis", "group": "BMN • ASET"},
+    {"key": "aset_tutup_buku", "label": "Tutup Buku", "group": "BMN • ASET"},
+    {"key": "aset_calbmn", "label": "CALBMN", "group": "BMN • ASET"},
+    {"key": "aset_wasdal", "label": "WASDAL", "group": "BMN • ASET"},
+    {"key": "aset_rkbmn", "label": "RKBMN", "group": "BMN • ASET"},
+    {"key": "aset_manajemen_risiko", "label": "Manajemen Risiko", "group": "BMN • ASET"},
+    {"key": "aset_sisporja", "label": "SISPORJA", "group": "BMN • ASET"},
+    {"key": "bmn_arsip", "label": "Dokumen BMN", "group": "BMN • ASET"},
+    {"key": "pemeliharaan_aset", "label": "Monitoring Pemeliharaan Aset", "group": "BMN • ASET"},
+    {"key": "master_persediaan", "label": "Monitoring Persediaan", "group": "BMN • Persediaan"},
+    {"key": "persediaan_tutup_buku", "label": "Tutup Buku", "group": "BMN • Persediaan"},
+    {"key": "persediaan_form_pengajuan", "label": "Form Pengajuan", "group": "BMN • Persediaan"},
+    {"key": "persediaan_pipk", "label": "PIPK", "group": "BMN • Persediaan"},
     {"key": "manage_users", "label": "Manage User", "group": "Admin"},
     {"key": "manage_modules", "label": "Manage Module", "group": "Admin"},
 ]
@@ -101,45 +114,25 @@ ALL_ROLES = [
 
 DEFAULT_ROLE_PERMISSIONS = {
     "Admin": {m["key"]: "full" for m in ALL_MODULES},
-    "SDM": {
-        "data_pegawai": "full",
-        "arsip_sdm": "full",
-        "info_board": "full",
-    },
-    "Perencanaan": {
-        "info_board": "view",
-        "dialog": "full",
-        "jadwal_siaran": "full",
-        "program_siaran": "full",
-    },
-    "KMB": {
-        "info_board": "view",
-        "konten": "full",
-    },
-    "Siaran": {
-        "info_board": "view",
-        "jadwal_siaran": "view",
-        "dialog": "update",
-        "program_siaran": "view",
-    },
-    "TMB": {
-        "info_board": "view",
-        "jadwal_tmb": "view",
-    },
+    "SDM": {"data_pegawai": "full", "arsip_sdm": "full", "info_board": "full"},
+    "Perencanaan": {"info_board": "view", "produksi_paket": "full", "dialog": "full", "jadwal_siaran": "full", "program_siaran": "full"},
+    "KMB": {"info_board": "view", "konten": "full", "bestcut_monitoring": "full", "socmed_analytics": "full", "dialog": "update"},
+    "Siaran": {"info_board": "view", "jadwal_siaran": "view", "produksi_paket": "view", "dialog": "update", "program_siaran": "view"},
+    "TMB": {"info_board": "view", "jadwal_tmb": "full", "monitoring_produksi": "full"},
     "BMN": {
         "info_board": "view",
-        "master_barang": "full",
-        "master_persediaan": "full",
-        "persediaan_masuk": "full",
-        "persediaan_keluar": "full",
-        "master_ruangan": "full",
-        "bmn_area": "full",
+        "master_barang": "full", "master_ruangan": "full", "bast_otomatis": "full",
+        "aset_tutup_buku": "full", "aset_calbmn": "full", "aset_wasdal": "full",
+        "aset_rkbmn": "full", "aset_manajemen_risiko": "full", "aset_sisporja": "full",
+        "bmn_arsip": "full", "pemeliharaan_aset": "full",
+        "master_persediaan": "full", "persediaan_tutup_buku": "full",
+        "persediaan_form_pengajuan": "full", "persediaan_pipk": "full"
     },
     "LPU": {"info_board": "view"},
-    "Berita": {"info_board": "view"},
-    "Keuangan": {"info_board": "view"},
-    "Pimpinan": {"info_board": "view", "data_pegawai": "view", "dialog": "view", "jadwal_siaran": "view", "program_siaran": "view"},
-    "Kasubag TU": {"info_board": "view", "data_pegawai": "view", "master_barang": "view", "master_persediaan": "view"},
+    "Berita": {"info_board": "view", "produksi_paket": "view"},
+    "Keuangan": {"info_board": "view", "master_barang": "view", "master_persediaan": "view"},
+    "Pimpinan": {"info_board": "view", "data_pegawai": "view", "produksi_paket": "view", "dialog": "view", "jadwal_siaran": "view", "program_siaran": "view", "socmed_analytics": "view", "master_barang": "view", "master_persediaan": "view"},
+    "Kasubag TU": {"info_board": "view", "data_pegawai": "view", "arsip_sdm": "view", "master_barang": "view", "master_persediaan": "view", "pemeliharaan_aset": "view"},
 }
 
 APP_CONFIG_DEFAULTS = {
@@ -171,10 +164,16 @@ DB_SCHEMAS = {
     "DB_Arsip_SDM": ["Nomor Dokumen", "Nama Dokumen", "Tanggal", "Jenis", "Link"],
     "DB_Info_Board": ["Tanggal", "Prioritas", "Judul", "Isi", "Target Divisi", "Lampiran"],
     "DB_Ruangan": ["Nomor Ruangan", "Nama Ruangan", "Lokasi", "NIP Penanggung Jawab"],
-    "DB_Aset": ["Nomor Kode Barang", "Kode Ruang", "Nama Barang", "Merk Model", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"],
+    "DB_Aset": ["Nomor Kode Barang", "Kode Ruang", "Tipe", "Nama Barang", "Merk Model", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"],
     "DB_Stok_Master": ["Kode Barang", "Nama Barang", "Unit", "Stok Awal", "Keterangan"],
-    "DB_Stok_Masuk": ["Tanggal", "Penanggung Jawab", "Nama Barang", "Jumlah Masuk", "Unit", "Pcs", "Keterangan"],
-    "DB_Stok_Keluar": ["Tanggal", "Nama Barang", "Bidang", "Penerima Barang", "Jumlah Keluar", "Unit", "Pcs", "Keterangan"],
+    "DB_Stok_Detail": ["ID Transaksi", "Tanggal", "Jenis", "Kode Barang", "Nama Barang", "Jumlah", "Unit", "Pcs", "Bidang", "Penanggung Jawab", "Keterangan"],
+    "DB_Produksi_Paket": ["ID", "Tanggal", "Program", "Judul Paket", "Jenis Paket", "Produser", "Reporter", "Editor", "Status", "Link File"],
+    "DB_Socmed_Analytics": ["Periode", "Platform", "Akun", "Followers", "Reach", "Engagement", "Top Konten", "Catatan"],
+    "DB_Monitoring_Produksi": ["Tanggal", "Program", "Studio", "Operator TMB", "Kualitas Audio", "Stream Status", "Kendala Teknis", "Tindak Lanjut"],
+    "DB_Pemeliharaan_Header": ["ID Jadwal", "Tanggal", "Judul Pemeliharaan", "Lokasi", "Teknisi Vendor", "Status", "Keterangan"],
+    "DB_Pemeliharaan_Detail": ["ID Jadwal", "Nomor Kode Barang", "Nama Barang", "NUP", "Kondisi Sebelum", "Tindakan", "Kondisi Sesudah", "Biaya"],
+    "DB_BMN_Arsip": ["Nomor Dokumen", "Jenis", "Judul Dokumen", "Tanggal", "Keterangan", "Link"],
+    "DB_BMN_Dokumen": ["Group", "Sub Menu", "Periode", "Kategori Item", "Judul Dokumen", "Tanggal Upload", "Link File", "Keterangan"],
 }
 
 AUTO_ID_FIELDS = {
@@ -182,6 +181,9 @@ AUTO_ID_FIELDS = {
     "DB_Dialog": ("No", ""),
     "DB_Konten": ("ID", "CNT-"),
     "DB_Program": ("Kode Program", "PRG-"),
+    "DB_Produksi_Paket": ("ID", "PKT-"),
+    "DB_Pemeliharaan_Header": ("ID Jadwal", "MNT-"),
+    "DB_Stok_Detail": ("ID Transaksi", "TRX-"),
 }
 AUTO_ID_LOCK = threading.Lock()
 
@@ -231,16 +233,14 @@ DEMO_DATA = {
         {"Nomor Ruangan": "1.13", "Nama Ruangan": "Gudang TMB", "Lokasi": "Lantai 1", "NIP Penanggung Jawab": "199006082022211012"},
     ],
     "DB_Aset": [
-        {"Nomor Kode Barang": "3030205002", "Kode Ruang": "1.13", "Nama Barang": "Tool Kit Box", "Merk Model": "Hand Toolset", "Tahun": "2026", "NUP": "1", "Kondisi": "Baik", "Tindak Lanjut": "", "Keterangan": ""},
+        {"Nomor Kode Barang": "3030205002", "Kode Ruang": "1.13", "Tipe": "Peralatan Studio & Transmisi", "Nama Barang": "Tool Kit Box", "Merk Model": "Hand Toolset", "Tahun": "2026", "NUP": "1", "Kondisi": "Baik", "Tindak Lanjut": "", "Keterangan": ""},
     ],
     "DB_Stok_Master": [
         {"Kode Barang": "ATK-001", "Nama Barang": "Kertas HVS F4", "Unit": "Rim", "Stok Awal": 10, "Keterangan": "Kertas F4 70gsm"},
     ],
-    "DB_Stok_Masuk": [
-        {"Tanggal": "14 Januari 2026", "Penanggung Jawab": "Operator Barang Persediaan", "Nama Barang": "Kertas HVS F4", "Jumlah Masuk": 5, "Unit": "Rim", "Pcs": 5, "Keterangan": "Pengadaan Triwulan I"},
-    ],
-    "DB_Stok_Keluar": [
-        {"Tanggal": "15 Januari 2026", "Nama Barang": "Kertas HVS F4", "Bidang": "Tim Penyiaran", "Penerima Barang": "Meydiana Indah", "Jumlah Keluar": 2, "Unit": "Rim", "Pcs": 2, "Keterangan": "Kebutuhan Naskah Siaran"},
+    "DB_Stok_Detail": [
+        {"ID Transaksi": "TRX-01", "Tanggal": "14 Januari 2026", "Jenis": "Masuk", "Kode Barang": "ATK-001", "Nama Barang": "Kertas HVS F4", "Jumlah": 5, "Unit": "Rim", "Pcs": 5, "Bidang": "BMN / Gudang", "Penanggung Jawab": "Operator Barang Persediaan", "Keterangan": "Pengadaan Triwulan I"},
+        {"ID Transaksi": "TRX-02", "Tanggal": "15 Januari 2026", "Jenis": "Keluar", "Kode Barang": "ATK-001", "Nama Barang": "Kertas HVS F4", "Jumlah": 2, "Unit": "Rim", "Pcs": 2, "Bidang": "Tim Penyiaran", "Penanggung Jawab": "Meydiana Indah", "Keterangan": "Kebutuhan Naskah Siaran"},
     ],
 }
 
@@ -383,51 +383,6 @@ class SheetsDB:
     # ---------------------------------------------------------
     # ADMIN INITIAL DATA: create missing standardized tabs and their initial data.
     # ---------------------------------------------------------
-    def init_database_tabs(self, include_sample_rows=True):
-        if not self.connected or not self.spreadsheet:
-            return False, "Google Sheet utama belum terhubung."
-
-        self._sync_snapshot(force=True)
-        created = []
-        for tab_name, target_headers in DB_SCHEMAS.items():
-            key = tab_name.lower()
-            if key in self._ws_cache:
-                continue
-
-            rows = 300
-            initial_rows = []
-            if key == "cfg_users":
-                rows = 200
-                initial_rows = [[str(user.get(header, "")) for header in target_headers]
-                                for user in DEMO_DATA["CFG_Users"]]
-            elif key == "cfg_app":
-                initial_rows = [
-                    [setting_key, value, APP_CONFIG_DESCRIPTIONS[setting_key]]
-                    for setting_key, value in APP_CONFIG_DEFAULTS.items()
-                ]
-            elif key == "cfg_role_modules":
-                initial_rows = [
-                    [role] + [DEFAULT_ROLE_PERMISSIONS.get(role, {}).get(module["key"], "none")
-                              for module in ALL_MODULES]
-                    for role in ALL_ROLES
-                ]
-            elif include_sample_rows and tab_name in DEMO_DATA:
-                initial_rows = [
-                    [str(sample.get(header, "")) for header in target_headers]
-                    for sample in DEMO_DATA[tab_name]
-                ]
-
-            ws = self.spreadsheet.add_worksheet(title=tab_name, rows=rows, cols=len(target_headers) + 2)
-            ws.append_row(target_headers, value_input_option="USER_ENTERED")
-            if initial_rows:
-                ws.append_rows(initial_rows, value_input_option="USER_ENTERED")
-            created.append(tab_name)
-
-        self.clear_cache()
-        if not created:
-            return True, "Semua tabel initial data sudah tersedia."
-        return True, f"Tabel initial data dibuat: {', '.join(created)}."
-
     # ---------------------------------------------------------
     # ROLE -> MODULE PERMISSIONS MATRIX
     # ---------------------------------------------------------
@@ -767,23 +722,54 @@ class SheetsDB:
         return enriched
 
     def get_stock_bundle(self):
-        master_rows = self.get_tab_records(["DB_Stok_Master"])
-        in_rows = self.get_tab_records(["DB_Stok_Masuk"])
-        out_rows = self.get_tab_records(["DB_Stok_Keluar"])
+        master_rows = self.get_tab_records(["DB_Stok_Master"], include_row_num=True)
+        detail_rows = self.get_tab_records(["DB_Stok_Detail"], include_row_num=True)
+
+        # Fallback if legacy DB_Stok_Masuk / DB_Stok_Keluar still exist before user merges them
+        if not detail_rows:
+            legacy_in = self.get_tab_records(["DB_Stok_Masuk"])
+            legacy_out = self.get_tab_records(["DB_Stok_Keluar"])
+            for r in legacy_in:
+                detail_rows.append({
+                    "ID Transaksi": "-",
+                    "Tanggal": r.get("Tanggal", ""),
+                    "Jenis": "Masuk",
+                    "Kode Barang": r.get("Kode Barang", ""),
+                    "Nama Barang": r.get("Nama Barang", ""),
+                    "Jumlah": r.get("Jumlah Masuk", 0),
+                    "Unit": r.get("Unit", "Pcs"),
+                    "Pcs": r.get("Pcs", r.get("Jumlah Masuk", 0)),
+                    "Bidang": "BMN / Gudang",
+                    "Penanggung": r.get("Penanggung Jawab", ""),
+                    "Keterangan": r.get("Keterangan", ""),
+                })
+            for r in legacy_out:
+                detail_rows.append({
+                    "ID Transaksi": "-",
+                    "Tanggal": r.get("Tanggal", ""),
+                    "Jenis": "Keluar",
+                    "Kode Barang": r.get("Kode Barang", ""),
+                    "Nama Barang": r.get("Nama Barang", ""),
+                    "Jumlah": r.get("Jumlah Keluar", 0),
+                    "Unit": r.get("Unit", "Pcs"),
+                    "Pcs": r.get("Pcs", r.get("Jumlah Keluar", 0)),
+                    "Bidang": r.get("Bidang", ""),
+                    "Penanggung Jawab": r.get("Penerima Barang", ""),
+                    "Keterangan": r.get("Keterangan", ""),
+                })
 
         in_totals = {}
-        for r in in_rows:
-            name = str(r.get("Nama Barang", "")).strip()
-            if name:
-                qty = _parse_num(r.get("Pcs", r.get("Jumlah Masuk", 0)))
-                in_totals[name.lower()] = in_totals.get(name.lower(), 0) + qty
-
         out_totals = {}
-        for r in out_rows:
+        for r in detail_rows:
             name = str(r.get("Nama Barang", "")).strip()
-            if name:
-                qty = _parse_num(r.get("Pcs", r.get("Jumlah Keluar", 0)))
+            if not name:
+                continue
+            jns = str(r.get("Jenis", "")).strip().lower()
+            qty = _parse_num(r.get("Pcs", r.get("Jumlah", 0)))
+            if jns == "keluar":
                 out_totals[name.lower()] = out_totals.get(name.lower(), 0) + qty
+            else:
+                in_totals[name.lower()] = in_totals.get(name.lower(), 0) + qty
 
         computed_master = []
         seen_names = set()
@@ -798,6 +784,7 @@ class SheetsDB:
             keluar = out_totals.get(key, 0)
             akhir = awal + masuk - keluar
             computed_master.append({
+                "_row_num": m.get("_row_num"),
                 "Kode Barang": m.get("Kode Barang", ""),
                 "Nama Barang": name,
                 "Unit": m.get("Unit", "Pcs"),
@@ -808,7 +795,7 @@ class SheetsDB:
                 "Keterangan": m.get("Keterangan", ""),
             })
 
-        for tx in in_rows + out_rows:
+        for tx in detail_rows:
             name = str(tx.get("Nama Barang", "")).strip()
             if name and name.lower() not in seen_names:
                 key = name.lower()
@@ -816,21 +803,40 @@ class SheetsDB:
                 masuk = in_totals.get(key, 0)
                 keluar = out_totals.get(key, 0)
                 computed_master.append({
-                    "Kode Barang": "-",
+                    "_row_num": None,
+                    "Kode Barang": tx.get("Kode Barang", "-") or "-",
                     "Nama Barang": name,
                     "Unit": tx.get("Unit", "Pcs"),
                     "Stok Awal": 0,
                     "Barang Masuk": masuk,
                     "Barang Keluar": keluar,
                     "Stok Akhir": masuk - keluar,
-                    "Keterangan": "Otomatis dari mutasi",
+                    "Keterangan": "Otomatis dari transaksi",
                 })
 
         return {
             "master": computed_master,
-            "in_list": list(reversed(in_rows)),
-            "out_list": list(reversed(out_rows)),
+            "details": detail_rows,
         }
+
+    def update_stok_detail_row(self, row_num, updates_dict):
+        ws = self._find_ws(["DB_Stok_Detail"])
+        if not ws:
+            for item in DEMO_DATA["DB_Stok_Detail"]:
+                if str(item.get("ID Transaksi")) == str(updates_dict.get("ID Transaksi")):
+                    item.update(updates_dict)
+            return True, "Transaksi persediaan diperbarui (Mode Demo)."
+        try:
+            all_values = self._get_values_from_snapshot(["DB_Stok_Detail"]) or ws.get_all_values()
+            headers = [h.strip() for h in all_values[0]]
+            for col_name, new_val in updates_dict.items():
+                if col_name in headers:
+                    col_idx = headers.index(col_name) + 1
+                    ws.update_cell(int(row_num), col_idx, str(new_val))
+            self._sync_snapshot(force=True)
+            return True, "Transaksi persediaan berhasil diperbarui!"
+        except Exception as e:
+            return False, f"Gagal memperbarui transaksi persediaan: {e}"
 
     # ---------------------------------------------------------
     # EMPLOYEES & CFG_USERS
