@@ -262,7 +262,8 @@ def index():
 
 
 @app.route("/dashboard")
-def dashboard():
+@app.route("/dashboard/<module_key>")
+def dashboard(module_key="overview"):
     user = session.get("user")
     if not user:
         return redirect(url_for("index"))

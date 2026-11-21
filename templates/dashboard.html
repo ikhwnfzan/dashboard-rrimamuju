@@ -27,6 +27,10 @@
     .dashed-kpi { border-style: dashed; }
     .nav-pill.active { background-color: #E2E8F0; color: #0F172A; font-weight: 700; }
     .dark .nav-pill.active { background-color: #1E293B; color: #F8FAFC; }
+    @media (max-width: 639px) {
+      #breadcrumbNav button,
+      #breadcrumbNav span { display: none; }
+    }
   </style>
 </head>
 <body class="bg-[#F6F7FB] dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
@@ -59,7 +63,11 @@
             <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition">
               <i aria-hidden="true" class="ti ti-menu-2 w-4 h-4 text-base leading-none"></i>
             </button>
-            <h1 id="pageTitle" class="text-lg sm:text-xl font-extrabold tracking-tight truncate">RRI Mamuju Dashboard</h1>
+            <div class="min-w-0">
+              <nav id="breadcrumbNav" aria-label="Breadcrumb" class="flex items-baseline gap-1.5 text-[10px] font-bold text-slate-400 mb-0.5">
+                <span>Dashboard</span>
+              </nav>
+            </div>
           </div>
 
           <div class="flex items-center gap-2.5 shrink-0">

@@ -260,7 +260,7 @@ function openUserProfile() {
 }
 
 async function loadDashboard() {
-  ACTIVE_MODULE = document.querySelector('.nav-pill.active')?.dataset?.mod || ACTIVE_MODULE || 'overview';
+  ACTIVE_MODULE = getUrlModule() || ACTIVE_MODULE || 'overview';
   const requests = [fetch('/api/user')];
   if (ACTIVE_MODULE !== 'app_settings') {
     requests.push(fetch(`/api/module/${encodeURIComponent(ACTIVE_MODULE)}`));
@@ -274,9 +274,52 @@ async function loadDashboard() {
   }
   applyTheme(getLocalTheme() || DATA.app_config?.default_theme || APP_CONFIG.default_theme || 'dark');
   buildRoleSidebar();
+  activateModuleScreen(ACTIVE_MODULE);
   populateNipDatalist();
   applyActionButtonVisibility();
   renderAllModules();
+  updateBreadcrumb();
+  updateModuleUrl(ACTIVE_MODULE, false);
+}
+
+function getUrlModule() {
+  const match = window.location.pathname.match(/^\/dashboard\/([^/]+)\/?$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function updateBreadcrumb() {
+  const item = MODULE_NAV_CONFIG.find(i => i.key === ACTIVE_MODULE);
+  const label = ACTIVE_MODULE === 'user_profile'
+    ? 'Profil Pegawai'
+    : (item?.label || ACTIVE_MODULE.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+  const section = item?.section ? `<span class="text-slate-300 dark:text-slate-600">/</span><span>${escapeHtml(item.section)}</span>` : '';
+  const breadcrumb = document.getElementById('breadcrumbNav');
+  if (breadcrumb) {
+    breadcrumb.innerHTML = `
+      <button type="button" onclick="switchModule('overview')" class="hover:text-teal-600 transition">Dashboard</button>
+      ${item?.group ? `<span class="text-slate-300 dark:text-slate-600">/</span><span>${escapeHtml(item.group)}</span>` : ''}
+      ${section}
+      <span class="text-slate-300 dark:text-slate-600">/</span><span class="text-sm text-teal-600 dark:text-teal-300">${escapeHtml(label)}</span>
+    `;
+  }
+  document.title = `${label}`;
+}
+
+function updateModuleUrl(modKey, push = true) {
+  const nextUrl = `/dashboard/${encodeURIComponent(modKey)}`;
+  if (push && window.location.pathname !== nextUrl) {
+    window.history.pushState({ module: modKey }, '', nextUrl);
+  } else if (!push) {
+    window.history.replaceState({ module: modKey }, '', nextUrl);
+  }
+}
+
+function activateModuleScreen(modKey) {
+  document.querySelectorAll('.nav-pill').forEach(button => {
+    button.classList.toggle('active', button.dataset.mod === modKey);
+  });
+  document.querySelectorAll('.mod-section').forEach(section => section.classList.add('hidden'));
+  document.getElementById(`mod-${modKey}`)?.classList.remove('hidden');
 }
 
 function populateNipDatalist() {
@@ -324,7 +367,7 @@ function buildRoleSidebar() {
     }
   });
 
-  const activeMod = document.querySelector('.nav-pill.active')?.dataset?.mod || 'overview';
+  const activeMod = ACTIVE_MODULE;
   const activeItemObj = visibleItems.find(i => i.key === activeMod);
   const activeSectionKey = activeItemObj?.section
     ? `${activeItemObj.group}__${activeItemObj.section}`
@@ -398,9 +441,10 @@ function applyActionButtonVisibility() {
   toggle('btnAddRuangan', canFull('master_ruangan'));
 }
 
-async function switchModule(modKey) {
+async function switchModule(modKey, updateHistory = true) {
   ACTIVE_MODULE = modKey;
-  document.querySelectorAll('.nav-pill').forEach(b => b.classList.toggle('active', b.dataset.mod === modKey));
+  updateModuleUrl(modKey, updateHistory);
+  activateModuleScreen(modKey);
   const itemObj = MODULE_NAV_CONFIG.find(i => i.key === modKey);
   if (itemObj?.section) {
     const sectionKey = `${itemObj.group}__${itemObj.section}`;
@@ -410,9 +454,8 @@ async function switchModule(modKey) {
       toggleSidebarSection(sectionKey);
     }
   }
-  document.querySelectorAll('.mod-section').forEach(s => s.classList.add('hidden'));
-  document.getElementById(`mod-${modKey}`)?.classList.remove('hidden');
   if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full');
+  updateBreadcrumb();
   if (modKey !== 'app_settings') {
     await processWithLoading(async () => {
       const res = await fetch(`/api/module/${encodeURIComponent(modKey)}`);
@@ -1727,4 +1770,8 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
 }
 
 initTheme();
+window.addEventListener('popstate', () => {
+  const modKey = getUrlModule() || 'overview';
+  switchModule(modKey, false);
+});
 processWithLoading(loadDashboard, 'Gagal memuat dashboard');
