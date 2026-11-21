@@ -328,7 +328,7 @@
 
     async function loadBoard() {
       try {
-        const res = await fetch('/api/board');
+        const res = await fetch('/api/public/landing');
         BOARD_DATA = await res.json();
         document.getElementById('liveDot').className = `w-2 h-2 rounded-full ${BOARD_DATA.connected ? 'bg-emerald-400' : 'bg-amber-400'}`;
         document.getElementById('syncStatusText').textContent = `${BOARD_DATA.status_msg} • ${BOARD_DATA.server_time}`;

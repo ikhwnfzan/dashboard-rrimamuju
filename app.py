@@ -109,6 +109,42 @@ TARGET_PERMISSION_MAP = {
     "DB_Stok_Detail": ("master_persediaan", "full"),
 }
 
+# Data payload groups loaded for an active module. The active module is always
+# included; dependencies are modules or supporting datasets needed by its UI.
+MODULE_DATA_DEPENDENCIES = {
+    "overview": {"timeline", "info_board"},
+    "user_profile": {"employees"},
+    "info_board": {"info_board"},
+    "data_pegawai": {"employees"},
+    "arsip_sdm": {"arsip_sdm"},
+    "dialog": {"dialogs", "timeline"},
+    "jadwal_siaran": {"siaran"},
+    "produksi_paket": {"produksi_paket"},
+    "program_siaran": {"program_siaran"},
+    "konten": {"content_planner"},
+    "bestcut_monitoring": {"dialogs"},
+    "socmed_analytics": {"socmed_analytics"},
+    "jadwal_tmb": {"jadwal_tmb"},
+    "monitoring_produksi": {"monitoring_produksi"},
+    "master_barang": {"assets", "rooms", "employees"},
+    "master_ruangan": {"rooms", "employees"},
+    "bast_otomatis": {"rooms", "assets", "employees"},
+    "pemeliharaan_aset": {"pemeliharaan_header", "pemeliharaan_detail", "assets"},
+    "bmn_arsip": {"bmn_arsip"},
+    "aset_tutup_buku": {"bmn_dokumen"},
+    "aset_calbmn": {"bmn_dokumen"},
+    "aset_wasdal": {"bmn_dokumen"},
+    "aset_rkbmn": {"bmn_dokumen"},
+    "aset_manajemen_risiko": {"bmn_dokumen"},
+    "aset_sisporja": {"bmn_dokumen"},
+    "master_persediaan": {"stock"},
+    "persediaan_tutup_buku": {"bmn_dokumen", "stock"},
+    "persediaan_pipk": {"bmn_dokumen", "stock"},
+    "manage_users": {"users_list", "all_roles"},
+    "manage_modules": {"role_matrix", "all_roles", "all_modules"},
+    "app_settings": {"app_config"},
+}
+
 LEVEL_RANK = {"none": 0, "view": 1, "update": 2, "full": 3}
 
 
@@ -121,6 +157,77 @@ def _has_perm(user, module_key, min_level="view"):
     perms = user.get("permissions") or {}
     cur = perms.get(module_key, "none")
     return LEVEL_RANK.get(cur, 0) >= LEVEL_RANK.get(min_level, 1)
+
+
+def _get_module_payload(user, module_key):
+    """Fetch only data required by the active module and its UI dependencies."""
+    if not user:
+        return {}
+
+    is_admin = _is_admin(user)
+    if module_key != "overview" and module_key != "user_profile" and not _has_perm(user, module_key, "view"):
+        return {"active_module": module_key, "module_access": "denied"}
+
+    dependencies = MODULE_DATA_DEPENDENCIES.get(module_key, set())
+    payload = {"active_module": module_key}
+
+    def can_fetch(module):
+        return is_admin or _has_perm(user, module, "view")
+
+    if "timeline" in dependencies:
+        payload["timeline"] = db.get_timeline() if can_fetch("dialog") or module_key == "overview" else []
+    if "dialogs" in dependencies:
+        payload["dialogs"] = db.get_agenda_setting() if can_fetch("dialog") or module_key == "bestcut_monitoring" else []
+    if "info_board" in dependencies:
+        payload["info_board"] = db.get_tab_records(["DB_Info_Board", "Info_Board"], include_row_num=True)
+    if "produksi_paket" in dependencies:
+        payload["produksi_paket"] = db.get_tab_records(["DB_Produksi_Paket"], include_row_num=True)
+    if "content_planner" in dependencies:
+        payload["content_planner"] = db.get_tab_records(["DB_Konten"], include_row_num=True)
+    if "socmed_analytics" in dependencies:
+        payload["socmed_analytics"] = db.get_tab_records(["DB_Socmed_Analytics"], include_row_num=True)
+    if "siaran" in dependencies:
+        payload["siaran"] = db.get_tab_records(["DB_Siaran", "Siaran"], include_row_num=True)
+    if "program_siaran" in dependencies:
+        payload["program_siaran"] = db.get_tab_records(["DB_Program"], include_row_num=True)
+    if "jadwal_tmb" in dependencies:
+        payload["jadwal_tmb"] = db.get_tab_records(["DB_Jadwal_TMB", "Jadwal_TMB"], include_row_num=True)
+    if "monitoring_produksi" in dependencies:
+        payload["monitoring_produksi"] = db.get_tab_records(["DB_Monitoring_Produksi"], include_row_num=True)
+    if "arsip_sdm" in dependencies:
+        payload["arsip_sdm"] = db.get_tab_records(["DB_Arsip_SDM", "Arsip_SDM"], include_row_num=True)
+    if "employees" in dependencies:
+        if can_fetch("data_pegawai") or module_key in {"master_barang", "master_ruangan", "bast_otomatis", "user_profile"}:
+            payload["employees"] = db.get_employees()
+        else:
+            payload["employees"] = []
+    if "assets" in dependencies:
+        payload["assets"] = db.get_assets() if is_admin or can_fetch("master_barang") or can_fetch("bast_otomatis") or can_fetch("pemeliharaan_aset") else []
+    if "rooms" in dependencies:
+        payload["rooms"] = db.get_rooms() if is_admin or can_fetch("master_ruangan") or can_fetch("bast_otomatis") or can_fetch("master_barang") else []
+    if "pemeliharaan_header" in dependencies:
+        payload["pemeliharaan_header"] = db.get_tab_records(["DB_Pemeliharaan_Header"], include_row_num=True)
+    if "pemeliharaan_detail" in dependencies:
+        payload["pemeliharaan_detail"] = db.get_tab_records(["DB_Pemeliharaan_Detail"], include_row_num=True)
+    if "bmn_arsip" in dependencies:
+        payload["bmn_arsip"] = db.get_tab_records(["DB_BMN_Arsip"], include_row_num=True)
+    if "bmn_dokumen" in dependencies:
+        payload["bmn_dokumen"] = db.get_tab_records(["DB_BMN_Dokumen"], include_row_num=True)
+    if "stock" in dependencies:
+        stock_bundle = db.get_stock_bundle()
+        payload["stock_master"] = stock_bundle["master"]
+        payload["stock_details"] = stock_bundle["details"]
+    if "users_list" in dependencies:
+        payload["users_list"] = db.get_users_list() if is_admin else []
+    if "all_roles" in dependencies:
+        payload["all_roles"] = ALL_ROLES
+    if "all_modules" in dependencies:
+        payload["all_modules"] = ALL_MODULES
+    if "role_matrix" in dependencies:
+        payload["role_matrix"] = db.get_role_matrix() if is_admin else {}
+
+
+    return payload
 
 
 def _validate_timeline_data(data):
@@ -179,22 +286,34 @@ def favicon():
     return send_from_directory(app.template_folder, "favicon.svg", mimetype="image/svg+xml")
 
 
-@app.route("/api/board")
-def api_board():
+@app.route("/api/module/<module_key>")
+def api_module(module_key):
+    user = session.get("user")
+    if not user:
+        return jsonify({"ok": False, "message": "Restricted access!"}), 401
+    if user:
+        user["permissions"] = db.compute_effective_permissions(user.get("roles", []))
+        session["user"] = user
+    payload = _get_module_payload(user, module_key)
+    if payload.get("module_access") == "denied":
+        return jsonify({"ok": False, "message": "Restricted access!", "active_module": module_key}), 403
+    payload["ok"] = True
+    return jsonify(payload)
+
+
+@app.route("/api/user")
+def api_user():
     user = session.get("user")
     if user:
         user["permissions"] = db.compute_effective_permissions(user.get("roles", []))
         session["user"] = user
-    app_config = _get_app_config()
 
-    can_see_stock = bool(user and _has_perm(user, "master_persediaan", "view"))
-    stock_bundle = db.get_stock_bundle() if can_see_stock else {"master": [], "details": []}
+    app_config = _get_app_config()
+    is_admin = _is_admin(user)
     existing_tabs = db.get_existing_tab_names() if user else []
     missing_tabs = [t for t in DB_SCHEMAS.keys() if t.lower() not in {x.lower() for x in existing_tabs}] if db.connected else list(DB_SCHEMAS.keys())
 
-    is_admin = _is_admin(user)
-
-    payload = {
+    return jsonify({
         "connected": db.connected,
         "status_msg": "Database Synced" if db.connected else (db.last_error or "Mode Demo"),
         "server_time": datetime.now(timezone.utc).astimezone(APP_TIMEZONES[app_config["timezone"]]).strftime("%d %b %Y • %H:%M %Z"),
@@ -206,34 +325,23 @@ def api_board():
         "role_matrix": db.get_role_matrix() if is_admin else {},
         "existing_tabs": existing_tabs,
         "missing_tabs": missing_tabs,
+    })
+
+
+@app.route("/api/public/landing")
+def api_public_landing():
+    app_config = _get_app_config()
+    return jsonify({
+        "connected": db.connected,
+        "status_msg": "Database Synced" if db.connected else (db.last_error or "Mode Demo"),
+        "server_time": datetime.now(timezone.utc).astimezone(APP_TIMEZONES[app_config["timezone"]]).strftime("%d %b %Y • %H:%M %Z"),
+        "app_config": app_config,
         "timeline": db.get_timeline(),
         "dialogs": db.get_agenda_setting(),
-        "produksi_paket": db.get_tab_records(["DB_Produksi_Paket"], include_row_num=True) if _has_perm(user, "produksi_paket", "view") else [],
-        "info_board": db.get_tab_records(["DB_Info_Board", "Info_Board"], include_row_num=True) if user else [],
-        "content_planner": db.get_tab_records(["DB_Konten"], include_row_num=True) if _has_perm(user, "konten", "view") else [],
-        "socmed_analytics": db.get_tab_records(["DB_Socmed_Analytics"], include_row_num=True) if _has_perm(user, "socmed_analytics", "view") else [],
-        "siaran": db.get_tab_records(["DB_Siaran", "Siaran"], include_row_num=True) if _has_perm(user, "jadwal_siaran", "view") else [],
         "program_siaran": db.get_tab_records(["DB_Program"], include_row_num=True),
-        "jadwal_tmb": db.get_tab_records(["DB_Jadwal_TMB", "Jadwal_TMB"], include_row_num=True) if _has_perm(user, "jadwal_tmb", "view") else [],
-        "monitoring_produksi": db.get_tab_records(["DB_Monitoring_Produksi"], include_row_num=True) if _has_perm(user, "monitoring_produksi", "view") else [],
-        "arsip_sdm": db.get_tab_records(["DB_Arsip_SDM", "Arsip_SDM"], include_row_num=True) if _has_perm(user, "arsip_sdm", "view") else [],
-        "employees": db.get_employees() if (_has_perm(user, "data_pegawai", "view") or _has_perm(user, "master_ruangan", "view") or _has_perm(user, "bast_otomatis", "view") or is_admin) else [],
-        "users_list": db.get_users_list() if is_admin else [],
-        "assets": db.get_assets() if (_has_perm(user, "master_barang", "view") or _has_perm(user, "bast_otomatis", "view") or _has_perm(user, "pemeliharaan_aset", "view")) else [],
-        "rooms": db.get_rooms() if (_has_perm(user, "master_ruangan", "view") or _has_perm(user, "master_barang", "view") or _has_perm(user, "bast_otomatis", "view")) else [],
-        "pemeliharaan_header": db.get_tab_records(["DB_Pemeliharaan_Header"], include_row_num=True) if _has_perm(user, "pemeliharaan_aset", "view") else [],
-        "pemeliharaan_detail": db.get_tab_records(["DB_Pemeliharaan_Detail"], include_row_num=True) if _has_perm(user, "pemeliharaan_aset", "view") else [],
-        "bmn_arsip": db.get_tab_records(["DB_BMN_Arsip"], include_row_num=True) if _has_perm(user, "bmn_arsip", "view") else [],
-        "bmn_dokumen": db.get_tab_records(["DB_BMN_Dokumen"], include_row_num=True) if any(_has_perm(user, mk, "view") for mk in [
-            "aset_tutup_buku", "aset_calbmn", "aset_wasdal", "aset_rkbmn", "aset_manajemen_risiko", "aset_sisporja",
-            "persediaan_tutup_buku", "persediaan_pipk"
-        ]) else [],
-        "stock_master": stock_bundle["master"],
-        "stock_details": stock_bundle["details"],
         "youtube_feed": media_feed.get_youtube_feed(),
         "drive_flyers": media_feed.get_drive_flyers(),
-    }
-    return jsonify(payload)
+    })
 
 
 @app.route("/api/login", methods=["POST"])

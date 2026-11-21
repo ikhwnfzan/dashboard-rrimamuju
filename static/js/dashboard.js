@@ -1,4 +1,5 @@
 let DATA = {};
+let ACTIVE_MODULE = 'overview';
 const PAGE_STATE = {};
 const DEFAULT_PAGE_SIZE = 10;
 let loadingTaskCount = 0;
@@ -259,8 +260,18 @@ function openUserProfile() {
 }
 
 async function loadDashboard() {
-  const res = await fetch('/api/board');
-  DATA = await res.json();
+  ACTIVE_MODULE = document.querySelector('.nav-pill.active')?.dataset?.mod || ACTIVE_MODULE || 'overview';
+  const requests = [fetch('/api/user')];
+  if (ACTIVE_MODULE !== 'app_settings') {
+    requests.push(fetch(`/api/module/${encodeURIComponent(ACTIVE_MODULE)}`));
+  }
+  const responses = await Promise.all(requests);
+  const userPayload = await responses[0].json();
+  DATA = userPayload;
+  if (responses[1]) {
+    if (!responses[1].ok) throw new Error('Gagal memuat data modul.');
+    DATA = { ...DATA, ...(await responses[1].json()) };
+  }
   applyTheme(getLocalTheme() || DATA.app_config?.default_theme || APP_CONFIG.default_theme || 'dark');
   buildRoleSidebar();
   populateNipDatalist();
@@ -387,7 +398,8 @@ function applyActionButtonVisibility() {
   toggle('btnAddRuangan', canFull('master_ruangan'));
 }
 
-function switchModule(modKey) {
+async function switchModule(modKey) {
+  ACTIVE_MODULE = modKey;
   document.querySelectorAll('.nav-pill').forEach(b => b.classList.toggle('active', b.dataset.mod === modKey));
   const itemObj = MODULE_NAV_CONFIG.find(i => i.key === modKey);
   if (itemObj?.section) {
@@ -401,6 +413,17 @@ function switchModule(modKey) {
   document.querySelectorAll('.mod-section').forEach(s => s.classList.add('hidden'));
   document.getElementById(`mod-${modKey}`)?.classList.remove('hidden');
   if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full');
+  if (modKey !== 'app_settings') {
+    await processWithLoading(async () => {
+      const res = await fetch(`/api/module/${encodeURIComponent(modKey)}`);
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.message || 'Gagal memuat modul.');
+      DATA = { ...DATA, ...payload };
+      renderAllModules();
+    }, 'Gagal memuat data modul');
+  } else {
+    renderAllModules();
+  }
 }
 
 function renderAllModules() {
@@ -408,36 +431,40 @@ function renderAllModules() {
   document.getElementById('syncTimeLabel').textContent = DATA.server_time || '';
   document.getElementById('statInfoCount').textContent = (DATA.info_board || []).length;
 
-  renderTimelineModule();
-  renderInfoBoard();
-  if (canView('data_pegawai')) renderDataPegawai();
-  if (canView('arsip_sdm')) renderArsipSdm();
-  if (canView('produksi_paket')) renderProduksiPaket();
-  if (canView('dialog')) renderDialogModule();
-  if (canView('jadwal_siaran')) renderJadwalSiaran();
-  if (canView('program_siaran')) renderProgramSiaran();
-  if (canView('konten')) renderKonten();
-  if (canView('bestcut_monitoring')) renderBestcutMonitoring();
-  if (canView('socmed_analytics')) renderSocmedAnalytics();
-  if (canView('jadwal_tmb')) renderJadwalTmb();
-  if (canView('monitoring_produksi')) renderMonitoringProduksi();
-  if (canView('master_barang')) renderMasterBarang();
-  if (canView('bast_otomatis')) initBastSelectors();
-  if (canView('pemeliharaan_aset')) renderPemeliharaanAset();
-  if (canView('bmn_arsip')) renderBmnArsip();
-  if (canView('aset_tutup_buku')) renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku');
-  if (canView('aset_calbmn')) renderBmnDokumenView('Aset', 'CALBMN', 'filterCalbmnPeriode', 'tbodyCalbmn', 'pagCalbmn');
-  if (canView('aset_wasdal')) renderBmnDokumenView('Aset', 'WASDAL', 'filterWasdalPeriode', 'tbodyWasdal', 'pagWasdal');
-  if (canView('aset_rkbmn')) renderBmnDokumenView('Aset', 'RKBMN', 'filterRkbmnPeriode', 'tbodyRkbmn', 'pagRkbmn');
-  if (canView('aset_manajemen_risiko')) renderBmnDokumenView('Aset', 'Manajemen Risiko', 'filterManRisikoPeriode', 'tbodyManRisiko', 'pagManRisiko');
-  if (canView('aset_sisporja')) renderBmnDokumenView('Aset', 'SISPORJA', 'filterSisporjaPeriode', 'tbodySisporja', 'pagSisporja');
-  if (canView('master_persediaan')) renderMasterPersediaan();
-  if (canView('persediaan_tutup_buku')) renderBmnDokumenView('Persediaan', 'Tutup Buku', 'filterPersediaanTutupBukuPeriode', 'tbodyPersediaanTutupBuku', 'pagPersediaanTutupBuku');
-  if (canView('persediaan_pipk')) renderBmnDokumenView('Persediaan', 'PIPK', 'filterPipkPeriode', 'tbodyPipk', 'pagPipk');
-  if (canView('master_ruangan')) renderMasterRuangan();
-  if (canFull('manage_users')) renderManageUsers();
-  if (canFull('manage_modules')) renderManageModules();
-  if (isAdmin()) renderAppSettings();
+  if (ACTIVE_MODULE === 'overview') {
+    renderTimelineModule();
+  } else if (ACTIVE_MODULE === 'info_board') {
+    renderInfoBoard();
+  } else if (ACTIVE_MODULE === 'data_pegawai') renderDataPegawai();
+  else if (ACTIVE_MODULE === 'arsip_sdm') renderArsipSdm();
+  else if (ACTIVE_MODULE === 'produksi_paket') renderProduksiPaket();
+  else if (ACTIVE_MODULE === 'dialog') {
+    renderTimelineModule();
+    renderDialogModule();
+  } else if (ACTIVE_MODULE === 'jadwal_siaran') renderJadwalSiaran();
+  else if (ACTIVE_MODULE === 'program_siaran') renderProgramSiaran();
+  else if (ACTIVE_MODULE === 'konten') renderKonten();
+  else if (ACTIVE_MODULE === 'bestcut_monitoring') renderBestcutMonitoring();
+  else if (ACTIVE_MODULE === 'socmed_analytics') renderSocmedAnalytics();
+  else if (ACTIVE_MODULE === 'jadwal_tmb') renderJadwalTmb();
+  else if (ACTIVE_MODULE === 'monitoring_produksi') renderMonitoringProduksi();
+  else if (ACTIVE_MODULE === 'master_barang') renderMasterBarang();
+  else if (ACTIVE_MODULE === 'bast_otomatis') initBastSelectors();
+  else if (ACTIVE_MODULE === 'pemeliharaan_aset') renderPemeliharaanAset();
+  else if (ACTIVE_MODULE === 'bmn_arsip') renderBmnArsip();
+  else if (ACTIVE_MODULE === 'aset_tutup_buku') renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku');
+  else if (ACTIVE_MODULE === 'aset_calbmn') renderBmnDokumenView('Aset', 'CALBMN', 'filterCalbmnPeriode', 'tbodyCalbmn', 'pagCalbmn');
+  else if (ACTIVE_MODULE === 'aset_wasdal') renderBmnDokumenView('Aset', 'WASDAL', 'filterWasdalPeriode', 'tbodyWasdal', 'pagWasdal');
+  else if (ACTIVE_MODULE === 'aset_rkbmn') renderBmnDokumenView('Aset', 'RKBMN', 'filterRkbmnPeriode', 'tbodyRkbmn', 'pagRkbmn');
+  else if (ACTIVE_MODULE === 'aset_manajemen_risiko') renderBmnDokumenView('Aset', 'Manajemen Risiko', 'filterManRisikoPeriode', 'tbodyManRisiko', 'pagManRisiko');
+  else if (ACTIVE_MODULE === 'aset_sisporja') renderBmnDokumenView('Aset', 'SISPORJA', 'filterSisporjaPeriode', 'tbodySisporja', 'pagSisporja');
+  else if (ACTIVE_MODULE === 'master_persediaan') renderMasterPersediaan();
+  else if (ACTIVE_MODULE === 'persediaan_tutup_buku') renderBmnDokumenView('Persediaan', 'Tutup Buku', 'filterPersediaanTutupBukuPeriode', 'tbodyPersediaanTutupBuku', 'pagPersediaanTutupBuku');
+  else if (ACTIVE_MODULE === 'persediaan_pipk') renderBmnDokumenView('Persediaan', 'PIPK', 'filterPipkPeriode', 'tbodyPipk', 'pagPipk');
+  else if (ACTIVE_MODULE === 'master_ruangan') renderMasterRuangan();
+  else if (ACTIVE_MODULE === 'manage_users') renderManageUsers();
+  else if (ACTIVE_MODULE === 'manage_modules') renderManageModules();
+  else if (ACTIVE_MODULE === 'app_settings' && isAdmin()) renderAppSettings();
 }
 
 function renderAppSettings() {
