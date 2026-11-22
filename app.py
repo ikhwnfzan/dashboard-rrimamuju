@@ -101,6 +101,7 @@ TARGET_PERMISSION_MAP = {
     "DB_Pegawai": ("data_pegawai", "full"),
     "DB_Aset": ("master_barang", "full"),
     "DB_Ruangan": ("master_ruangan", "full"),
+    "DB_BAST": ("bast_otomatis", "full"),
     "DB_Pemeliharaan_Header": ("pemeliharaan_aset", "full"),
     "DB_Pemeliharaan_Detail": ("pemeliharaan_aset", "full"),
     "DB_BMN_Arsip": ("bmn_arsip", "full"),
@@ -411,6 +412,54 @@ def api_admin_save_settings():
     return jsonify({"ok": True, "message": msg, "app_config": _get_app_config()})
 
 
+BAST_TEMPLATE_DOC_ID = "1LtyvE6jcMYWueQZv62KnXhG8Y4AweOW1oOjJRrh14dw"
+
+
+@app.route("/api/bast/records", methods=["GET"])
+def api_bast_records():
+    user = session.get("user")
+    if not _has_perm(user, "bast_otomatis", "view"):
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
+    return jsonify({"ok": True, "records": db.get_bast_records()})
+
+
+@app.route("/api/bast/generate", methods=["POST"])
+def api_bast_generate():
+    user = session.get("user")
+    if not _has_perm(user, "bast_otomatis", "full"):
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
+
+    payload = request.get_json(silent=True) or {}
+    required = ["nomor_bast", "tanggal", "nama", "nip", "pangkat", "jabatan", "nomor_barang", "nup", "barang", "nilai", "jumlah", "letak"]
+    missing = [field for field in required if not str(payload.get(field, "")).strip()]
+    if missing:
+        return jsonify({"ok": False, "message": "Data BAST belum lengkap."}), 400
+
+    ok, result = db.generate_bast_document(payload, template_doc_id=BAST_TEMPLATE_DOC_ID)
+    return jsonify({"ok": ok, **result})
+
+
+@app.route("/api/bast/update", methods=["POST"])
+def api_bast_update():
+    user = session.get("user")
+    if not _has_perm(user, "bast_otomatis", "update"):
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
+
+    data = request.get_json(silent=True) or {}
+    row_num = data.get("row_num")
+    updates = data.get("updates") or {}
+    if not row_num or not isinstance(updates, dict):
+        return jsonify({"ok": False, "message": "Invalid row number or BAST data!"}), 400
+
+    allowed_fields = {"Nomor BAST", "NIP", "Nomor Barang", "NUP", "Nilai", "Jumlah"}
+    if not set(updates).issubset(allowed_fields):
+        return jsonify({"ok": False, "message": "Kolom BAST tidak valid."}), 400
+
+    updates = {key: str(value or "").strip() for key, value in updates.items()}
+    ok, msg = db.update_bast_row(row_num, updates)
+    return jsonify({"ok": ok, "message": msg})
+
+
 @app.route("/api/admin/role-modules", methods=["POST"])
 def api_admin_update_role_module():
     user = session.get("user")
@@ -454,6 +503,48 @@ def api_update_dialog():
         return jsonify({"ok": False, "message": "Invalid row number!"}), 400
 
     ok, msg = db.update_dialog_row(row_num, updates)
+    return jsonify({"ok": ok, "message": msg})
+
+
+@app.route("/api/assets/update", methods=["POST"])
+def api_update_asset():
+    user = session.get("user")
+    if not _has_perm(user, "master_barang", "update"):
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
+
+    data = request.get_json(silent=True) or {}
+    row_num = data.get("row_num")
+    updates = data.get("updates") or {}
+    if not row_num or not isinstance(updates, dict):
+        return jsonify({"ok": False, "message": "Invalid row number or asset data!"}), 400
+
+    allowed_fields = {"Kode Ruang", "Tipe", "Nama Barang", "Merk Model", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"}
+    if not set(updates).issubset(allowed_fields):
+        return jsonify({"ok": False, "message": "Nomor Kode Barang tidak dapat diubah."}), 400
+
+    updates = {key: str(value or "").strip() for key, value in updates.items()}
+    ok, msg = db.update_asset_row(row_num, updates)
+    return jsonify({"ok": ok, "message": msg})
+
+
+@app.route("/api/rooms/update", methods=["POST"])
+def api_update_room():
+    user = session.get("user")
+    if not _has_perm(user, "master_ruangan", "update"):
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
+
+    data = request.get_json(silent=True) or {}
+    row_num = data.get("row_num")
+    updates = data.get("updates") or {}
+    if not row_num or not isinstance(updates, dict):
+        return jsonify({"ok": False, "message": "Invalid row number or room data!"}), 400
+
+    allowed_fields = {"Nama Ruangan", "Lokasi", "NIP Penanggung Jawab"}
+    if not set(updates).issubset(allowed_fields):
+        return jsonify({"ok": False, "message": "Nomor Ruangan tidak dapat diubah."}), 400
+
+    updates = {key: str(value or "").strip() for key, value in updates.items()}
+    ok, msg = db.update_room_row(row_num, updates)
     return jsonify({"ok": ok, "message": msg})
 
 

@@ -3,8 +3,11 @@ import json
 import time
 import threading
 import traceback
+import io
 import gspread
 from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -36,6 +39,26 @@ def _parse_num(val):
         return int(f) if f.is_integer() else round(f, 2)
     except ValueError:
         return 0
+
+
+def _format_rupiah(val):
+    try:
+        number = int(float(str(val).replace(",", "").replace(".", "").split(".")[0]))
+    except (ValueError, AttributeError):
+        number = 0
+    return f"Rp {number:,}".replace(",", ".")
+
+
+def _indonesian_day_words(day):
+    words = [
+        "", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan",
+        "sepuluh", "sebelas", "dua belas", "tiga belas", "empat belas", "lima belas",
+        "enam belas", "tujuh belas", "delapan belas", "sembilan belas", "dua puluh",
+    ]
+    day = int(day)
+    if day <= 20:
+        return words[day]
+    return f"dua puluh {words[day - 20]}"
 
 
 def parse_roles(role_str):
@@ -161,6 +184,7 @@ DB_SCHEMAS = {
     "DB_Konten": ["ID", "Tanggal Tayang", "Platform", "Akun", "Judul Konten", "Jenis", "Divisi", "PIC", "Status", "Link Asset"],
     "DB_Jadwal_TMB": ["Tanggal", "Shift", "Lokasi Pemancar", "Teknisi TMB", "Tugas", "Status"],
     "DB_Pegawai": ["No", "Nama Pegawai", "NIP", "Pangkat Golongan", "Jabatan", "Status", "Posisi"],
+    "DB_BAST": ["Nomor BAST", "NIP", "Nomor Barang", "NUP", "Nilai", "Jumlah", "Status", "Link PDF"],
     "DB_Arsip_SDM": ["Nomor Dokumen", "Nama Dokumen", "Tanggal", "Jenis", "Link"],
     "DB_Info_Board": ["Tanggal", "Prioritas", "Judul", "Isi", "Target Divisi", "Lampiran"],
     "DB_Ruangan": ["Nomor Ruangan", "Nama Ruangan", "Lokasi", "NIP Penanggung Jawab"],
@@ -709,7 +733,7 @@ class SheetsDB:
         return enriched
 
     def get_assets(self):
-        assets = self.get_tab_records(["DB_Aset"])
+        assets = self.get_tab_records(["DB_Aset"], include_row_num=True)
         rooms = self.get_rooms()
         room_lookup = {str(rm.get("Nomor Ruangan", "")).strip(): rm.get("Nama Ruangan", "") for rm in rooms}
         enriched = []
@@ -718,6 +742,44 @@ class SheetsDB:
             item["Merk Model"] = item.get("Merk Model") or item.get("Merk/ Model") or ""
             kr = str(item.get("Kode Ruang", "")).strip()
             item["Nama Ruangan"] = room_lookup.get(kr, kr or "-")
+            enriched.append(item)
+        return enriched
+
+    def get_bast_records(self):
+        records = self.get_tab_records(["DB_BAST"], include_row_num=True)
+        employees = self.get_employees()
+        assets = self.get_assets()
+        rooms = self.get_rooms()
+
+        employee_lookup = {
+            _normalize_nip(emp.get("NIP")): emp
+            for emp in employees
+        }
+        asset_lookup = {
+            str(asset.get("Nomor Kode Barang", "")).strip(): asset
+            for asset in assets
+        }
+        room_lookup = {
+            str(room.get("Nomor Ruangan", "")).strip(): room
+            for room in rooms
+        }
+        enriched = []
+        for record in records:
+            item = dict(record)
+            nip = _normalize_nip(item.get("NIP"))
+            employee = employee_lookup.get(nip, {})
+            asset = asset_lookup.get(str(item.get("Nomor Barang", "")).strip(), {})
+            room_code = str(asset.get("Kode Ruang", "")).strip()
+            room = room_lookup.get(room_code, {})
+            item["Nama"] = employee.get("Nama Pegawai") or ""
+            item["Pangkat"] = employee.get("Pangkat Golongan") or ""
+            item["Jabatan"] = employee.get("Jabatan") or employee.get("Posisi") or ""
+            item["Barang"] = asset.get("Nama Barang") or ""
+            item["Merk"] = asset.get("Merk Model") or ""
+            item["Tipe"] = asset.get("Tipe") or ""
+            item["Letak"] = room.get("Nama Ruangan") or asset.get("Nama Ruangan") or room_code or ""
+            if not item.get("Nilai"):
+                item["Nilai"] = ""
             enriched.append(item)
         return enriched
 
@@ -854,6 +916,190 @@ class SheetsDB:
             item["nip_clean"] = _normalize_nip(nip)
             result.append(item)
         return result
+
+    def generate_bast_document(self, payload, template_doc_id):
+        if not template_doc_id:
+            return False, {"message": "Konfigurasi template BAST belum lengkap."}
+
+        creds = None
+        try:
+            sa_path = self._find_local_sa_file()
+            if sa_path:
+                from google.oauth2.service_account import Credentials
+                info = json.load(open(sa_path, "r", encoding="utf-8"))
+                creds = Credentials.from_service_account_info(info, scopes=SCOPES + ["https://www.googleapis.com/auth/documents"])
+            elif self.creds_json:
+                creds = Credentials.from_service_account_info(
+                    _parse_service_account_env(self.creds_json),
+                    scopes=SCOPES + ["https://www.googleapis.com/auth/documents"],
+                )
+        except Exception as exc:
+            return False, {"message": f"Kredensial Google tidak valid: {exc}"}
+        if not creds:
+            return False, {"message": "service_account.json belum tersedia."}
+
+        try:
+            from datetime import datetime
+            tanggal = datetime.strptime(str(payload["tanggal"]), "%Y-%m-%d")
+            month_names = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+            tanggal_terbilang = f"{_indonesian_day_words(tanggal.day)} bulan {month_names[tanggal.month]} tahun {tanggal.year}"
+            tanggal_ttd = f"Mamuju, {tanggal.day} {month_names[tanggal.month]} {tanggal.year}"
+
+            drive = build("drive", "v3", credentials=creds, cache_discovery=False)
+            docs = build("docs", "v1", credentials=creds, cache_discovery=False)
+
+            template = drive.files().get(fileId=template_doc_id, fields="parents").execute()
+            copied = drive.files().copy(
+                fileId=template_doc_id,
+                body={"name": f"BAST {payload['nomor_bast']}"},
+            ).execute()
+            document_id = copied["id"]
+
+            replacements = {
+                "{{nomor_bast}}": str(payload["nomor_bast"]),
+                "{{tanggal_terbilang}}": tanggal_terbilang,
+                "{{nama}}": str(payload["nama"]),
+                "{{nip}}": str(payload["nip"]),
+                "{{pangkat}}": str(payload["pangkat"]),
+                "{{jabatan}}": str(payload["jabatan"]),
+                "{{nomor_barang}}": str(payload["nomor_barang"]),
+                "{{nup}}": str(payload["nup"]),
+                "{{barang}}": str(payload["barang"]),
+                "{{merk}}": str(payload["merk"] or ""),
+                "{{tipe}}": str(payload["tipe"] or ""),
+                "{{nilai}}": _format_rupiah(payload["nilai"]),
+                "{{jumlah}}": str(payload["jumlah"]),
+                "{{letak}}": str(payload["letak"]),
+                "{{tanggal_ttd}}": tanggal_ttd,
+            }
+            requests_body = [{
+                "replaceAllText": {
+                    "containsText": {"text": key, "matchCase": True},
+                    "replaceText": value,
+                }
+            } for key, value in replacements.items()]
+            docs.documents().batchUpdate(documentId=document_id, body={"requests": requests_body}).execute()
+
+            pdf_bytes = drive.files().export_media(fileId=document_id, mimeType="application/pdf").execute()
+            pdf_name = f"BAST {payload['nomor_bast']}.pdf"
+            pdf_metadata = {"name": pdf_name, "mimeType": "application/pdf"}
+            if template.get("parents"):
+                pdf_metadata["parents"] = template["parents"]
+            media = MediaIoBaseUpload(io.BytesIO(pdf_bytes), mimetype="application/pdf", resumable=False)
+            pdf_file = drive.files().create(body=pdf_metadata, media_body=media, fields="id,webViewLink,webContentLink").execute()
+
+            try:
+                drive.files().delete(fileId=document_id).execute()
+            except Exception:
+                pass
+
+            pdf_url = pdf_file.get("webViewLink") or f"https://drive.google.com/file/d/{pdf_file['id']}/view"
+
+            sheet_row = int(payload.get("sheet_row") or 0)
+            if sheet_row >= 2:
+                worksheet = self._find_ws(["DB_BAST"])
+                if worksheet:
+                    headers = [str(header).strip() for header in worksheet.row_values(1)]
+                    status_col = headers.index("Status") + 1 if "Status" in headers else None
+                    link_col = headers.index("Link PDF") + 1 if "Link PDF" in headers else None
+                else:
+                    status_col = link_col = None
+                if status_col:
+                    worksheet.update_cell(sheet_row, status_col, "DONE")
+                if link_col:
+                    worksheet.update_cell(sheet_row, link_col, pdf_url)
+
+            self._sync_snapshot(force=True)
+            return True, {"message": "Dokumen BAST dan PDF berhasil dibuat.", "pdf_url": pdf_url, "pdf_id": pdf_file["id"]}
+        except Exception as exc:
+            return False, {"message": f"Gagal membuat dokumen BAST: {exc}"}
+
+    def update_bast_row(self, row_num, updates_dict):
+        ws = self._find_ws(["DB_BAST"])
+        if not ws:
+            rows = DEMO_DATA.setdefault("DB_BAST", [])
+            idx = int(row_num) - 2
+            if 0 <= idx < len(rows):
+                rows[idx].update(updates_dict)
+                return True, "Data BAST diperbarui (Mode Demo)."
+            return False, "Baris BAST tidak ditemukan."
+
+        try:
+            all_vals = self._get_values_from_snapshot(["DB_BAST"]) or ws.get_all_values()
+            headers = [str(header).strip() for header in all_vals[0]]
+            target_row = int(row_num)
+            for col_name, new_val in updates_dict.items():
+                if col_name in headers:
+                    ws.update_cell(target_row, headers.index(col_name) + 1, str(new_val))
+            self._sync_snapshot(force=True)
+            return True, "Data BAST berhasil diperbarui!"
+        except Exception as exc:
+            return False, f"Gagal memperbarui data BAST: {exc}"
+
+    def update_room_row(self, row_num, updates_dict):
+        if "Nomor Ruangan" in updates_dict:
+            return False, "Nomor Ruangan tidak dapat diubah."
+
+        ws = self._find_ws(["DB_Ruangan"])
+        if not ws:
+            rows = DEMO_DATA.get("DB_Ruangan", [])
+            target_row = int(row_num)
+            idx = target_row - 2
+            if 0 <= idx < len(rows):
+                rows[idx].update(updates_dict)
+                return True, "Data ruangan diperbarui (Mode Demo)."
+            return False, "Baris ruangan tidak ditemukan."
+
+        try:
+            all_vals = self._get_values_from_snapshot(["DB_Ruangan"]) or ws.get_all_values()
+            headers = [h.strip() for h in all_vals[0]]
+            target_row = int(row_num)
+            for col_name, new_val in updates_dict.items():
+                candidates = ["NIP Penanggung Jawab", "Penanggungjawab Ruangan"] if col_name == "NIP Penanggung Jawab" else [col_name]
+                for cand in candidates:
+                    if cand in headers:
+                        col_idx = headers.index(cand) + 1
+                        value = _normalize_nip(str(new_val).replace("NIPPPK.", "").replace("NIP.", "")) if col_name == "NIP Penanggung Jawab" else str(new_val)
+                        ws.update_cell(target_row, col_idx, value)
+                        break
+            self._sync_snapshot(force=True)
+            return True, "Data ruangan berhasil diperbarui!"
+        except Exception as e:
+            return False, f"Gagal memperbarui data ruangan: {e}"
+
+    def update_asset_row(self, row_num, updates_dict):
+        if "Nomor Kode Barang" in updates_dict:
+            return False, "Nomor Kode Barang tidak dapat diubah."
+
+        ws = self._find_ws(["DB_Aset"])
+        if not ws:
+            rows = DEMO_DATA.get("DB_Aset", [])
+            target_row = int(row_num)
+            idx = target_row - 2
+            if 0 <= idx < len(rows):
+                rows[idx].update(updates_dict)
+                return True, "Data barang diperbarui (Mode Demo)."
+            return False, "Baris barang tidak ditemukan."
+
+        try:
+            all_vals = self._get_values_from_snapshot(["DB_Aset"]) or ws.get_all_values()
+            headers = [h.strip() for h in all_vals[0]]
+            target_row = int(row_num)
+            col_fallbacks = {
+                "Merk Model": ["Merk Model", "Merk/ Model"],
+            }
+            for col_name, new_val in updates_dict.items():
+                found = False
+                for cand in col_fallbacks.get(col_name, [col_name]):
+                    if cand in headers:
+                        col_idx = headers.index(cand) + 1
+                        ws.update_cell(target_row, col_idx, str(new_val))
+                        found = True
+                        break
+            self._sync_snapshot(force=True)
+            return True, "Data barang berhasil diperbarui!"
+        except Exception as e:
+            return False, f"Gagal memperbarui data barang: {e}"
 
     def update_employee_row(self, row_num, updates_dict):
         if "No" in updates_dict:

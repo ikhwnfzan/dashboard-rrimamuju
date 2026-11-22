@@ -41,7 +41,8 @@ const ICON_CLASSES = {
   moon: 'ti-moon',
   app_settings: 'ti-settings',
   edit: 'ti-pencil',
-  delete: 'ti-trash'
+  delete: 'ti-trash',
+  link: 'ti-link'
 };
 
 function icon(name, size = 'w-4 h-4 text-base leading-none') {
@@ -967,25 +968,35 @@ function renderJadwalTmb() {
 function renderMasterBarang() {
   const q = (document.getElementById('searchBarang')?.value || '').toLowerCase();
   const cat = (document.getElementById('filterAsetKategori')?.value || 'all').toLowerCase();
+  const editable = canUpdate('master_barang');
+  const deletable = canFull('master_barang');
   const filtered = (DATA.assets || []).filter(a => {
     const matchText = Object.values(a).some(v => String(v).toLowerCase().includes(q));
     const matchCat = cat === 'all' || String(a['Tindak Lanjut'] || '').toLowerCase().includes(cat);
     return matchText && matchCat;
   });
   const rows = paginateArray('barang', filtered, 'pagBarang', 'renderMasterBarang');
-  document.getElementById('tbodyBarang').innerHTML = rows.map(a => `
-    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-bold">${a['Kode Ruang'] || '-'} <span class="block text-[10px] text-slate-400">${a['Nama Ruangan'] || ''}</span></td>
-      <td class="py-3 px-3 font-mono text-slate-500">${a['Nomor Kode Barang'] || '-'}</td>
-      <td class="py-3 px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400">${a.Tipe || '-'}</td>
-      <td class="py-3 px-3 font-bold">${a['Nama Barang'] || '-'}</td>
-      <td class="py-3 px-3">${a['Merk Model'] || '-'}</td>
-      <td class="py-3 px-3">${a.Tahun || '-'}</td>
-      <td class="py-3 px-3 font-bold">${a.NUP || '-'}</td>
-      <td class="py-3 px-3 font-bold ${String(a.Kondisi).toLowerCase() === 'baik' ? 'text-emerald-600' : 'text-rose-500'}">${a.Kondisi || '-'}</td>
-      <td class="py-3 px-3 text-amber-600">${a['Tindak Lanjut'] || '-'}</td>
-    </tr>
-  `).join('');
+  document.getElementById('tbodyBarang').innerHTML = rows.map(a => {
+    const safeAsset = encodeURIComponent(JSON.stringify(a));
+    const rowNum = a._row_num ?? a.row_num;
+    return `
+      <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+        <td class="py-3 px-3 font-bold">${escapeHtml(a['Kode Ruang'] || '-')} <span class="block text-[10px] text-slate-400">${escapeHtml(a['Nama Ruangan'] || '')}</span></td>
+        <td class="py-3 px-3 font-mono text-slate-500">${escapeHtml(a['Nomor Kode Barang'] || '-')}</td>
+        <td class="py-3 px-3 font-bold">${escapeHtml(a['Nama Barang'] || '-')}</td>
+        <td class="py-3 px-3">${escapeHtml(a['Merk Model'] || '-')}</td>
+        <td class="py-3 px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400">${escapeHtml(a.Tipe || '-')}</td>
+        <td class="py-3 px-3">${escapeHtml(a.Tahun || '-')}</td>
+        <td class="py-3 px-3 font-bold">${escapeHtml(a.NUP || '-')}</td>
+        <td class="py-3 px-3 font-bold ${String(a.Kondisi).toLowerCase() === 'baik' ? 'text-emerald-600' : 'text-rose-500'}">${escapeHtml(a.Kondisi || '-')}</td>
+        <td class="py-3 px-3 text-amber-600">${escapeHtml(a['Tindak Lanjut'] || '-')}</td>
+        <td class="py-3 px-3 text-right whitespace-nowrap">
+          ${editable && rowNum ? `<button type="button" title="Edit barang" aria-label="Edit barang" onclick="openAssetModal(JSON.parse(decodeURIComponent('${safeAsset}')))" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
+          ${deletable && rowNum ? `<button type="button" title="Hapus barang" aria-label="Hapus barang" onclick="deleteRecord('DB_Aset', ${rowNum}, '${escapeHtml(a['Nama Barang'] || 'barang ini').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 let CURRENT_STOK_ITEM = null;
@@ -1184,6 +1195,7 @@ async function deleteStokDetailRow(rowNum, label) {
 
 function renderMasterRuangan() {
   const q = (document.getElementById('searchRuangan')?.value || '').toLowerCase();
+  const editable = canUpdate('master_ruangan');
   const deletable = canFull('master_ruangan');
   const employeesByNip = new Map((DATA.employees || []).map(e => [
     String(e.NIP || '').replace(/\D/g, ''), e
@@ -1196,6 +1208,7 @@ function renderMasterRuangan() {
     const nipClean = String(rawPjNip).replace(/\D/g, '');
     const emp = employeesByNip.get(nipClean);
     const rowNum = r._row_num ?? r.row_num ?? ((DATA.rooms || []).indexOf(r) + 2);
+    const safeRoom = encodeURIComponent(JSON.stringify(r));
     return `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
         <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-extrabold">${r['Nomor Ruangan'] || '-'}</span></td>
@@ -1205,7 +1218,8 @@ function renderMasterRuangan() {
         <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300">${emp?.['Nama Pegawai'] || r.pj_nama || '-'}</td>
         <td class="py-3 px-3 text-xs font-semibold">${emp?.Jabatan || emp?.Posisi || r.pj_jabatan || '-'}</td>
         <td class="py-3 px-3 text-right">
-          ${deletable && rowNum > 1 ? `<button type="button" title="Hapus ruangan" aria-label="Hapus ruangan" onclick="deleteRecord('DB_Ruangan', ${rowNum}, '${(r['Nama Ruangan'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : '-'}
+          ${editable && rowNum > 1 ? `<button type="button" title="Edit ruangan" aria-label="Edit ruangan" onclick="openRoomModal(JSON.parse(decodeURIComponent('${safeRoom}')))" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
+          ${deletable && rowNum > 1 ? `<button type="button" title="Hapus ruangan" aria-label="Hapus ruangan" onclick="deleteRecord('DB_Ruangan', ${rowNum}, '${(r['Nama Ruangan'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
         </td>
       </tr>
     `;
@@ -1336,7 +1350,7 @@ const SCHEMAS = {
   DB_Program: { title: 'Tambah Program Siaran', fields: ['Kode Program', 'Programa', 'Nama Program', 'Hari', 'Jam', 'Format', 'Produser', 'Status'] },
   DB_Konten: { title: 'Tambah Konten (Planner)', fields: ['Tanggal Tayang', 'Platform', 'Akun', 'Judul Konten', 'Jenis', 'Divisi', 'PIC', 'Status', 'Link Asset'] },
   DB_Jadwal_TMB: { title: 'Tambah Jadwal TMB', fields: ['Tanggal', 'Shift', 'Lokasi Pemancar', 'Teknisi TMB', 'Tugas', 'Status'] },
-  DB_Aset: { title: 'Tambah Persediaan', fields: ['Nomor Kode Barang', 'Kode Ruang', 'Tipe', 'Nama Barang', 'Merk Model', 'Tahun', 'NUP', 'Kondisi', 'Tindak Lanjut', 'Keterangan'] },
+  DB_Aset: { title: 'Tambah Barang', fields: ['Nomor Kode Barang', 'Kode Ruang', 'Tipe', 'Nama Barang', 'Merk Model', 'Tahun', 'NUP', 'Kondisi', 'Tindak Lanjut', 'Keterangan'] },
   DB_Ruangan: { title: 'Tambah Master Ruangan', fields: ['Nomor Ruangan', 'Nama Ruangan', 'Lokasi', 'NIP Penanggung Jawab', 'Nama', 'Jabatan'] },
   DB_Stok_Master: { title: 'Tambah Master Persediaan', fields: ['Kode Barang', 'Nama Barang', 'Unit', 'Stok Awal', 'Keterangan'] },
   DB_Stok_Masuk: { title: 'Catat Persediaan Masuk', fields: ['Tanggal', 'Penanggung Jawab', 'Nama Barang', 'Jumlah Masuk', 'Unit', 'Pcs', 'Keterangan'] },
@@ -1430,6 +1444,130 @@ function handleRoomNipLookup(nipInputEl) {
   }
 }
 
+function openRoomModal(room = null) {
+  const editing = Boolean(room);
+  document.getElementById('genericModalTitle').textContent = editing ? 'Edit Ruangan' : 'Tambah Ruangan';
+  const form = document.getElementById('genericAddForm');
+  form.dataset.targetKey = 'DB_Ruangan';
+  form.dataset.editRowNum = editing ? String(room._row_num || room.row_num || '') : '';
+
+  const selectedNip = String(room?.['NIP Penanggung Jawab'] || room?.pj_nip || '').replace(/\D/g, '');
+  const employeeOptions = (DATA.employees || []).map(employee => {
+    const nip = String(employee.NIP || employee.nip_clean || '').replace(/\D/g, '');
+    if (!nip) return '';
+    const name = String(employee['Nama Pegawai'] || '').trim();
+    const selected = nip === selectedNip ? ' selected' : '';
+    return `<option value="${escapeHtml(nip)}"${selected}>${escapeHtml(nip)}${name ? ` - ${escapeHtml(name)}` : ''}</option>`;
+  }).join('');
+
+  form.innerHTML = `
+    <div>
+      <label class="block font-bold mb-1">Nomor Ruangan</label>
+      <input type="text" name="Nomor Ruangan" value="${escapeHtml(room?.['Nomor Ruangan'] || '')}" ${editing ? 'readonly' : 'required'}
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 ${editing ? 'opacity-70 cursor-not-allowed' : ''}" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Nama Ruangan</label>
+      <input type="text" name="Nama Ruangan" value="${escapeHtml(room?.['Nama Ruangan'] || '')}" required
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Lokasi</label>
+      <input type="text" name="Lokasi" value="${escapeHtml(room?.Lokasi || '')}"
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">NIP Penanggung Jawab</label>
+      <select name="NIP Penanggung Jawab" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <option value="">Pilih Pegawai</option>${employeeOptions}
+      </select>
+    </div>
+    <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">${editing ? 'Simpan Perubahan' : 'Simpan Ruangan'}</button>
+  `;
+
+  const modal = document.getElementById('genericAddModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function openAssetModal(asset = null) {
+  const editing = Boolean(asset);
+  document.getElementById('genericModalTitle').textContent = editing ? 'Edit Barang' : 'Tambah Barang';
+  const form = document.getElementById('genericAddForm');
+  form.dataset.targetKey = 'DB_Aset';
+  form.dataset.editRowNum = editing ? String(asset._row_num || asset.row_num || '') : '';
+
+  const roomOptions = (DATA.rooms || []).map(room => {
+    const code = String(room['Nomor Ruangan'] || '').trim();
+    const name = String(room['Nama Ruangan'] || '').trim();
+    if (!code) return '';
+    const selected = code === String(asset?.['Kode Ruang'] || '').trim() ? ' selected' : '';
+    return `<option value="${escapeHtml(code)}"${selected}>${escapeHtml(code)}${name ? ` - ${escapeHtml(name)}` : ''}</option>`;
+  }).join('');
+  const selectOptions = (values, selectedValue) => values.map(value =>
+    `<option value="${escapeHtml(value)}"${value === String(selectedValue || '') ? ' selected' : ''}>${escapeHtml(value)}</option>`
+  ).join('');
+
+  form.innerHTML = `
+    <div>
+      <label class="block font-bold mb-1">Nomor Kode Barang</label>
+      <input type="text" name="Nomor Kode Barang" value="${escapeHtml(asset?.['Nomor Kode Barang'] || '')}" ${editing ? 'readonly' : 'required'}
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 ${editing ? 'opacity-70 cursor-not-allowed' : ''}" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Kode Ruang</label>
+      <select name="Kode Ruang" required class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <option value="">Pilih Ruangan</option>${roomOptions}
+      </select>
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Tipe</label>
+      <input type="text" name="Tipe" value="${escapeHtml(asset?.Tipe || '')}" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Nama Barang</label>
+      <input type="text" name="Nama Barang" value="${escapeHtml(asset?.['Nama Barang'] || '')}" required class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Merk Model</label>
+      <input type="text" name="Merk Model" value="${escapeHtml(asset?.['Merk Model'] || '')}" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <label class="block font-bold mb-1">Tahun</label>
+        <input type="number" name="Tahun" value="${escapeHtml(asset?.Tahun || '')}" min="0" step="1" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div>
+        <label class="block font-bold mb-1">NUP</label>
+        <input type="number" name="NUP" value="${escapeHtml(asset?.NUP || '')}" min="0" step="1" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Kondisi</label>
+      <select name="Kondisi" required class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <option value="">Pilih Kondisi</option>
+        ${selectOptions(['Baik', 'Rusak Ringan', 'Rusak Berat'], asset?.Kondisi)}
+      </select>
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Tindak Lanjut</label>
+      <select name="Tindak Lanjut" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <option value="">Pilih Tindak Lanjut</option>
+        ${selectOptions(['Penggunaan', 'Penyewaan', 'Peminjaman', 'Penghapusan', 'Pemeliharaan', 'Pengadaan', 'Reklas BMN'], asset?.['Tindak Lanjut'])}
+      </select>
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Keterangan</label>
+      <textarea name="Keterangan" rows="2" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">${escapeHtml(asset?.Keterangan || '')}</textarea>
+    </div>
+    <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">${editing ? 'Simpan Perubahan' : 'Simpan Barang'}</button>
+  `;
+
+  const modal = document.getElementById('genericAddModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
 function openAddModal(key) {
   const s = SCHEMAS[key];
   if (!s) return;
@@ -1451,13 +1589,30 @@ function openAddModal(key) {
   }).join('') + `<button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">Simpan</button>`;
   const m = document.getElementById('genericAddModal'); m.classList.remove('hidden'); m.classList.add('flex');
 }
-function closeGenericModal() { const m = document.getElementById('genericAddModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function closeGenericModal() {
+  const m = document.getElementById('genericAddModal');
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+  const form = document.getElementById('genericAddForm');
+  if (form) form.dataset.editRowNum = '';
+}
 async function submitGenericRecord(e) {
   e.preventDefault();
   const key = e.target.dataset.targetKey;
   const payload = Object.fromEntries(new FormData(e.target).entries());
+  const editRowNum = e.target.dataset.editRowNum;
+  if (key === 'DB_Aset' && editRowNum) delete payload['Nomor Kode Barang'];
+  if (key === 'DB_Ruangan' && editRowNum) delete payload['Nomor Ruangan'];
   const out = await processWithLoading(async () => {
-    const res = await fetch(`/api/add/${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const url = key === 'DB_Aset' && editRowNum
+      ? '/api/assets/update'
+      : key === 'DB_Ruangan' && editRowNum
+        ? '/api/rooms/update'
+        : `/api/add/${key}`;
+    const body = (key === 'DB_Aset' || key === 'DB_Ruangan') && editRowNum
+      ? { row_num: Number(editRowNum), updates: payload }
+      : payload;
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const out = await res.json();
     if (out.ok) { closeGenericModal(); await loadDashboard(); }
     return out;
@@ -1628,45 +1783,187 @@ function renderMonitoringProduksi() {
   `).join('');
 }
 
-function initBastSelectors() {
-  const rSel = document.getElementById('bastRuanganSelect');
-  const aSel = document.getElementById('bastAsetSelect');
-  const pSel = document.getElementById('bastPegawaiSelect');
-  if (!rSel || !aSel || !pSel) return;
+let BAST_RECORDS = [];
+let BAST_EDIT_ROW = null;
 
-  rSel.innerHTML = (DATA.rooms || []).map((r, i) => `<option value="${i}">${escapeHtml(r['Nomor Ruangan'])} — ${escapeHtml(r['Nama Ruangan'])}</option>`).join('');
-  aSel.innerHTML = (DATA.assets || []).map((a, i) => `<option value="${i}">${escapeHtml(a['Nomor Kode Barang'])} • ${escapeHtml(a['Nama Barang'])} (NUP ${escapeHtml(a.NUP)})</option>`).join('');
-  pSel.innerHTML = (DATA.employees || []).map((e, i) => `<option value="${i}">${escapeHtml(e['Nama Pegawai'])} (${escapeHtml(e.NIP)})</option>`).join('');
-  updateBastPreview();
-}
-
-function updateBastPreview() {
-  const r = (DATA.rooms || [])[document.getElementById('bastRuanganSelect')?.value || 0] || {};
-  const a = (DATA.assets || [])[document.getElementById('bastAsetSelect')?.value || 0] || {};
-  const e = (DATA.employees || [])[document.getElementById('bastPegawaiSelect')?.value || 0] || {};
-  const nomor = document.getElementById('bastNomor')?.value || 'BAST-001/BMN/RRI-MMJ/2026';
-
-  if (document.getElementById('prevBastNomor')) document.getElementById('prevBastNomor').textContent = `Nomor: ${nomor}`;
-  if (document.getElementById('prevBastPenerima')) document.getElementById('prevBastPenerima').textContent = e['Nama Pegawai'] || '-';
-  if (document.getElementById('prevBastNip')) document.getElementById('prevBastNip').textContent = `NIP: ${e.NIP || '-'}`;
-  if (document.getElementById('prevBastBody')) {
-    document.getElementById('prevBastBody').innerHTML = `
-      Pada hari ini telah dilakukan serah terima penggunaan Barang Milik Negara (BMN) pada ruangan <strong>${escapeHtml(r['Nama Ruangan'] || '-')} (${escapeHtml(r['Nomor Ruangan'] || '-')})</strong> berupa:<br><br>
-      • <strong>Tipe / Kategori Aset:</strong> ${escapeHtml(a.Tipe || '-')}<br>
-      • <strong>Nama Barang:</strong> ${escapeHtml(a['Nama Barang'] || '-')} (${escapeHtml(a['Merk Model'] || '-')})<br>
-      • <strong>Kode Barang / NUP:</strong> ${escapeHtml(a['Nomor Kode Barang'] || '-')} / NUP ${escapeHtml(a.NUP || '-')}<br>
-      • <strong>Kondisi:</strong> ${escapeHtml(a.Kondisi || 'Baik')}<br><br>
-      Barang tersebut diserahkan kepada <strong>${escapeHtml(e['Nama Pegawai'] || '-')}</strong> (${escapeHtml(e.Jabatan || '-')}) untuk dipergunakan dan dipelihara sesuai ketentuan pengelolaan BMN LPP RRI Mamuju.
-    `;
+async function initBastSelectors() {
+  await loadBastRecords();
+  if (!document.getElementById('bastTanggal')?.value) {
+    document.getElementById('bastTanggal').value = new Date().toISOString().slice(0, 10);
   }
 }
 
-function printBastDraft() {
-  const content = document.getElementById('bastPreviewBox')?.innerHTML || '';
-  const win = window.open('', '_blank', 'width=800,height=650');
-  win.document.write(`<html><head><title>Cetak BAST BMN</title><style>body{font-family:sans-serif;padding:40px;line-height:1.6;}</style></head><body>${content}</body></html>`);
-  win.document.close();
-  win.print();
+function openBastGenerateModal(row = null) {
+  if (row) fillBastForm(row, row._row_num || 0);
+  if (!document.getElementById('bastNip')?.options.length || document.getElementById('bastNip')?.options.length === 1) initBastSelects();
+  if (!row) {
+    document.getElementById('bastRowIndex').value = '';
+    BAST_EDIT_ROW = null;
+    const submitButton = document.querySelector('#bastGenerateForm button[type="submit"]');
+    if (submitButton) submitButton.textContent = 'Generate Dokumen & PDF';
+    document.querySelector('#bastGenerateModal h3').textContent = 'Input / Generate BAST';
+  }
+  const modal = document.getElementById('bastGenerateModal');
+  modal?.classList.remove('hidden');
+  modal?.classList.add('flex');
+}
+
+function closeBastGenerateModal() {
+  const modal = document.getElementById('bastGenerateModal');
+  modal?.classList.add('hidden');
+  modal?.classList.remove('flex');
+  BAST_EDIT_ROW = null;
+}
+
+function initBastSelects(selectedNip = '', selectedAssetCode = '', selectedNup = '') {
+  const nipSelect = document.getElementById('bastNip');
+  const assetSelect = document.getElementById('bastNomorBarang');
+  if (nipSelect) {
+    nipSelect.innerHTML = '<option value="">Pilih Pegawai</option>' + (DATA.employees || []).map(emp => {
+      const nip = emp.NIP || emp.nip_clean || '';
+      const selected = String(nip).replace(/\D/g, '') === String(selectedNip).replace(/\D/g, '') ? ' selected' : '';
+      return `<option value="${escapeHtml(nip)}"${selected}>${escapeHtml(nip)} - ${escapeHtml(emp['Nama Pegawai'] || '')}</option>`;
+    }).join('');
+  }
+  if (assetSelect) {
+    assetSelect.innerHTML = '<option value="">Pilih Barang</option>' + (DATA.assets || []).map(asset => {
+      const code = asset['Nomor Kode Barang'] || '';
+      const selected = String(code).trim() === String(selectedAssetCode).trim() ? ' selected' : '';
+      return `<option value="${escapeHtml(code)}"${selected}>${escapeHtml(code)} - ${escapeHtml(asset['Nama Barang'] || '')}</option>`;
+    }).join('');
+  }
+  if (selectedNup) document.getElementById('bastNup').value = selectedNup;
+  syncBastEmployee();
+  syncBastAsset();
+  if (selectedNup) document.getElementById('bastNup').value = selectedNup;
+}
+
+function syncBastEmployee() {
+  const nip = document.getElementById('bastNip')?.value || '';
+  const clean = String(nip).replace(/\D/g, '');
+  const emp = (DATA.employees || []).find(item => String(item.NIP || item.nip_clean || '').replace(/\D/g, '') === clean);
+  if (document.getElementById('bastNama')) document.getElementById('bastNama').value = emp?.['Nama Pegawai'] || '';
+  if (document.getElementById('bastPangkat')) document.getElementById('bastPangkat').value = emp?.['Pangkat Golongan'] || '';
+  if (document.getElementById('bastJabatan')) document.getElementById('bastJabatan').value = emp?.Jabatan || emp?.Posisi || '';
+}
+
+function syncBastAsset() {
+  const code = document.getElementById('bastNomorBarang')?.value || '';
+  const asset = (DATA.assets || []).find(item => String(item['Nomor Kode Barang'] || '').trim() === String(code).trim());
+  if (!asset) return;
+  document.getElementById('bastNup').value = asset.NUP || '';
+  document.getElementById('bastBarang').value = asset['Nama Barang'] || '';
+  document.getElementById('bastMerk').value = asset['Merk Model'] || '';
+  document.getElementById('bastTipe').value = asset.Tipe || '';
+  const roomCode = String(asset['Kode Ruang'] || '').trim();
+  const room = (DATA.rooms || []).find(item => String(item['Nomor Ruangan'] || '').trim() === roomCode);
+  document.getElementById('bastLetak').value = room?.['Nama Ruangan'] || roomCode || '';
+}
+
+async function loadBastRecords(force = false) {
+  const out = await processWithLoading(async () => {
+    const res = await fetch(`/api/bast/records${force ? '?force=true' : ''}`);
+    return res.json();
+  }, 'Gagal memuat daftar BAST');
+  if (!out?.ok) {
+    if (out) showToast(out.message, 'error');
+    return;
+  }
+  BAST_RECORDS = out.records || [];
+  const tbody = document.getElementById('tbodyBast');
+  if (!tbody) return;
+  const rows = paginateArray('bast', BAST_RECORDS, 'pagBast', 'loadBastRecords');
+  const editable = canUpdate('bast_otomatis');
+  const deletable = canFull('bast_otomatis');
+  tbody.innerHTML = rows.map((row, index) => {
+    const safeRow = encodeURIComponent(JSON.stringify(row));
+    const status = String(row.Status || '').trim();
+    const link = row['Link PDF'] || '';
+    return `
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+        <td class="py-2.5 px-2 font-mono font-bold">${escapeHtml(row['Nomor BAST'] || '-')}</td>
+        <td class="py-2.5 px-2 font-mono">${escapeHtml(row.NIP || '-')}</td>
+        <td class="py-2.5 px-2 font-bold">${escapeHtml(row.Nama || '-')}</td>
+        <td class="py-2.5 px-2">${escapeHtml(row.Pangkat || '-')}</td>
+        <td class="py-2.5 px-2">${escapeHtml(row.Jabatan || '-')}</td>
+        <td class="py-2.5 px-2 font-mono">${escapeHtml(row['Nomor Barang'] || '-')}</td>
+        <td class="py-2.5 px-2">${escapeHtml(row.NUP || '-')}</td>
+        <td class="py-2.5 px-2">${escapeHtml(row.Barang || '-')}</td>
+        <td class="py-2.5 px-2">${escapeHtml(row.Letak || '-')}</td>
+        <td class="py-2.5 px-2">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${status === 'DONE' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300'}">${escapeHtml(status || 'PENDING')}</span>
+        </td>
+        <td class="py-2.5 px-2 text-right whitespace-nowrap">
+          ${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-700 text-slate-700 dark:text-slate-100 hover:bg-emerald-200 dark:hover:bg-emerald-700 transition">${icon('link')}</a>` : ''}
+          ${editable ? `<button type="button" title="Edit BAST" onclick="fillBastForm(JSON.parse(decodeURIComponent('${safeRow}')), ${row._row_num || 0}, true)" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
+          ${deletable ? `<button type="button" title="Hapus BAST" onclick="deleteRecord('DB_BAST', ${row._row_num || 0}, 'BAST ${escapeHtml(row['Nomor BAST'] || '').replace(/'/g, '')}') " class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="11" class="py-8 text-center text-slate-400">Belum ada data BAST.</td></tr>';
+}
+
+function fillBastForm(row, sheetRowIndex, editMode = false) {
+  document.getElementById('bastRowIndex').value = sheetRowIndex;
+  BAST_EDIT_ROW = editMode ? Number(sheetRowIndex || 0) : null;
+  document.getElementById('bastNomor').value = row['Nomor BAST'] || '';
+  document.getElementById('bastTanggal').value = new Date().toISOString().slice(0, 10);
+  initBastSelects(row.NIP || '', row['Nomor Barang'] || '', row.NUP || '');
+  syncBastEmployee();
+  syncBastAsset();
+  document.getElementById('bastNup').value = row.NUP || document.getElementById('bastNup').value;
+  document.getElementById('bastNilai').value = row.Nilai || '';
+  document.getElementById('bastJumlah').value = row.Jumlah || '';
+  const submitButton = document.querySelector('#bastGenerateForm button[type="submit"]');
+  if (submitButton) submitButton.textContent = editMode ? 'Simpan Perubahan BAST' : 'Generate Dokumen & PDF';
+  document.querySelector('#bastGenerateModal h3').textContent = editMode ? 'Edit Data BAST' : 'Input / Generate BAST';
+  const modal = document.getElementById('bastGenerateModal');
+  modal?.classList.remove('hidden');
+  modal?.classList.add('flex');
+}
+
+async function generateBastDocument(event) {
+  event.preventDefault();
+  const payload = Object.fromEntries(new FormData(event.target).entries());
+  payload.sheet_row = Number(document.getElementById('bastRowIndex').value || 0);
+  if (BAST_EDIT_ROW) {
+    const updates = {
+      'Nomor BAST': payload.nomor_bast,
+      'NIP': payload.nip,
+      'Nomor Barang': payload.nomor_barang,
+      'NUP': payload.nup,
+      'Nilai': payload.nilai,
+      'Jumlah': payload.jumlah,
+    };
+    const out = await processWithLoading(async () => {
+      const res = await fetch('/api/bast/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ row_num: BAST_EDIT_ROW, updates })
+      });
+      return res.json();
+    }, 'Gagal memperbarui data BAST');
+    showToast(out?.message || 'Gagal memperbarui data BAST', out?.ok ? 'success' : 'error');
+    if (out?.ok) {
+      closeBastGenerateModal();
+      await loadBastRecords(true);
+    }
+    return;
+  }
+  const out = await processWithLoading(async () => {
+    const res = await fetch('/api/bast/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  }, 'Gagal generate BAST');
+  if (!out) return;
+  showToast(out.message, out.ok ? 'success' : 'error');
+  if (out.ok) {
+    if (out.pdf_url) window.open(out.pdf_url, '_blank', 'noopener');
+    await loadBastRecords(true);
+  }
 }
 
 function renderPemeliharaanAset() {

@@ -5,25 +5,29 @@
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <h2 class="text-xl font-extrabold">Master Assets (KIR)</h2>
-      <p class="text-xs text-slate-400">Inventaris BMN per ruangan &amp; tindak lanjut (Penggunaan, Penyewaan, Peminjaman, Penghapusan, Pemeliharaan, Pengadaan, Reklas BMN)</p>
+      <p class="text-xs text-slate-400">Inventaris BMN per ruangan</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
-      <select id="filterAsetKategori" onchange="renderMasterBarang()"
-        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold">
-        <option value="all">Semua Tindak Lanjut</option>
-        <option value="Penggunaan">Penggunaan</option>
-        <option value="Penyewaan">Penyewaan</option>
-        <option value="Peminjaman">Peminjaman</option>
-        <option value="Penghapusan">Penghapusan</option>
-        <option value="Pemeliharaan">Pemeliharaan</option>
-        <option value="Pengadaan">Pengadaan</option>
-        <option value="Reklas BMN">Reklas BMN</option>
-      </select>
-      <input type="text" id="searchBarang" oninput="renderMasterBarang()" placeholder="Cari barang, kode, ruangan..."
-        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
-      <button id="btnAddBarang" onclick="openAddModal('DB_Aset')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-        + Tambah Barang
-      </button>
+      <div class="flex sm:w-auto w-full items-center">
+        <select id="filterAsetKategori" onchange="renderMasterBarang()"
+          class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold w-full">
+          <option value="all">Semua Tindak Lanjut</option>
+          <option value="Penggunaan">Penggunaan</option>
+          <option value="Penyewaan">Penyewaan</option>
+          <option value="Peminjaman">Peminjaman</option>
+          <option value="Penghapusan">Penghapusan</option>
+          <option value="Pemeliharaan">Pemeliharaan</option>
+          <option value="Pengadaan">Pengadaan</option>
+          <option value="Reklas BMN">Reklas BMN</option>
+        </select>
+      </div>
+      <div class="flex sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="searchBarang" oninput="renderMasterBarang()" placeholder="Cari barang"
+          class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
+        <button id="btnAddBarang" onclick="openAssetModal()" aria-label="Tambah Barang" title="Tambah Barang" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
+          <i class="ti ti-plus" aria-hidden="true"></i><span class="hidden sm:inline"> Tambah Barang</span>
+        </button>
+      </div>
     </div>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
@@ -32,13 +36,14 @@
         <tr>
           <th class="py-3 px-3">Ruangan</th>
           <th class="py-3 px-3">Nomor Kode Barang</th>
-          <th class="py-3 px-3">Tipe</th>
           <th class="py-3 px-3">Nama Barang</th>
           <th class="py-3 px-3">Merk Model</th>
+          <th class="py-3 px-3">Tipe</th>
           <th class="py-3 px-3">Tahun</th>
           <th class="py-3 px-3">NUP</th>
           <th class="py-3 px-3">Kondisi</th>
           <th class="py-3 px-3">Tindak Lanjut</th>
+          <th class="py-3 px-3 text-right">Aksi</th>
         </tr>
       </thead>
       <tbody id="tbodyBarang" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
@@ -54,13 +59,13 @@
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <h2 class="text-xl font-extrabold">Master Room (DBR)</h2>
-      <p class="text-xs text-slate-400">Daftar ruangan &amp; penanggung jawab terhubung otomatis via NIP Pegawai</p>
+      <p class="text-xs text-slate-400">Daftar ruangan</p>
     </div>
-    <div class="flex items-center gap-2">
-      <input type="text" id="searchRuangan" oninput="renderMasterRuangan()" placeholder="Cari ruangan, NIP, PJ..."
-        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
-      <button id="btnAddRuangan" onclick="openAddModal('DB_Ruangan')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-        + Tambah Ruangan
+    <div class="flex sm:w-auto w-full text-right gap-2 items-center">
+      <input type="text" id="searchRuangan" oninput="renderMasterRuangan()" placeholder="Cari ruangan"
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
+      <button id="btnAddRuangan" onclick="openRoomModal()" aria-label="Tambah Ruangan" title="Tambah Ruangan" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
+        <i class="ti ti-plus" aria-hidden="true"></i><span class="hidden sm:inline"> Tambah Ruangan</span>
       </button>
     </div>
   </div>
@@ -89,56 +94,59 @@
 <section id="mod-bast_otomatis" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h2 class="text-xl font-extrabold">BAST Otomatis</h2>
-      <p class="text-xs text-slate-400">Relasi otomatis Master Assets (Tipe) + Master Room + Employee untuk Berita Acara Serah Terima</p>
+      <h2 class="text-xl font-extrabold">Berita Acara Serah Terima</h2>
     </div>
-    <a href="https://docs.google.com/spreadsheets/d/1Cj7Mu7ceb8RFVY3X22DAMNoutobrRE8I-oeZX01XDZg/edit?usp=sharing" target="_blank" rel="noopener"
-      class="text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      Buka Sheet BAST Otomatis ↗
-    </a>
+    <button type="button" onclick="openBastGenerateModal()" class="text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+      + Generate BAST
+    </button>
   </div>
 
-  <div class="grid lg:grid-cols-12 gap-6">
-    <div class="lg:col-span-5 bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3 text-xs">
-      <h3 class="text-sm font-extrabold">Generator Draft BAST</h3>
-      <div>
-        <label class="block font-bold mb-1">Nomor BAST</label>
-        <input type="text" id="bastNomor" oninput="updateBastPreview()" value="BAST-001/BMN/RRI-MMJ/2026" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
-      </div>
-      <div>
-        <label class="block font-bold mb-1">Pilih Ruangan (DBR)</label>
-        <select id="bastRuanganSelect" onchange="updateBastPreview()" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></select>
-      </div>
-      <div>
-        <label class="block font-bold mb-1">Pilih Aset BMN (KIR)</label>
-        <select id="bastAsetSelect" onchange="updateBastPreview()" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></select>
-      </div>
-      <div>
-        <label class="block font-bold mb-1">Pegawai Penerima (DB_Pegawai)</label>
-        <select id="bastPegawaiSelect" onchange="updateBastPreview()" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></select>
-      </div>
-      <button type="button" onclick="printBastDraft()" class="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-teal-600 text-white font-bold hover:opacity-90 transition">
-        Cetak / Simpan PDF BAST
-      </button>
-    </div>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <table class="w-full text-left text-xs">
+      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+        <tr>
+          <th class="py-2.5 px-2">Nomor BAST</th>
+          <th class="py-2.5 px-2">NIP</th>
+          <th class="py-2.5 px-2">Nama</th>
+          <th class="py-2.5 px-2">Pangkat</th>
+          <th class="py-2.5 px-2">Jabatan</th>
+          <th class="py-2.5 px-2">Kode Barang</th>
+          <th class="py-2.5 px-2">NUP</th>
+          <th class="py-2.5 px-2">Barang</th>
+          <th class="py-2.5 px-2">Letak</th>
+          <th class="py-2.5 px-2">Status</th>
+          <th class="py-2.5 px-2 text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyBast" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+    </table>
+    <div id="pagBast" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
 
-    <div id="bastPreviewBox" class="lg:col-span-7 bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 space-y-4 text-xs leading-relaxed">
-      <div class="text-center border-b border-slate-200 dark:border-slate-700 pb-3">
-        <p class="font-extrabold text-sm uppercase">Berita Acara Serah Terima (BAST) Penggunaan BMN</p>
-        <p class="font-mono text-slate-500" id="prevBastNomor">Nomor: BAST-001/BMN/RRI-MMJ/2026</p>
+  <div id="bastGenerateModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-[#111827] rounded-3xl max-w-4xl w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl my-8">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-extrabold">Input / Generate BAST</h3>
+        <button type="button" onclick="closeBastGenerateModal()" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
       </div>
-      <p id="prevBastBody" class="text-slate-600 dark:text-slate-300">Pilih ruangan, aset, dan pegawai penerima untuk menyusun naskah BAST otomatis.</p>
-      <div class="grid grid-cols-2 gap-6 pt-8 text-center">
-        <div>
-          <p class="font-bold">PIHAK PERTAMA (Pengelola BMN)</p>
-          <p class="mt-12 font-extrabold underline">Operator BMN LPP RRI Mamuju</p>
-        </div>
-        <div>
-          <p class="font-bold">PIHAK KEDUA (Penanggung Jawab)</p>
-          <p class="mt-12 font-extrabold underline" id="prevBastPenerima">-</p>
-          <p class="text-[11px] font-mono text-slate-400" id="prevBastNip">-</p>
-        </div>
-      </div>
+      <form id="bastGenerateForm" onsubmit="generateBastDocument(event)" class="grid md:grid-cols-3 gap-3 text-xs">
+      <input type="hidden" id="bastRowIndex" />
+      <div><label class="block font-bold mb-1">Nomor BAST</label><input id="bastNomor" name="nomor_bast" required class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></div>
+      <div><label class="block font-bold mb-1">Tanggal</label><input type="date" id="bastTanggal" name="tanggal" required class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></div>
+      <div><label class="block font-bold mb-1">Nama Penerima</label><input id="bastNama" name="nama" required readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-70" /></div>
+      <div><label class="block font-bold mb-1">NIP</label><select id="bastNip" name="nip" onchange="syncBastEmployee()" required class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></select></div>
+      <div><label class="block font-bold mb-1">Pangkat / Golongan</label><input id="bastPangkat" name="pangkat" required readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-70" /></div>
+      <div><label class="block font-bold mb-1">Jabatan</label><input id="bastJabatan" name="jabatan" required readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-70" /></div>
+      <div><label class="block font-bold mb-1">Nomor Barang</label><select id="bastNomorBarang" name="nomor_barang" onchange="syncBastAsset()" required class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></select></div>
+      <div><label class="block font-bold mb-1">NUP</label><input id="bastNup" name="nup" required readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-70" /></div>
+      <div><label class="block font-bold mb-1">Nama Barang</label><input id="bastBarang" name="barang" required readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-70" /></div>
+      <div><label class="block font-bold mb-1">Merk Barang</label><input id="bastMerk" name="merk" readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-70" /></div>
+      <div><label class="block font-bold mb-1">Tipe Barang</label><input id="bastTipe" name="tipe" readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-70" /></div>
+      <div><label class="block font-bold mb-1">Nilai / Harga</label><input id="bastNilai" name="nilai" type="number" min="0" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></div>
+      <div><label class="block font-bold mb-1">Jumlah</label><input id="bastJumlah" name="jumlah" type="number" min="1" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" /></div>
+      <div><label class="block font-bold mb-1">Letak Barang</label><input id="bastLetak" name="letak" readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-70" /></div>
+      <div class="md:col-span-3"><button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">Generate Dokumen &amp; PDF</button></div>
+      </form>
     </div>
   </div>
 </section>
