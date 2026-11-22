@@ -42,7 +42,8 @@ const ICON_CLASSES = {
   app_settings: 'ti-settings',
   edit: 'ti-pencil',
   delete: 'ti-trash',
-  link: 'ti-eye'
+  link: 'ti-eye',
+  search: 'ti-search'
 };
 
 function icon(name, size = 'w-4 h-4 text-base leading-none') {
@@ -495,16 +496,17 @@ function renderAllModules() {
   else if (ACTIVE_MODULE === 'master_barang') renderMasterBarang();
   else if (ACTIVE_MODULE === 'bast_otomatis') initBastSelectors();
   else if (ACTIVE_MODULE === 'pemeliharaan_aset') renderPemeliharaanAset();
-  else if (ACTIVE_MODULE === 'bmn_arsip') renderBmnArsip();
-  else if (ACTIVE_MODULE === 'aset_tutup_buku') renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku');
-  else if (ACTIVE_MODULE === 'aset_calbmn') renderBmnDokumenView('Aset', 'CALBMN', 'filterCalbmnPeriode', 'tbodyCalbmn', 'pagCalbmn');
-  else if (ACTIVE_MODULE === 'aset_wasdal') renderBmnDokumenView('Aset', 'WASDAL', 'filterWasdalPeriode', 'tbodyWasdal', 'pagWasdal');
-  else if (ACTIVE_MODULE === 'aset_rkbmn') renderBmnDokumenView('Aset', 'RKBMN', 'filterRkbmnPeriode', 'tbodyRkbmn', 'pagRkbmn');
-  else if (ACTIVE_MODULE === 'aset_manajemen_risiko') renderBmnDokumenView('Aset', 'Manajemen Risiko', 'filterManRisikoPeriode', 'tbodyManRisiko', 'pagManRisiko');
-  else if (ACTIVE_MODULE === 'aset_sisporja') renderBmnDokumenView('Aset', 'SISPORJA', 'filterSisporjaPeriode', 'tbodySisporja', 'pagSisporja');
+  // else if (ACTIVE_MODULE === 'bmn_arsip') renderBmnArsip();
+  else if (ACTIVE_MODULE === 'bmn_arsip') renderBmnDokumenView('Aset', 'Arsip', 'filterBmnArsip', 'tbodyBmnArsip', 'pagBmnArsip', 'selectBmnArsipPeriode');
+  else if (ACTIVE_MODULE === 'aset_tutup_buku') renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku', 'selectAsetTutupBukuPeriode');
+  else if (ACTIVE_MODULE === 'aset_calbmn') renderBmnDokumenView('Aset', 'CALBMN', 'filterCalbmnPeriode', 'tbodyCalbmn', 'pagCalbmn', 'selectCalbmnPeriode');
+  else if (ACTIVE_MODULE === 'aset_wasdal') renderBmnDokumenView('Aset', 'WASDAL', 'filterWasdalPeriode', 'tbodyWasdal', 'pagWasdal', 'selectWasdalPeriode');
+  else if (ACTIVE_MODULE === 'aset_rkbmn') renderBmnDokumenView('Aset', 'RKBMN', 'filterRkbmnPeriode', 'tbodyRkbmn', 'pagRkbmn', 'selectRkbmnPeriode');
+  else if (ACTIVE_MODULE === 'aset_manajemen_risiko') renderBmnDokumenView('Aset', 'Manajemen Risiko', 'filterManRisikoPeriode', 'tbodyManRisiko', 'pagManRisiko', 'selectManRisikoPeriode');
+  else if (ACTIVE_MODULE === 'aset_sisporja') renderBmnDokumenView('Aset', 'SISPORJA', 'filterSisporjaPeriode', 'tbodySisporja', 'pagSisporja', 'selectSisporjaPeriode');
   else if (ACTIVE_MODULE === 'master_persediaan') renderMasterPersediaan();
-  else if (ACTIVE_MODULE === 'persediaan_tutup_buku') renderBmnDokumenView('Persediaan', 'Tutup Buku', 'filterPersediaanTutupBukuPeriode', 'tbodyPersediaanTutupBuku', 'pagPersediaanTutupBuku');
-  else if (ACTIVE_MODULE === 'persediaan_pipk') renderBmnDokumenView('Persediaan', 'PIPK', 'filterPipkPeriode', 'tbodyPipk', 'pagPipk');
+  else if (ACTIVE_MODULE === 'persediaan_tutup_buku') renderBmnDokumenView('Persediaan', 'Tutup Buku', 'filterPersediaanTutupBukuPeriode', 'tbodyPersediaanTutupBuku', 'pagPersediaanTutupBuku', 'selectPersediaanTutupBukuPeriode');
+  else if (ACTIVE_MODULE === 'persediaan_pipk') renderBmnDokumenView('Persediaan', 'PIPK', 'filterPipkPeriode', 'tbodyPipk', 'pagPipk', 'selectPipkPeriode');
   else if (ACTIVE_MODULE === 'master_ruangan') renderMasterRuangan();
   else if (ACTIVE_MODULE === 'manage_users') renderManageUsers();
   else if (ACTIVE_MODULE === 'manage_modules') renderManageModules();
@@ -2095,21 +2097,21 @@ function renderPemeliharaanAset() {
   }
 }
 
-function renderBmnArsip() {
-  const rows = paginateArray('bmn_arsip', DATA.bmn_arsip || [], 'pagBmnArsip', 'renderBmnArsip');
-  const tbody = document.getElementById('tbodyBmnArsip');
-  if (!tbody) return;
-  tbody.innerHTML = rows.map(a => `
-    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs font-bold">${escapeHtml(a['Nomor Dokumen'] || '-')}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold">${escapeHtml(a.Jenis || '-')}</span></td>
-      <td class="py-3 px-3 font-bold">${escapeHtml(a['Judul Dokumen'] || '-')}</td>
-      <td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(a.Tanggal || '-')}</td>
-      <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(a.Keterangan || '-')}</td>
-      <td class="py-3 px-3">${a.Link ? `<a href="${escapeHtml(a.Link)}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
-    </tr>
-  `).join('');
-}
+// function renderBmnArsip() {
+//   const rows = paginateArray('bmn_arsip', DATA.bmn_arsip || [], 'pagBmnArsip', 'renderBmnArsip');
+//   const tbody = document.getElementById('tbodyBmnArsip');
+//   if (!tbody) return;
+//   tbody.innerHTML = rows.map(a => `
+//     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+//       <td class="py-3 px-3 font-mono text-xs font-bold">${escapeHtml(a['Nomor Dokumen'] || '-')}</td>
+//       <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold">${escapeHtml(a.Jenis || '-')}</span></td>
+//       <td class="py-3 px-3 font-bold">${escapeHtml(a['Judul Dokumen'] || '-')}</td>
+//       <td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(a.Tanggal || '-')}</td>
+//       <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(a.Keterangan || '-')}</td>
+//       <td class="py-3 px-3">${a.Link ? `<a href="${escapeHtml(a.Link)}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
+//     </tr>
+//   `).join('');
+// }
 
 function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
   const form = document.getElementById('genericAddForm');
@@ -2123,6 +2125,7 @@ function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
     : subMenuName === 'Tutup Buku'
       ? 'Contoh: November 2026'
       : 'Contoh: 2026';
+  const isArsip = subMenuName === 'Arsip';
   const categorySelect = categoryOptions.map(option =>
     `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`
   ).join('');
@@ -2136,8 +2139,15 @@ function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
       <input type="text" name="Periode" placeholder="${periodPlaceholder}"
         class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
     </div>
+    ${ isArsip ? `
+      <div>
+      <label class="block font-bold mb-1">Nomor Dokumen</label>
+      <input type="text" name="Keterangan" required placeholder="Nomor dokumen"
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>` : ''
+    }
     <div>
-      <label class="block font-bold mb-1">Kategori Item</label>
+      <label class="block font-bold mb-1">${ isArsip ? 'Jenis Dokumen' : 'Kategori Item' }</label>
       <select name="Kategori Item" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
         ${categorySelect}
       </select>
@@ -2183,12 +2193,13 @@ function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
       <input type="url" id="bmnDriveLink" placeholder="https://drive.google.com/file/d/..."
         class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
     </div>
-
-    <div>
-      <label class="block font-bold mb-1">Keterangan</label>
-      <textarea name="Keterangan" rows="3" placeholder="Tambahkan keterangan"
-        class="w-full resize-y px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></textarea>
-    </div>
+    ${ isArsip ? '' : `
+      <div>
+        <label class="block font-bold mb-1">Keterangan</label>
+        <textarea name="Keterangan" rows="3" placeholder="Tambahkan keterangan"
+          class="w-full resize-y px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></textarea>
+      </div>` 
+    }
     <input type="hidden" name="Link File" id="bmnLinkFile" value="" />
     <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">Simpan Dokumen</button>
   `;
@@ -2242,17 +2253,62 @@ function handleBmnFileSelection(file) {
   }
 }
 
-function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pagId) {
-  const per = (document.getElementById(filterInputId)?.value || '').toLowerCase();
-  const list = (DATA.bmn_dokumen || []).filter(d => {
+function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pagId, periodSelectId = '') {
+  const searchTerm = (document.getElementById(filterInputId)?.value || '').trim().toLocaleLowerCase();
+  const periodSelect = periodSelectId ? document.getElementById(periodSelectId) : null;
+  const moduleDocuments = (DATA.bmn_dokumen || []).filter(d => {
     if (String(d.Group || '').toLowerCase() !== groupName.toLowerCase()) return false;
     if (String(d['Sub Menu'] || '').toLowerCase() !== subMenuName.toLowerCase()) return false;
-    if (per && !String(d.Periode || '').toLowerCase().includes(per)) return false;
+    return true;
+  });
+  let dateFromInput = null;
+  let dateToInput = null;
+  if (periodSelect) {
+    periodSelect.classList.add('hidden');
+    const rangeId = `${periodSelectId}DateRange`;
+    let range = document.getElementById(rangeId);
+    if (!range) {
+      range = document.createElement('div');
+      range.id = rangeId;
+      range.className = 'flex items-end gap-3';
+      range.innerHTML = `
+        <label class="flex items-center gap-2 text-xs font-bold">Tanggal
+          <input type="date" id="${rangeId}From" class="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 dark:border-slate-700 dark:bg-slate-800" />
+        </label>
+        <label class="flex items-center gap-2 text-xs font-bold">s/d
+          <input type="date" id="${rangeId}To" class="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 dark:border-slate-700 dark:bg-slate-800" />
+        </label>
+        <button type="button" aria-label="Cari" title="Cari" class="inline-flex items-center justify-center rounded-xl bg-blue-600 p-2 text-white hover:bg-blue-700">
+          ${icon('search', 'w-5 h-5 text-base leading-none')}
+        </button>`;
+      periodSelect.insertAdjacentElement('afterend', range);
+      range.querySelector('button').addEventListener('click', () => {
+        PAGE_STATE[pagKey] = PAGE_STATE[pagKey] || { page: 1, size: DEFAULT_PAGE_SIZE };
+        PAGE_STATE[pagKey].page = 1;
+        renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pagId, periodSelectId);
+      });
+    }
+    dateFromInput = document.getElementById(`${rangeId}From`);
+    dateToInput = document.getElementById(`${rangeId}To`);
+  }
+  const dateFrom = dateFromInput?.value || '';
+  const dateTo = dateToInput?.value || '';
+  const list = moduleDocuments.filter(d => {
+    const matchesKeterangan = subMenuName.toLowerCase() === 'arsip'
+      && String(d.Keterangan || '').toLocaleLowerCase().includes(searchTerm);
+    if (periodSelect) {
+      const documentDate = dateValueForInput(d['Tanggal Buat'] || '');
+      if (dateFrom && (!documentDate || documentDate < dateFrom)) return false;
+      if (dateTo && (!documentDate || documentDate > dateTo)) return false;
+      if (searchTerm && !String(d['Judul Dokumen'] || '').toLocaleLowerCase().includes(searchTerm) && !matchesKeterangan) return false;
+    } else if (searchTerm && !String(d.Periode || '').toLowerCase().includes(searchTerm) && !matchesKeterangan) {
+      return false;
+    }
     return true;
   });
 
   const pagKey = `${groupName}_${subMenuName}`.replace(/[^a-zA-Z0-9]/g, '_');
-  const rerenderFn = `() => renderBmnDokumenView('${groupName}', '${subMenuName}', '${filterInputId}', '${tbodyId}', '${pagId}')`;
+  const rerenderFn = `() => renderBmnDokumenView('${groupName}', '${subMenuName}', '${filterInputId}', '${tbodyId}', '${pagId}', '${periodSelectId}')`;
   const rows = paginateArray(pagKey, list, pagId, rerenderFn);
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
@@ -2263,6 +2319,7 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
     'Aset|RKBMN': 'aset_rkbmn',
     'Aset|Manajemen Risiko': 'aset_manajemen_risiko',
     'Aset|SISPORJA': 'aset_sisporja',
+    'Aset|Arsip': 'bmn_arsip',
     'Persediaan|Tutup Buku': 'persediaan_tutup_buku',
     'Persediaan|PIPK': 'persediaan_pipk'
   };
@@ -2275,17 +2332,19 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
     const label = linkedBast ? 'BAST Dokumen' : 'Dokumen';
     return `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+      ${groupName === 'Persediaan' ? `<td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(d.Periode || '-')}</td>` : ''}
+      ${subMenuName === 'Arsip' ? ` <td class="py-3 px-3 font-mono font-bold">${escapeHtml(d['Keterangan'] || '-')}</td>` : ''}
       <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(d['Judul Dokumen'] || '-')}</td>
       <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold">${escapeHtml(d['Kategori Item'] || '-')}</span></td>
       <td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(d['Tanggal Buat'] || '-')}</td>
-      <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(d.Keterangan || '-')}</td>
+      ${subMenuName != 'Arsip' ? `<td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(d.Keterangan || '-')}</td>` : ''}
       <td class="py-3 px-3">
         ${d['Link File'] ? `<a href="${escapeHtml(d['Link File'])}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : '-'}
         ${deletable ? `<button type="button" title="Hapus Dokumen" onclick="deleteRecord('DB_BMN_Dokumen', ${d._row_num || 0}, '${label} ${escapeHtml(d['Judul Dokumen'] || '').replace(/'/g, '')}') " class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
       </td>
     </tr>
   `;
-  }).join('') || `<tr><td colspan="5" class="py-8 text-center text-xs text-slate-400">Belum ada dokumen ${escapeHtml(subMenuName)} yang diunggah.</td></tr>`;
+  }).join('') || `<tr><td colspan="${groupName === 'Persediaan' ? 6 : 5}" class="py-8 text-center text-xs text-slate-400">Belum ada dokumen ${escapeHtml(subMenuName)} yang diunggah.</td></tr>`;
 }
 
 initTheme();

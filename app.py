@@ -134,7 +134,7 @@ MODULE_DATA_DEPENDENCIES = {
     "master_ruangan": {"rooms", "employees"},
     "bast_otomatis": {"rooms", "assets", "employees"},
     "pemeliharaan_aset": {"pemeliharaan_header", "pemeliharaan_detail", "assets"},
-    "bmn_arsip": {"bmn_arsip"},
+    "bmn_arsip": {"bmn_dokumen"},
     "aset_tutup_buku": {"bmn_dokumen"},
     "aset_calbmn": {"bmn_dokumen"},
     "aset_wasdal": {"bmn_dokumen"},
@@ -213,8 +213,8 @@ def _get_module_payload(user, module_key):
         payload["pemeliharaan_header"] = db.get_tab_records(["DB_Pemeliharaan_Header"], include_row_num=True)
     if "pemeliharaan_detail" in dependencies:
         payload["pemeliharaan_detail"] = db.get_tab_records(["DB_Pemeliharaan_Detail"], include_row_num=True)
-    if "bmn_arsip" in dependencies:
-        payload["bmn_arsip"] = db.get_tab_records(["DB_BMN_Arsip"], include_row_num=True)
+    # if "bmn_arsip" in dependencies:
+    #     payload["bmn_arsip"] = db.get_tab_records(["DB_BMN_Arsip"], include_row_num=True)
     if "bmn_dokumen" in dependencies:
         payload["bmn_dokumen"] = db.get_tab_records(["DB_BMN_Dokumen"], include_row_num=True)
     if "stock" in dependencies:
@@ -607,6 +607,7 @@ def api_upload_bmn_document():
         ("Aset", "RKBMN"): "aset_rkbmn",
         ("Aset", "Manajemen Risiko"): "aset_manajemen_risiko",
         ("Aset", "SISPORJA"): "aset_sisporja",
+        ("Aset", "Arsip"): "bmn_arsip",
         ("Persediaan", "Tutup Buku"): "persediaan_tutup_buku",
         ("Persediaan", "PIPK"): "persediaan_pipk",
     }

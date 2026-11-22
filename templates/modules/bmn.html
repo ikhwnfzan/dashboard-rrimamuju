@@ -161,9 +161,9 @@
       <p class="text-xs text-slate-400">Kelengkapan dokumen tutup buku BMN Aset: <strong>Invoice</strong> &amp; <strong>BAST</strong></p>
     </div>
     <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-      <div class="flex sm:w-auto w-full text-right gap-2 items-center">
-        <input type="text" id="filterAsetTutupBukuPeriode" oninput="renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku')"
-          placeholder="Cari dokumen"
+      <div class="flex flex-wrap sm:flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="filterAsetTutupBukuPeriode" oninput="renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku', 'selectAsetTutupBukuPeriode')"
+          placeholder="Cari Judul Dokumen"
           class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
         <button id="btnAddAsetTutupBuku" onclick="openBmnDokModal('Aset', 'Tutup Buku', ['Invoice'])"
           class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
@@ -173,6 +173,13 @@
     </div>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <div class="flex justify-end mb-3">
+      <select id="selectAsetTutupBukuPeriode" onchange="renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku', 'selectAsetTutupBukuPeriode')"
+        aria-label="Filter periode"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-44 w-full">
+        <option value="">Semua Periode</option>
+      </select>
+    </div>
     <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
@@ -199,9 +206,9 @@
       <p class="text-xs text-slate-400">22 Kelengkapan Dokumen Per Semester</p>
     </div>
     <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-      <div class="flex sm:w-auto w-full text-right gap-2 items-center">
-        <input type="text" id="filterCalbmnPeriode" oninput="renderBmnDokumenView('Aset', 'CALBMN', 'filterCalbmnPeriode', 'tbodyCalbmn', 'pagCalbmn')"
-          placeholder="Cari dokumen"
+      <div class="flex flex-wrap sm:flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="filterCalbmnPeriode" oninput="renderBmnDokumenView('Aset', 'CALBMN', 'filterCalbmnPeriode', 'tbodyCalbmn', 'pagCalbmn', 'selectCalbmnPeriode')"
+          placeholder="Cari Judul Dokumen"
           class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
         <button id="btnAddCalbmn" onclick="openBmnDokModal('Aset', 'CALBMN', ['1. Berita Acara Rekonsiliasi Data BMN antara UAKPB dan UAKPA', '2. Laporan Posisi BMN di Neraca Akhir Tahun', '3. Laporan Posisi BMN di Neraca (Saldo Awal)', '4. Laporan Barang Persediaan', '5. Laporan Barang Intrakomptabel', '6. Laporan Barang Ekstrakomptabel', '7. Laporan Barang Gabungan', '8. Laporan Konstruksi Dalam Pengerjaan', '9. Laporan Aset Tak Berwujud', '10. Laporan Barang Bersejarah', '11. Laporan Barang Rusak Berat', '12. Laporan Barang Hilang', '13. Laporan Barang BPYBDS', '14. Laporan Barang Hibah DK/TP', '15. Laporan Penyusutan Intrakomptabel', '16. Laporan Penyusutan Ekstrakomptabel', '17. Laporan Amortisasi ATB', '18. Catatan Atas Laporan BMN', '19. Laporan PNBP (yang bersumber dari pengelolaan BMN)', '20. Laporan Pelaksanaan Pengasuransian BMN', '21. Rekapitulasi Konstruksi Dalam Pengerjaan.', '22. Laporan BMN berupa Rumah Negara'])"
           class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
@@ -240,6 +247,13 @@
   </details>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <div class="flex justify-end mb-3">
+      <select id="selectCalbmnPeriode" onchange="renderBmnDokumenView('Aset', 'CALBMN', 'filterCalbmnPeriode', 'tbodyCalbmn', 'pagCalbmn', 'selectCalbmnPeriode')"
+        aria-label="Filter periode"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-44 w-full">
+        <option value="">Semua Periode</option>
+      </select>
+    </div>
     <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
@@ -266,9 +280,9 @@
       <p class="text-xs text-slate-400">7 Kelengkapan Laporan Wasdal per Semester</p>
     </div>
     <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-      <div class="flex sm:w-auto w-full text-right gap-2 items-center">
-        <input type="text" id="filterWasdalPeriode" oninput="renderBmnDokumenView('Aset', 'WASDAL', 'filterWasdalPeriode', 'tbodyWasdal', 'pagWasdal')"
-          placeholder="Cari dokumen"
+      <div class="flex flex-wrap sm:flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="filterWasdalPeriode" oninput="renderBmnDokumenView('Aset', 'WASDAL', 'filterWasdalPeriode', 'tbodyWasdal', 'pagWasdal', 'selectWasdalPeriode')"
+          placeholder="Cari Judul Dokumen"
           class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
         <button id="btnAddWasdal" onclick="openBmnDokModal('Aset', 'WASDAL', ['1. BA Pemantauan Periodik', '2. Laporan Periodik A-GH', '3. Laporan Insidentil A-GH', '4. Laporan Penertiban', '5. Surat Pengantar Laporan Wasdal', '6. Laporan Wasdal', '7. Surat Tugas Wasdal'])"
           class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
@@ -293,6 +307,13 @@
   </details>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <div class="flex justify-end mb-3">
+      <select id="selectWasdalPeriode" onchange="renderBmnDokumenView('Aset', 'WASDAL', 'filterWasdalPeriode', 'tbodyWasdal', 'pagWasdal', 'selectWasdalPeriode')"
+        aria-label="Filter periode"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-44 w-full">
+        <option value="">Semua Periode</option>
+      </select>
+    </div>
     <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
@@ -319,9 +340,9 @@
       <p class="text-xs text-slate-400">9 Kelengkapan Dokumen Perencanaan Tahunan</p>
     </div>
     <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-      <div class="flex sm:w-auto w-full text-right gap-2 items-center">
-        <input type="text" id="filterRkbmnPeriode" oninput="renderBmnDokumenView('Aset', 'RKBMN', 'filterRkbmnPeriode', 'tbodyRkbmn', 'pagRkbmn')"
-          placeholder="Cari dokumen"
+      <div class="flex flex-wrap sm:flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="filterRkbmnPeriode" oninput="renderBmnDokumenView('Aset', 'RKBMN', 'filterRkbmnPeriode', 'tbodyRkbmn', 'pagRkbmn', 'selectRkbmnPeriode')"
+          placeholder="Cari Judul Dokumen"
           class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
         <button id="btnAddRkbmn" onclick="openBmnDokModal('Aset', 'RKBMN', ['1. Rencana Pemanfaatan', '2. Rencana Pemeliharaan', '3. Rencana Pemindahtanganan', '4. Rencana Pengadaan', '5. Rencana Penggunaan', '6. Rencana Penghapusan', '7. SPTJM', '8. Surat Pengantar RKBMN', '9. Surat Pernyataan Tusi LPP RRI'])"
           class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
@@ -348,6 +369,13 @@
   </details>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <div class="flex justify-end mb-3">
+      <select id="selectRkbmnPeriode" onchange="renderBmnDokumenView('Aset', 'RKBMN', 'filterRkbmnPeriode', 'tbodyRkbmn', 'pagRkbmn', 'selectRkbmnPeriode')"
+        aria-label="Filter periode"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-44 w-full">
+        <option value="">Semua Periode</option>
+      </select>
+    </div>
     <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
@@ -374,9 +402,9 @@
       <p class="text-xs text-slate-400">Upload &amp; arsip dokumen Manajemen Risiko pengelolaan aset per Tahun</p>
     </div>
     <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-      <div class="flex sm:w-auto w-full text-right gap-2 items-center">
-        <input type="text" id="filterManRisikoPeriode" oninput="renderBmnDokumenView('Aset', 'Manajemen Risiko', 'filterManRisikoPeriode', 'tbodyManRisiko', 'pagManRisiko')"
-          placeholder="Cari dokumen"
+      <div class="flex flex-wrap sm:flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="filterManRisikoPeriode" oninput="renderBmnDokumenView('Aset', 'Manajemen Risiko', 'filterManRisikoPeriode', 'tbodyManRisiko', 'pagManRisiko', 'selectManRisikoPeriode')"
+          placeholder="Cari Judul Dokumen"
           class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
         <button id="btnAddManRisiko" onclick="openBmnDokModal('Aset', 'Manajemen Risiko', ['Manajemen Risiko'])"
           class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
@@ -386,6 +414,13 @@
     </div>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <div class="flex justify-end mb-3">
+      <select id="selectManRisikoPeriode" onchange="renderBmnDokumenView('Aset', 'Manajemen Risiko', 'filterManRisikoPeriode', 'tbodyManRisiko', 'pagManRisiko', 'selectManRisikoPeriode')"
+        aria-label="Filter periode"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-44 w-full">
+        <option value="">Semua Periode</option>
+      </select>
+    </div>
     <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
@@ -412,9 +447,9 @@
       <p class="text-xs text-slate-400">Sistem Pelaporan Pertanggungjawaban BMN</p>
     </div>
     <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-      <div class="flex sm:w-auto w-full text-right gap-2 items-center">
-        <input type="text" id="filterSisporjaPeriode" oninput="renderBmnDokumenView('Aset', 'SISPORJA', 'filterSisporjaPeriode', 'tbodySisporja', 'pagSisporja')"
-          placeholder="Cari dokumen"
+      <div class="flex flex-wrap sm:flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="filterSisporjaPeriode" oninput="renderBmnDokumenView('Aset', 'SISPORJA', 'filterSisporjaPeriode', 'tbodySisporja', 'pagSisporja', 'selectSisporjaPeriode')"
+          placeholder="Cari Judul Dokumen"
           class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
         <button id="btnAddSisporja" onclick="openBmnDokModal('Aset', 'SISPORJA', ['Laporan SISPORJA Tahunan', 'Lampiran Pertanggungjawaban'])"
           class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
@@ -424,6 +459,13 @@
     </div>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <div class="flex justify-end mb-3">
+      <select id="selectSisporjaPeriode" onchange="renderBmnDokumenView('Aset', 'SISPORJA', 'filterSisporjaPeriode', 'tbodySisporja', 'pagSisporja', 'selectSisporjaPeriode')"
+        aria-label="Filter periode"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-44 w-full">
+        <option value="">Semua Periode</option>
+      </select>
+    </div>
     <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
@@ -446,22 +488,36 @@
 <section id="mod-bmn_arsip" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h2 class="text-xl font-extrabold">Administrasi BMN (Surat &amp; Nota Dinas)</h2>
+      <h2 class="text-xl font-extrabold">Administrasi BMN</h2>
       <p class="text-xs text-slate-400">Arsip Surat Menyurat, Nota Dinas, dan lain sebagainya</p>
     </div>
-    <button id="btnAddBmnArsip" onclick="openAddModal('DB_BMN_Arsip')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      + Tambah Dokumen BMN
-    </button>
+    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <div class="flex flex-wrap sm:flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="filterBmnArsip" oninput="renderBmnDokumenView('Aset', 'Arsip', 'filterBmnArsip', 'tbodyBmnArsip', 'pagBmnArsip', 'selectBmnArsipPeriode')"
+          placeholder="Cari Judul Dokumen"
+          class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
+        <button id="btnAddBmnArsip" onclick="openBmnDokModal('Aset', 'Arsip', ['Surat', 'Nodin', 'Dokumen Lainnya'])"
+          class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
+          <i class="ti ti-plus" aria-hidden="true"></i><span class="hidden sm:inline"> Upload Berkas</span>
+        </button>
+      </div>
+    </div>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <div class="flex justify-end mb-3">
+      <select id="selectBmnArsipPeriode" onchange="renderBmnDokumenView('Aset', 'Arsip', 'filterBmnArsip', 'tbodyBmnArsip', 'pagBmnArsip', 'selectBmnArsipPeriode')"
+        aria-label="Filter periode"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-44 w-full">
+        <option value="">Semua Periode</option>
+      </select>
+    </div>
     <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Nomor Dokumen</th>
-          <th class="py-3 px-3">Jenis</th>
           <th class="py-3 px-3">Judul Dokumen</th>
+          <th class="py-3 px-3">Jenis</th>
           <th class="py-3 px-3">Tanggal</th>
-          <th class="py-3 px-3">Keterangan</th>
           <th class="py-3 px-3">Link</th>
         </tr>
       </thead>
@@ -538,15 +594,11 @@
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <h2 class="text-xl font-extrabold">Monitoring Persediaan</h2>
-      <p class="text-xs text-slate-400">Klik baris barang untuk membuka pop-up detail transaksi Masuk/Keluar (<code>DB_Stok_Detail</code>)</p>
+      <p class="text-xs text-slate-400">Klik nama barang untuk membuka pop-up detail mutasi barang persediaan</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
       <input type="text" id="searchPersediaan" oninput="renderMasterPersediaan()" placeholder="Cari kode atau nama barang..."
         class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
-      <a href="https://docs.google.com/spreadsheets/d/1KG0V97oTRunwUeMJrLJZjHt8ciG5BzDyVgL-Bf1TSa8/edit?usp=sharing" target="_blank" rel="noopener"
-        class="text-xs font-bold px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-200 transition">
-        Sheet Stock ↗
-      </a>
       <button id="btnAddPersediaan" onclick="openAddModal('DB_Stok_Master')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
         + Persediaan
       </button>
@@ -577,22 +629,24 @@
 <section id="mod-persediaan_tutup_buku" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h2 class="text-xl font-extrabold">Tutup Buku — Persediaan (Bulanan)</h2>
-      <p class="text-xs text-slate-400">6 Kelengkapan Bulanan: Transaksi Masuk, Transaksi Keluar, Opname, Reklas, Invoice, Surat Pengajuan Bidang</p>
+      <h2 class="text-xl font-extrabold">Tutup Buku Persediaan</h2>
+      <p class="text-xs text-slate-400">6 Kelengkapan Bulanan:</p>
     </div>
-    <div class="flex items-center gap-2">
-      <input type="text" id="filterPersediaanTutupBukuPeriode" oninput="renderBmnDokumenView('Persediaan', 'Tutup Buku', 'filterPersediaanTutupBukuPeriode', 'tbodyPersediaanTutupBuku', 'pagPersediaanTutupBuku')"
-        placeholder="Filter Bulan (mis. November 2026)..."
-        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
-      <button id="btnAddPersediaanTutupBuku" onclick="openBmnDokModal('Persediaan', 'Tutup Buku', ['1. Transaksi Masuk', '2. Transaksi Keluar', '3. Opname', '4. Reklas', '5. Invoice', '6. Surat Pengajuan Bidang'])"
-        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-        + Upload Kelengkapan
-      </button>
+    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <div class="flex flex-wrap sm:flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="filterPersediaanTutupBukuPeriode" oninput="renderBmnDokumenView('Persediaan', 'Tutup Buku', 'filterPersediaanTutupBukuPeriode', 'tbodyPersediaanTutupBuku', 'pagPersediaanTutupBuku', 'selectPersediaanTutupBukuPeriode')"
+          placeholder="Cari Judul Dokumen"
+          class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
+        <button id="btnAddPersediaanTutupBuku" onclick="openBmnDokModal('Persediaan', 'Tutup Buku', ['1. Transaksi Masuk', '2. Transaksi Keluar', '3. Opname', '4. Reklas', '5. Invoice', '6. Surat Pengajuan Bidang'])"
+          class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
+          <i class="ti ti-plus" aria-hidden="true"></i><span class="hidden sm:inline"> Upload Berkas</span>
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 text-xs">
-    <p class="font-extrabold text-emerald-700 dark:text-emerald-300 mb-2">6 Kelengkapan Tutup Buku Persediaan (Bulanan):</p>
+  <details class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 text-xs">
+    <summary class="font-extrabold text-emerald-700 dark:text-emerald-300 mb-2">6 Kelengkapan Tutup Buku Persediaan (Bulanan):</summary>
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5 text-slate-600 dark:text-slate-300">
       <div>1. Transaksi Masuk</div>
       <div>2. Transaksi Keluar</div>
@@ -601,9 +655,16 @@
       <div>5. Invoice</div>
       <div>6. Surat Pengajuan Bidang</div>
     </div>
-  </div>
+  </details>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <div class="flex justify-end mb-3">
+      <select id="selectPersediaanTutupBukuPeriode" onchange="renderBmnDokumenView('Persediaan', 'Tutup Buku', 'filterPersediaanTutupBukuPeriode', 'tbodyPersediaanTutupBuku', 'pagPersediaanTutupBuku', 'selectPersediaanTutupBukuPeriode')"
+        aria-label="Filter periode"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-44 w-full">
+        <option value="">Semua Periode</option>
+      </select>
+    </div>
     <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
@@ -646,22 +707,24 @@
 <section id="mod-persediaan_pipk" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h2 class="text-xl font-extrabold">PIPK — Persediaan</h2>
-      <p class="text-xs text-slate-400">8 Kelengkapan Pengendalian Intern atas Pelaporan Keuangan (SK Tim s.d. Laporan PIPK)</p>
+      <h2 class="text-xl font-extrabold">PIPK</h2>
+      <p class="text-xs text-slate-400">8 Kelengkapan Pengendalian Intern atas Pelaporan Keuangan</p>
     </div>
-    <div class="flex items-center gap-2">
-      <input type="text" id="filterPipkPeriode" oninput="renderBmnDokumenView('Persediaan', 'PIPK', 'filterPipkPeriode', 'tbodyPipk', 'pagPipk')"
-        placeholder="Filter Tahun / Periode..."
-        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
-      <button id="btnAddPipk" onclick="openBmnDokModal('Persediaan', 'PIPK', ['1. SK Tim', '2. Tabel A', '3. Tabel B', '4. Tabel C', '5. Tabel D', '6. Tabel E', '7. Matriks Pengujian', '8. Laporan PIPK'])"
-        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-        + Upload Dokumen PIPK
-      </button>
+    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <div class="flex flex-wrap sm:flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="filterPipkPeriode" oninput="renderBmnDokumenView('Persediaan', 'PIPK', 'filterPipkPeriode', 'tbodyPipk', 'pagPipk', 'selectPipkPeriode')"
+          placeholder="Cari Judul Dokumen"
+          class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
+        <button id="btnAddPipk" onclick="openBmnDokModal('Persediaan', 'PIPK', ['1. SK Tim', '2. Tabel A', '3. Tabel B', '4. Tabel C', '5. Tabel D', '6. Tabel E', '7. Matriks Pengujian', '8. Laporan PIPK'])"
+          class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
+          <i class="ti ti-plus" aria-hidden="true"></i><span class="hidden sm:inline"> Upload Berkas</span>
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 text-xs">
-    <p class="font-extrabold text-amber-700 dark:text-amber-300 mb-2">8 Kelengkapan PIPK:</p>
+  <details class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 text-xs">
+    <summary class="font-extrabold text-amber-700 dark:text-amber-300 mb-2">8 Kelengkapan PIPK:</summary>
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-1.5 text-slate-600 dark:text-slate-300">
       <div>1. SK Tim</div>
       <div>2. Tabel A</div>
@@ -672,9 +735,16 @@
       <div>7. Matriks Pengujian</div>
       <div>8. Laporan PIPK</div>
     </div>
-  </div>
+  </details>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+    <div class="flex justify-end mb-3">
+      <select id="selectPipkPeriode" onchange="renderBmnDokumenView('Persediaan', 'PIPK', 'filterPipkPeriode', 'tbodyPipk', 'pagPipk', 'selectPipkPeriode')"
+        aria-label="Filter periode"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-44 w-full">
+        <option value="">Semua Periode</option>
+      </select>
+    </div>
     <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
