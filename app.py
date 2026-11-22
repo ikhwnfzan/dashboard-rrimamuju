@@ -1,7 +1,7 @@
 import os
 import base64
 from datetime import datetime, timedelta, timezone
-from flask import Flask, render_template, request, jsonify, session, send_from_directory, redirect, url_for
+from flask import Flask, abort, render_template, request, jsonify, session, send_from_directory, redirect, url_for
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from sheets_service import (
@@ -273,6 +273,17 @@ def dashboard(module_key="overview"):
         return redirect(url_for("index"))
     user["permissions"] = db.compute_effective_permissions(user.get("roles", []))
     session["user"] = user
+
+    known_modules = {module["key"] for module in ALL_MODULES}
+    known_modules.update({"overview", "user_profile", "persediaan_form_pengajuan", "app_settings"})
+    if module_key not in known_modules:
+        abort(404)
+    if module_key == "app_settings":
+        if not _is_admin(user):
+            abort(404)
+    elif module_key not in {"overview", "user_profile"} and not _has_perm(user, module_key, "view"):
+        abort(404)
+
     return render_template(
         "dashboard.html",
         station=STATION_INFO,
@@ -281,6 +292,11 @@ def dashboard(module_key="overview"):
         all_modules=ALL_MODULES,
         app_config=_get_app_config(),
     )
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template("404.html", user=session.get("user")), 404
 
 
 @app.route("/favicon.svg")
