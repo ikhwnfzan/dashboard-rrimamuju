@@ -21,7 +21,7 @@ const ICON_CLASSES = {
   produksi_paket: 'ti-package',
   bestcut_monitoring: 'ti-scissors',
   socmed_analytics: 'ti-chart-pie',
-  monitoring_produksi: 'ti-activity-heartbeat',
+  tmb_working_progresss: 'ti-activity-heartbeat',
   master_ruangan: 'ti-building',
   bast_otomatis: 'ti-file-certificate',
   aset_tutup_buku: 'ti-book-2',
@@ -68,7 +68,7 @@ const MODULE_NAV_CONFIG = [
   { key: 'bestcut_monitoring', label: 'Bestcut Monitoring', group: 'KMB' },
   { key: 'socmed_analytics', label: 'Social Media Analytics', group: 'KMB' },
   { key: 'jadwal_tmb', label: 'Jadwal TMB', group: 'TMB' },
-  { key: 'monitoring_produksi', label: 'Monitoring Produksi', group: 'TMB' },
+  { key: 'tmb_working_progresss', label: 'TMB Working Progress', group: 'TMB' },
   { key: 'master_barang', label: 'Master Assets (KIR)', group: 'BMN', section: 'ASET' },
   { key: 'master_ruangan', label: 'Master Room (DBR)', group: 'BMN', section: 'ASET' },
   { key: 'bast_otomatis', label: 'BAST Otomatis', group: 'BMN', section: 'ASET' },
@@ -423,7 +423,7 @@ function applyActionButtonVisibility() {
   toggle('btnAddKonten', canFull('konten'));
   toggle('btnAddSocmed', canFull('socmed_analytics'));
   toggle('btnAddTmb', canFull('jadwal_tmb'));
-  toggle('btnAddMonitoringProd', canFull('monitoring_produksi'));
+  toggle('btnAddMonitoringProd', canFull('tmb_working_progresss'));
   toggle('btnAddBarang', canFull('master_barang'));
   toggle('btnAddPemeliharaanHeader', canFull('pemeliharaan_aset'));
   toggle('btnAddPemeliharaanDetail', canFull('pemeliharaan_aset'));
@@ -491,7 +491,7 @@ function renderAllModules() {
   else if (ACTIVE_MODULE === 'bestcut_monitoring') renderBestcutMonitoring();
   else if (ACTIVE_MODULE === 'socmed_analytics') renderSocmedAnalytics();
   else if (ACTIVE_MODULE === 'jadwal_tmb') renderJadwalTmb();
-  else if (ACTIVE_MODULE === 'monitoring_produksi') renderMonitoringProduksi();
+  else if (ACTIVE_MODULE === 'tmb_working_progresss') renderMonitoringProduksi();
   else if (ACTIVE_MODULE === 'master_barang') renderMasterBarang();
   else if (ACTIVE_MODULE === 'bast_otomatis') initBastSelectors();
   else if (ACTIVE_MODULE === 'pemeliharaan_aset') renderPemeliharaanAset();
@@ -1365,11 +1365,11 @@ const SCHEMAS = {
   DB_Stok_Keluar: { title: 'Catat Persediaan Keluar', fields: ['Tanggal', 'Nama Barang', 'Bidang', 'Penerima Barang', 'Jumlah Keluar', 'Unit', 'Pcs', 'Keterangan'] },
   DB_Produksi_Paket: { title: 'Tambah Produksi Paket', fields: ['Tanggal', 'Program', 'Judul Paket', 'Jenis Paket', 'Produser', 'Reporter', 'Editor', 'Status', 'Link File'] },
   DB_Socmed_Analytics: { title: 'Input Laporan Analitik', fields: ['Periode', 'Platform', 'Akun', 'Followers', 'Reach', 'Engagement', 'Top Konten', 'Catatan'] },
-  DB_Monitoring_Produksi: { title: 'Catat Monitoring Produksi', fields: ['Tanggal', 'Program', 'Studio', 'Operator TMB', 'Kualitas Audio', 'Stream Status', 'Kendala Teknis', 'Tindak Lanjut'] },
+  DB_TMB_Working_Progress: { title: 'Tambah Produksi', fields: ['Judul', 'Jenis', 'Tanggal Record', 'Record', 'Editing', 'PIC TMB', 'PIC Penyiaran', 'Progress', 'Deadline', 'Kendala', 'Link', 'Status'] },
   DB_Pemeliharaan_Header: { title: 'Tambah Jadwal Pemeliharaan Aset', fields: ['Tanggal', 'Judul Pemeliharaan', 'Lokasi', 'Teknisi Vendor', 'Status', 'Keterangan'] },
   DB_Pemeliharaan_Detail: { title: 'Tambah Detail Aset Dipelihara', fields: ['ID Jadwal', 'Kode Barang', 'Nama Barang', 'NUP', 'Kondisi Sebelum', 'Tindakan', 'Kondisi Sesudah', 'Biaya'] },
   DB_BMN_Arsip: { title: 'Tambah Arsip BMN (Surat & Nodin)', fields: ['Nomor Dokumen', 'Jenis', 'Judul Dokumen', 'Tanggal', 'Keterangan', 'Link'] },
-  DB_BMN_Dokumen: { title: 'Upload Dokumen Pelaporan BMN', fields: ['Group', 'Sub Menu', 'Periode', 'Kategori Item', 'Judul Dokumen', 'Tanggal Upload', 'Link File', 'Keterangan'] },
+  DB_BMN_Dokumen: { title: 'Upload Dokumen Pelaporan BMN', fields: ['Group', 'Sub Menu', 'Periode', 'Kategori Item', 'Judul Dokumen', 'Tanggal Buat', 'Link File', 'Keterangan'] },
 };
 
 function dateValueForInput(value) {
@@ -1775,20 +1775,38 @@ function renderSocmedAnalytics() {
 }
 
 function renderMonitoringProduksi() {
-  const rows = paginateArray('mon_prod', DATA.monitoring_produksi || [], 'pagMonitoringProd', 'renderMonitoringProduksi');
+  const rows = paginateArray('mon_prod', DATA.tmb_working_progresss || [], 'pagMonitoringProd', 'renderMonitoringProduksi');
   const tbody = document.getElementById('tbodyMonitoringProd');
   if (!tbody) return;
-  tbody.innerHTML = rows.map(m => `
-    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-bold whitespace-nowrap">${escapeHtml(m.Tanggal || '-')}</td>
-      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(m.Program || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(m.Studio || '-')}</td>
-      <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(m['Operator TMB'] || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(m['Kualitas Audio'] || '-')}</td>
-      <td class="py-3 px-3 text-xs font-bold text-emerald-600">${escapeHtml(m['Stream Status'] || '-')}</td>
-      <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(m['Kendala Teknis'] || '-')} (${escapeHtml(m['Tindak Lanjut'] || '-')})</td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = rows.map(m =>{
+    const hasLink = String(m.Link || '').trim().startsWith('http');
+    return `<tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+      <td class="py-3 px-3">${escapeHtml(m.Judul || '-')}</td>
+      <td class="py-3 px-3">
+        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${String(m.Jenis || 'Video').toLowerCase() === 'video' ? 'bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-300' : 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300'}">${m.Jenis || '-'}</span>
+      </td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(m['Tanggal Record'] || '-')}</td>
+      <td class="py-3 px-3 text-[11px]">${escapeHtml(m.Record || '-')}</td>
+      <td class="py-3 px-3 text-[11px]">${escapeHtml(m.Editing || '-')}</td>
+      <td class="py-3 px-3 text-[11px]">${escapeHtml(m['PIC TMB'] || '-')}</td>
+      <td class="py-3 px-3 text-[11px]">${escapeHtml(m['PIC Penyiaran'] || '-')}</td>
+      <td class="py-3 px-3 text-mono">
+        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${(m.Progress || 0) == 100 ?
+           'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 
+           m.Progress || 50  >= 50 ? 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300' :'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300'}">${m.Progress || 0}</span>
+      </td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(m.Deadline || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap">${escapeHtml(m.Kendala || '-')}</td>
+      <td class="py-3 px-3">
+        ${hasLink ? `<a href="${escapeHtml(m.Link)}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : ''}
+      </td>
+      <td class="py-3 px-3">
+        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${String(m.Status || 'Done').toLowerCase() === 'done' ?
+           'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 
+           String(m.Status || 'Editing').toLowerCase() === 'editing' ? 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300' :'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300'}">${m.Status || '-'}</span>
+      </td>
+    </tr>`
+  }).join('');
 }
 
 let BAST_RECORDS = [];

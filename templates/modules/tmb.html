@@ -27,28 +27,33 @@
   </div>
 </section>
 
-<!-- TMB: MONITORING PRODUKSI -->
-<section id="mod-monitoring_produksi" class="mod-section hidden space-y-5">
+<!-- TMB: TMB Working Progress -->
+<section id="mod-tmb_working_progresss" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h2 class="text-xl font-extrabold">Monitoring Produksi</h2>
+      <h2 class="text-xl font-extrabold">TMB Working Progress</h2>
       <p class="text-xs text-slate-400">Log kualitas audio studio, status stream RRI Digital, dan catatan teknis</p>
     </div>
-    <button id="btnAddMonitoringProd" onclick="openAddModal('DB_Monitoring_Produksi')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      + Catat Monitoring
+    <button id="btnAddMonitoringProd" onclick="openAddModal('DB_TMB_Working_Progress')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+      + Tambah Produksi
     </button>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
     <table class="w-full text-left text-xs sm:text-sm">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
-          <th class="py-3 px-3">Tanggal</th>
-          <th class="py-3 px-3">Program</th>
-          <th class="py-3 px-3">Studio</th>
-          <th class="py-3 px-3">Operator TMB</th>
-          <th class="py-3 px-3">Kualitas Audio</th>
-          <th class="py-3 px-3">Stream Status</th>
-          <th class="py-3 px-3">Kendala / Tindak Lanjut</th>
+          <th class="py-3 px-3 whitespace-nowrap">Judul</th>
+          <th class="py-3 px-3 whitespace-nowrap">Jenis</th>
+          <th class="py-3 px-3 whitespace-nowrap">Tanggal Record</th>
+          <th class="py-3 px-3 whitespace-nowrap">Record</th>
+          <th class="py-3 px-3 whitespace-nowrap">Editing</th>
+          <th class="py-3 px-3 whitespace-nowrap">PIC TMB</th>
+          <th class="py-3 px-3 whitespace-nowrap">PIC Penyiaran</th>
+          <th class="py-3 px-3 whitespace-nowrap">Progress</th>
+          <th class="py-3 px-3 whitespace-nowrap">Deadline</th>
+          <th class="py-3 px-3 whitespace-nowrap">Kendala</th>
+          <th class="py-3 px-3 whitespace-nowrap">Link</th>
+          <th class="py-3 px-3 whitespace-nowrap">Status</th>
         </tr>
       </thead>
       <tbody id="tbodyMonitoringProd" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>

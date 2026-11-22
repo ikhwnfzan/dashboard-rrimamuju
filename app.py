@@ -95,7 +95,7 @@ TARGET_PERMISSION_MAP = {
     "DB_Siaran": ("jadwal_siaran", "full"),
     "DB_Program": ("program_siaran", "full"),
     "DB_Jadwal_TMB": ("jadwal_tmb", "full"),
-    "DB_Monitoring_Produksi": ("monitoring_produksi", "full"),
+    "DB_TMB_Working_Progress": ("tmb_working_progresss", "full"),
     "DB_Info_Board": ("info_board", "full"),
     "DB_Arsip_SDM": ("arsip_sdm", "full"),
     "DB_Pegawai": ("data_pegawai", "full"),
@@ -126,7 +126,7 @@ MODULE_DATA_DEPENDENCIES = {
     "bestcut_monitoring": {"dialogs"},
     "socmed_analytics": {"socmed_analytics"},
     "jadwal_tmb": {"jadwal_tmb"},
-    "monitoring_produksi": {"monitoring_produksi"},
+    "tmb_working_progresss": {"tmb_working_progresss"},
     "master_barang": {"assets", "rooms", "employees"},
     "master_ruangan": {"rooms", "employees"},
     "bast_otomatis": {"rooms", "assets", "employees"},
@@ -193,8 +193,8 @@ def _get_module_payload(user, module_key):
         payload["program_siaran"] = db.get_tab_records(["DB_Program"], include_row_num=True)
     if "jadwal_tmb" in dependencies:
         payload["jadwal_tmb"] = db.get_tab_records(["DB_Jadwal_TMB", "Jadwal_TMB"], include_row_num=True)
-    if "monitoring_produksi" in dependencies:
-        payload["monitoring_produksi"] = db.get_tab_records(["DB_Monitoring_Produksi"], include_row_num=True)
+    if "tmb_working_progresss" in dependencies:
+        payload["tmb_working_progresss"] = db.get_tab_records(["DB_TMB_Working_Progress"], include_row_num=True)
     if "arsip_sdm" in dependencies:
         payload["arsip_sdm"] = db.get_tab_records(["DB_Arsip_SDM", "Arsip_SDM"], include_row_num=True)
     if "employees" in dependencies:

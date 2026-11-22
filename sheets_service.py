@@ -100,7 +100,7 @@ ALL_MODULES = [
     {"key": "bestcut_monitoring", "label": "Bestcut Monitoring", "group": "KMB"},
     {"key": "socmed_analytics", "label": "Social Media Analytics", "group": "KMB"},
     {"key": "jadwal_tmb", "label": "Jadwal TMB", "group": "TMB"},
-    {"key": "monitoring_produksi", "label": "Monitoring Produksi", "group": "TMB"},
+    {"key": "tmb_working_progresss", "label": "TMB Working Progress", "group": "TMB"},
     {"key": "master_barang", "label": "Master Assets (KIR)", "group": "BMN • ASET"},
     {"key": "master_ruangan", "label": "Master Room (DBR)", "group": "BMN • ASET"},
     {"key": "bast_otomatis", "label": "BAST Otomatis", "group": "BMN • ASET"},
@@ -141,7 +141,7 @@ DEFAULT_ROLE_PERMISSIONS = {
     "Perencanaan": {"info_board": "view", "produksi_paket": "full", "dialog": "full", "jadwal_siaran": "full", "program_siaran": "full"},
     "KMB": {"info_board": "view", "konten": "full", "bestcut_monitoring": "full", "socmed_analytics": "full", "dialog": "update"},
     "Siaran": {"info_board": "view", "jadwal_siaran": "view", "produksi_paket": "view", "dialog": "update", "program_siaran": "view"},
-    "TMB": {"info_board": "view", "jadwal_tmb": "full", "monitoring_produksi": "full"},
+    "TMB": {"info_board": "view", "jadwal_tmb": "full", "tmb_working_progresss": "full"},
     "BMN": {
         "info_board": "view",
         "master_barang": "full", "master_ruangan": "full", "bast_otomatis": "full",
