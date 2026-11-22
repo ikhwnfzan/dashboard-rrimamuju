@@ -163,6 +163,10 @@ APP_CONFIG_DEFAULTS = {
     "language": "id",
     "default_theme": "light",
     "active_year": str(time.localtime().tm_year),
+    "drive_root_folder_id": os.getenv("DRIVE_ROOT_FOLDER_ID", "").strip(),
+    "drive_bridge_url": os.getenv("DRIVE_BRIDGE_URL", "").strip(),
+    "drive_bridge_secret": os.getenv("DRIVE_BRIDGE_SECRET", "beacon-rri-secret-2026").strip(),
+    "bast_template_doc_id": os.getenv("BAST_TEMPLATE_DOC_ID", "1LtyvE6jcMYWueQZv62KnXhG8Y4AweOW1oOjJRrh14dw").strip(),
 }
 
 APP_CONFIG_DESCRIPTIONS = {
@@ -170,6 +174,10 @@ APP_CONFIG_DESCRIPTIONS = {
     "language": "Preferensi bahasa untuk dukungan lokalisasi mendatang.",
     "default_theme": "Tema dashboard yang digunakan untuk semua pengguna.",
     "active_year": "Tahun aktif untuk data dan laporan.",
+    "drive_root_folder_id": "Folder ID utama BEACON pada Google Drive akun pemilik storage.",
+    "drive_bridge_url": "URL Web App Google Apps Script (/exec) untuk generate PDF memakai kuota Drive pemilik akun.",
+    "drive_bridge_secret": "Token rahasia validasi request antara Flask dan Google Apps Script.",
+    "bast_template_doc_id": "Google Docs Template ID untuk dokumen BAST Otomatis.",
 }
 
 # Unified Database (`DB_*`) & Configuration (`CFG_*`) Schemas with standardized Title Case Headers
@@ -184,7 +192,7 @@ DB_SCHEMAS = {
     "DB_Konten": ["ID", "Tanggal Tayang", "Platform", "Akun", "Judul Konten", "Jenis", "Divisi", "PIC", "Status", "Link Asset"],
     "DB_Jadwal_TMB": ["Tanggal", "Shift", "Lokasi Pemancar", "Teknisi TMB", "Tugas", "Status"],
     "DB_Pegawai": ["No", "Nama Pegawai", "NIP", "Pangkat Golongan", "Jabatan", "Status", "Posisi"],
-    "DB_BAST": ["Nomor BAST", "NIP", "Nomor Barang", "NUP", "Nilai", "Jumlah", "Status", "Link PDF"],
+    "DB_BAST": ["Nomor BAST", "NIP", "Nomor Barang", "NUP", "Nilai", "Jumlah", "Tanggal Dokumen", "Status", "Link PDF"],
     "DB_Arsip_SDM": ["Nomor Dokumen", "Nama Dokumen", "Tanggal", "Jenis", "Link"],
     "DB_Info_Board": ["Tanggal", "Prioritas", "Judul", "Isi", "Target Divisi", "Lampiran"],
     "DB_Ruangan": ["Nomor Ruangan", "Nama Ruangan", "Lokasi", "NIP Penanggung Jawab"],
@@ -193,11 +201,11 @@ DB_SCHEMAS = {
     "DB_Stok_Detail": ["ID Transaksi", "Tanggal", "Jenis", "Kode Barang", "Nama Barang", "Jumlah", "Unit", "Pcs", "Bidang", "Penanggung Jawab", "Keterangan"],
     "DB_Produksi_Paket": ["ID", "Tanggal", "Program", "Judul Paket", "Jenis Paket", "Produser", "Reporter", "Editor", "Status", "Link File"],
     "DB_Socmed_Analytics": ["Periode", "Platform", "Akun", "Followers", "Reach", "Engagement", "Top Konten", "Catatan"],
-    "DB_Monitoring_Produksi": ["Tanggal", "Program", "Studio", "Operator TMB", "Kualitas Audio", "Stream Status", "Kendala Teknis", "Tindak Lanjut"],
+    "DB_TMB_Working_Progress": ["Judul", "Jenis", "Tanggal Record", "Record", "Editing", "PIC TMB", "PIC Penyiaran", "Progress", "Deadline", "Kendala", "Link", "Status"],
     "DB_Pemeliharaan_Header": ["ID Jadwal", "Tanggal", "Judul Pemeliharaan", "Lokasi", "Teknisi Vendor", "Status", "Keterangan"],
     "DB_Pemeliharaan_Detail": ["ID Jadwal", "Kode Barang", "Nama Barang", "NUP", "Kondisi Sebelum", "Tindakan", "Kondisi Sesudah", "Biaya"],
     "DB_BMN_Arsip": ["Nomor Dokumen", "Jenis", "Judul Dokumen", "Tanggal", "Keterangan", "Link"],
-    "DB_BMN_Dokumen": ["Group", "Sub Menu", "Periode", "Kategori Item", "Judul Dokumen", "Tanggal Upload", "Link File", "Keterangan"],
+    "DB_BMN_Dokumen": ["Group", "Sub Menu", "Periode", "Kategori Item", "Judul Dokumen", "Tanggal Buat", "Link File", "Keterangan"],
 }
 
 AUTO_ID_FIELDS = {
@@ -443,7 +451,7 @@ class SheetsDB:
     def save_app_settings(self, settings):
         if not self.connected or not self.spreadsheet:
             return False, "Google Sheet utama belum terhubung; pengaturan tidak disimpan."
-        if not isinstance(settings, dict) or set(settings) != set(APP_CONFIG_DEFAULTS):
+        if not isinstance(settings, dict) or not settings or not set(settings).issubset(set(APP_CONFIG_DEFAULTS)):
             return False, "Data pengaturan aplikasi tidak lengkap atau tidak valid."
 
         ws = self._find_ws(["CFG_App"])
@@ -917,15 +925,105 @@ class SheetsDB:
             result.append(item)
         return result
 
-    def generate_bast_document(self, payload, template_doc_id):
-        if not template_doc_id:
-            return False, {"message": "Konfigurasi template BAST belum lengkap."}
+    def generate_bast_document(self, payload, template_doc_id=None):
+        cfg_map = {item["key"]: item["value"] for item in self.get_app_settings()}
+        resolved_template_id = (
+            str(payload.get("template_doc_id") or "").strip()
+            or cfg_map.get("bast_template_doc_id", "").strip()
+            or str(template_doc_id or "").strip()
+        )
+        if not resolved_template_id:
+            return False, {"message": "Template ID Google Docs BAST belum diatur di App Setting."}
 
+        bridge_url = cfg_map.get("drive_bridge_url", "").strip()
+        root_folder_id = cfg_map.get("drive_root_folder_id", "").strip()
+        bridge_secret = cfg_map.get("drive_bridge_secret", "").strip()
+        subfolder_name = str(payload.get("subfolder_name") or "BAST").strip()
+
+        from datetime import datetime
+        try:
+            tanggal = datetime.strptime(str(payload["tanggal"]), "%Y-%m-%d")
+        except ValueError:
+            return False, {"message": "Format tanggal BAST harus YYYY-MM-DD."}
+
+        month_names = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+        tanggal_terbilang = f"{_indonesian_day_words(tanggal.day)} bulan {month_names[tanggal.month]} tahun {tanggal.year}"
+        tanggal_ttd = f"{tanggal.day} {month_names[tanggal.month]} {tanggal.year}"
+        tanggal_dokumen = tanggal.strftime("%Y-%m-%d")
+        periode_dokumen = f"{month_names[tanggal.month]} {tanggal.year}"
+
+        nomor_barang = str(payload.get("nomor_barang") or "").strip()
+        asset = next(
+            (item for item in self.get_assets() if str(item.get("Kode Barang", "")).strip() == nomor_barang),
+            {},
+        )
+        room_code = str(asset.get("Kode Ruang") or payload.get("kode_ruang") or payload.get("letak") or "").strip()
+        room = next(
+            (item for item in self.get_rooms() if str(item.get("Nomor Ruangan", "")).strip() == room_code),
+            {},
+        )
+        letak_name = room.get("Nama Ruangan") or asset.get("Nama Ruangan") or str(payload.get("letak") or "")
+
+        replacements = {
+            "{{nomor_bast}}": str(payload["nomor_bast"]),
+            "{{tanggal_terbilang}}": tanggal_terbilang,
+            "{{nama}}": str(payload["nama"]),
+            "{{nip}}": str(payload["nip"]),
+            "{{pangkat}}": str(payload["pangkat"]),
+            "{{jabatan}}": str(payload["jabatan"]),
+            "{{nomor_barang}}": str(payload["nomor_barang"]),
+            "{{nup}}": str(payload["nup"]),
+            "{{barang}}": str(payload["barang"]),
+            "{{merk}}": str(payload.get("merk") or ""),
+            "{{tipe}}": str(payload.get("tipe") or ""),
+            "{{nilai}}": _format_rupiah(payload["nilai"]),
+            "{{jumlah}}": str(payload["jumlah"]),
+            "{{letak}}": str(letak_name),
+            "{{tanggal_ttd}}": tanggal_ttd,
+        }
+        pdf_name = f"BAST {payload['nomor_bast']}.pdf".replace("/", "-")
+
+        # 1. Preferred Path: Google Apps Script Bridge (uses owner Google Account Drive storage quota!)
+        if bridge_url:
+            try:
+                import requests
+                bridge_payload = {
+                    "secret": bridge_secret,
+                    "action": "generate_pdf",
+                    "template_doc_id": resolved_template_id,
+                    "root_folder_id": root_folder_id,
+                    "subfolder_name": subfolder_name,
+                    "output_name": pdf_name,
+                    "replacements": replacements,
+                }
+                resp = requests.post(bridge_url, json=bridge_payload, timeout=60, allow_redirects=True)
+                data = resp.json()
+                if not data.get("ok"):
+                    return False, {"message": data.get("message") or "Apps Script gagal membuat PDF."}
+
+                pdf_url = data.get("pdf_url", "")
+                pdf_id = data.get("pdf_id", "")
+                self._mark_bast_row_done(
+                    payload.get("sheet_row"),
+                    pdf_url,
+                    payload=payload,
+                    document_date=tanggal_dokumen,
+                    document_period=periode_dokumen,
+                )
+                self._sync_snapshot(force=True)
+                return True, {
+                    "message": f"Dokumen BAST berhasil dibuat!",
+                    "pdf_url": pdf_url,
+                    "pdf_id": pdf_id,
+                }
+            except Exception as exc:
+                return False, {"message": f"Gagal menghubungi Google Apps Script Bridge: {exc}"}
+
+        # 2. Fallback Path: Direct Service Account Drive/Docs API (requires Shared Drive or Service Account quota)
         creds = None
         try:
             sa_path = self._find_local_sa_file()
             if sa_path:
-                from google.oauth2.service_account import Credentials
                 info = json.load(open(sa_path, "r", encoding="utf-8"))
                 creds = Credentials.from_service_account_info(info, scopes=SCOPES + ["https://www.googleapis.com/auth/documents"])
             elif self.creds_json:
@@ -939,39 +1037,32 @@ class SheetsDB:
             return False, {"message": "service_account.json belum tersedia."}
 
         try:
-            from datetime import datetime
-            tanggal = datetime.strptime(str(payload["tanggal"]), "%Y-%m-%d")
-            month_names = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
-            tanggal_terbilang = f"{_indonesian_day_words(tanggal.day)} bulan {month_names[tanggal.month]} tahun {tanggal.year}"
-            tanggal_ttd = f"Mamuju, {tanggal.day} {month_names[tanggal.month]} {tanggal.year}"
-
             drive = build("drive", "v3", credentials=creds, cache_discovery=False)
             docs = build("docs", "v1", credentials=creds, cache_discovery=False)
 
-            template = drive.files().get(fileId=template_doc_id, fields="parents").execute()
+            target_parent_id = root_folder_id
+            if root_folder_id and subfolder_name:
+                q = (
+                    f"'{root_folder_id}' in parents and "
+                    f"mimeType = 'application/vnd.google-apps.folder' and "
+                    f"name = '{subfolder_name}' and trashed = false"
+                )
+                sub_res = drive.files().list(q=q, fields="files(id,name)", supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
+                sub_files = sub_res.get("files", [])
+                if sub_files:
+                    target_parent_id = sub_files[0]["id"]
+
+            copy_body = {"name": f"TEMP_{pdf_name}"}
+            if target_parent_id:
+                copy_body["parents"] = [target_parent_id]
+
             copied = drive.files().copy(
-                fileId=template_doc_id,
-                body={"name": f"BAST {payload['nomor_bast']}"},
+                fileId=resolved_template_id,
+                body=copy_body,
+                supportsAllDrives=True,
             ).execute()
             document_id = copied["id"]
 
-            replacements = {
-                "{{nomor_bast}}": str(payload["nomor_bast"]),
-                "{{tanggal_terbilang}}": tanggal_terbilang,
-                "{{nama}}": str(payload["nama"]),
-                "{{nip}}": str(payload["nip"]),
-                "{{pangkat}}": str(payload["pangkat"]),
-                "{{jabatan}}": str(payload["jabatan"]),
-                "{{nomor_barang}}": str(payload["nomor_barang"]),
-                "{{nup}}": str(payload["nup"]),
-                "{{barang}}": str(payload["barang"]),
-                "{{merk}}": str(payload["merk"] or ""),
-                "{{tipe}}": str(payload["tipe"] or ""),
-                "{{nilai}}": _format_rupiah(payload["nilai"]),
-                "{{jumlah}}": str(payload["jumlah"]),
-                "{{letak}}": str(payload["letak"]),
-                "{{tanggal_ttd}}": tanggal_ttd,
-            }
             requests_body = [{
                 "replaceAllText": {
                     "containsText": {"text": key, "matchCase": True},
@@ -981,38 +1072,121 @@ class SheetsDB:
             docs.documents().batchUpdate(documentId=document_id, body={"requests": requests_body}).execute()
 
             pdf_bytes = drive.files().export_media(fileId=document_id, mimeType="application/pdf").execute()
-            pdf_name = f"BAST {payload['nomor_bast']}.pdf"
             pdf_metadata = {"name": pdf_name, "mimeType": "application/pdf"}
-            if template.get("parents"):
-                pdf_metadata["parents"] = template["parents"]
+            if target_parent_id:
+                pdf_metadata["parents"] = [target_parent_id]
             media = MediaIoBaseUpload(io.BytesIO(pdf_bytes), mimetype="application/pdf", resumable=False)
-            pdf_file = drive.files().create(body=pdf_metadata, media_body=media, fields="id,webViewLink,webContentLink").execute()
+            pdf_file = drive.files().create(
+                body=pdf_metadata,
+                media_body=media,
+                fields="id,webViewLink,webContentLink",
+                supportsAllDrives=True,
+            ).execute()
 
             try:
-                drive.files().delete(fileId=document_id).execute()
+                drive.files().delete(fileId=document_id, supportsAllDrives=True).execute()
             except Exception:
                 pass
 
             pdf_url = pdf_file.get("webViewLink") or f"https://drive.google.com/file/d/{pdf_file['id']}/view"
-
-            sheet_row = int(payload.get("sheet_row") or 0)
-            if sheet_row >= 2:
-                worksheet = self._find_ws(["DB_BAST"])
-                if worksheet:
-                    headers = [str(header).strip() for header in worksheet.row_values(1)]
-                    status_col = headers.index("Status") + 1 if "Status" in headers else None
-                    link_col = headers.index("Link PDF") + 1 if "Link PDF" in headers else None
-                else:
-                    status_col = link_col = None
-                if status_col:
-                    worksheet.update_cell(sheet_row, status_col, "DONE")
-                if link_col:
-                    worksheet.update_cell(sheet_row, link_col, pdf_url)
-
+            self._mark_bast_row_done(
+                payload.get("sheet_row"),
+                pdf_url,
+                payload=payload,
+                document_date=tanggal_dokumen,
+                document_period=periode_dokumen,
+            )
             self._sync_snapshot(force=True)
             return True, {"message": "Dokumen BAST dan PDF berhasil dibuat.", "pdf_url": pdf_url, "pdf_id": pdf_file["id"]}
         except Exception as exc:
+            err_msg = str(exc)
+            if "storageQuotaExceeded" in err_msg:
+                return False, {
+                    "message": "Storage Service Account penuh (0 GB). Isi 'drive_bridge_url' & 'drive_root_folder_id' di menu Admin → App Setting agar menggunakan Google Drive akun Anda."
+                }
             return False, {"message": f"Gagal membuat dokumen BAST: {exc}"}
+
+    def _mark_bast_row_done(self, sheet_row_raw, pdf_url, payload=None, document_date="", document_period=""):
+        sheet_row = int(sheet_row_raw or 0)
+        worksheet = self._find_ws(["DB_BAST"])
+        if not worksheet:
+            if payload:
+                DEMO_DATA.setdefault("DB_BAST", []).append({
+                    "Nomor BAST": str(payload.get("nomor_bast", "")).strip(),
+                    "NIP": _normalize_nip(payload.get("nip", "")),
+                    "Nomor Barang": str(payload.get("nomor_barang", "")).strip(),
+                    "NUP": str(payload.get("nup", "")).strip(),
+                    "Nilai": str(payload.get("nilai", "")).strip(),
+                    "Jumlah": str(payload.get("jumlah", "")).strip(),
+                    "Tanggal Dokumen": document_date,
+                    "Status": "DONE",
+                    "Link PDF": pdf_url,
+                })
+        else:
+            headers = [str(header).strip() for header in worksheet.row_values(1)]
+            if "Tanggal Dokumen" not in headers:
+                worksheet.update_cell(1, len(headers) + 1, "Tanggal Dokumen")
+                headers.append("Tanggal Dokumen")
+            if sheet_row >= 2:
+                row_values = {
+                    "Status": "DONE",
+                    "Link PDF": pdf_url,
+                    "Tanggal Dokumen": document_date,
+                }
+                for field, value in row_values.items():
+                    if field in headers:
+                        worksheet.update_cell(sheet_row, headers.index(field) + 1, value)
+            elif payload:
+                row_map = {
+                    "Nomor BAST": str(payload.get("nomor_bast", "")).strip(),
+                    "NIP": _normalize_nip(payload.get("nip", "")),
+                    "Nomor Barang": str(payload.get("nomor_barang", "")).strip(),
+                    "NUP": str(payload.get("nup", "")).strip(),
+                    "Nilai": str(payload.get("nilai", "")).strip(),
+                    "Jumlah": str(payload.get("jumlah", "")).strip(),
+                    "Tanggal Dokumen": document_date,
+                    "Letak": str(payload.get("letak", "")).strip(),
+                    "Status": "DONE",
+                    "Link PDF": pdf_url,
+                }
+                new_row = [row_map.get(h, "") for h in headers]
+                worksheet.append_row(new_row, value_input_option="USER_ENTERED")
+
+        if not self._find_ws(["DB_BMN_Dokumen"]):
+            DEMO_DATA.setdefault("DB_BMN_Dokumen", []).append({
+                "Group": "Aset",
+                "Sub Menu": "Tutup Buku",
+                "Periode": document_period,
+                "Kategori Item": "BAST",
+                "Judul Dokumen": f"BAST {payload.get('nomor_bast', '')}.pdf".replace("/", "-") if payload else "",
+                "Tanggal Buat": document_date,
+                "Tanggal Buat": document_date,
+                "Link File": pdf_url,
+                "Keterangan": "DONE",
+            })
+        else:
+            dokumen_ws = self._find_ws(["DB_BMN_Dokumen"])
+            dokumen_headers = [str(header).strip() for header in dokumen_ws.row_values(1)]
+            if not dokumen_headers:
+                dokumen_headers = list(DB_SCHEMAS["DB_BMN_Dokumen"])
+                dokumen_ws.append_row(dokumen_headers, value_input_option="USER_ENTERED")
+
+            judul_dokumen = f"BAST {payload.get('nomor_bast', '')}.pdf".replace("/", "-") if payload else ""
+            row_map = {
+                "Group": "Aset",
+                "Sub Menu": "Tutup Buku",
+                "Periode": document_period,
+                "Kategori Item": "BAST",
+                "Judul Dokumen": judul_dokumen,
+                "Tanggal Buat": document_date,
+                "Tanggal Buat": document_date,
+                "Link File": pdf_url,
+                "Keterangan": "DONE",
+            }
+            dokumen_ws.append_row(
+                [row_map.get(header, "") for header in dokumen_headers],
+                value_input_option="USER_ENTERED",
+            )
 
     def update_bast_row(self, row_num, updates_dict):
         ws = self._find_ws(["DB_BAST"])

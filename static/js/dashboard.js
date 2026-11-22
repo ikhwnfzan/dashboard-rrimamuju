@@ -42,7 +42,7 @@ const ICON_CLASSES = {
   app_settings: 'ti-settings',
   edit: 'ti-pencil',
   delete: 'ti-trash',
-  link: 'ti-link'
+  link: 'ti-eye'
 };
 
 function icon(name, size = 'w-4 h-4 text-base leading-none') {
@@ -517,6 +517,10 @@ function renderAppSettings() {
   document.getElementById('appLanguage').value = config.language || 'id';
   document.getElementById('appDefaultTheme').value = config.default_theme || 'light';
   document.getElementById('appActiveYear').value = config.active_year || APP_CONFIG.active_year;
+  if (document.getElementById('appDriveRootFolderId')) document.getElementById('appDriveRootFolderId').value = config.drive_root_folder_id || '';
+  if (document.getElementById('appBastTemplateDocId')) document.getElementById('appBastTemplateDocId').value = config.bast_template_doc_id || '';
+  if (document.getElementById('appDriveBridgeUrl')) document.getElementById('appDriveBridgeUrl').value = config.drive_bridge_url || '';
+  if (document.getElementById('appDriveBridgeSecret')) document.getElementById('appDriveBridgeSecret').value = config.drive_bridge_secret || 'beacon-rri-secret-2026';
 }
 
 async function submitAppSettings(event) {
@@ -527,7 +531,11 @@ async function submitAppSettings(event) {
     timezone: document.getElementById('appTimezone').value,
     language: document.getElementById('appLanguage').value,
     default_theme: document.getElementById('appDefaultTheme').value,
-    active_year: document.getElementById('appActiveYear').value
+    active_year: document.getElementById('appActiveYear').value,
+    drive_root_folder_id: (document.getElementById('appDriveRootFolderId')?.value || '').trim(),
+    bast_template_doc_id: (document.getElementById('appBastTemplateDocId')?.value || '').trim(),
+    drive_bridge_url: (document.getElementById('appDriveBridgeUrl')?.value || '').trim(),
+    drive_bridge_secret: (document.getElementById('appDriveBridgeSecret')?.value || '').trim()
   };
   try {
     const result = await processWithLoading(async () => {
@@ -981,11 +989,11 @@ function renderMasterBarang() {
     const rowNum = a._row_num ?? a.row_num;
     return `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-3 px-3 text-[10px] font-bold">${escapeHtml(a['Kode Ruang'] || '-')} <span class="block text-slate-400">${escapeHtml(a['Nama Ruangan'] || '')}</span></td>
-        <td class="py-3 px-3 font-mono text-slate-500">${escapeHtml(a['Kode Barang'] || '-')}</td>
-        <td class="py-3 px-3 font-bold">${escapeHtml(a['Nama Barang'] || '-')}</td>
-        <td class="py-3 px-3">${escapeHtml(a['Merk Model'] || '-')}</td>
-        <td class="py-3 px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400">${escapeHtml(a.Tipe || '-')}</td>
+        <td class="py-3 px-3 text-[10px] font-semibold">${escapeHtml(a['Kode Ruang'] || '-')} <span class="block text-slate-400">${escapeHtml(a['Nama Ruangan'] || '')}</span></td>
+        <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-extrabold">${escapeHtml(a['Kode Barang'] || '-')}</span></td>
+        <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400">${escapeHtml(a['Nama Barang'] || '-')}</td>
+        <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(a['Merk Model'] || '-')}</td>
+        <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(a.Tipe || '-')}</td>
         <td class="py-3 px-3">${escapeHtml(a.Tahun || '-')}</td>
         <td class="py-3 px-3 font-bold">${escapeHtml(a.NUP || '-')}</td>
         <td class="py-3 px-3 font-bold ${String(a.Kondisi).toLowerCase() === 'baik' ? 'text-emerald-600' : 'text-rose-500'}">${escapeHtml(a.Kondisi || '-')}</td>
@@ -1211,9 +1219,9 @@ function renderMasterRuangan() {
     const safeRoom = encodeURIComponent(JSON.stringify(r));
     return `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-extrabold">${r['Nomor Ruangan'] || '-'}</span></td>
-        <td class="py-3 px-3 font-extrabold">${r['Nama Ruangan'] || '-'}</td>
-        <td class="py-3 px-3 text-xs text-slate-500">${r.Lokasi || '-'}</td>
+        <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-semibold">${r['Nomor Ruangan'] || '-'}</span></td>
+        <td class="py-3 px-3 font-bold text-indigo-600 dark:text-indigo-400">${r['Nama Ruangan'] || '-'}</td>
+        <td class="py-3 px-3 text-xs font-semibold">${r.Lokasi || '-'}</td>
         <td class="py-3 px-3 font-mono text-xs text-slate-500">${rawPjNip || '-'}</td>
         <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300">${emp?.['Nama Pegawai'] || r.pj_nama || '-'}</td>
         <td class="py-3 px-3 text-xs font-semibold">${emp?.Jabatan || emp?.Posisi || r.pj_jabatan || '-'}</td>
@@ -1881,20 +1889,20 @@ async function loadBastRecords(force = false) {
     const link = row['Link PDF'] || '';
     return `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-        <td class="py-2.5 px-2 font-mono font-bold">${escapeHtml(row['Nomor BAST'] || '-')}</td>
-        <td class="py-2.5 px-2 font-mono">${escapeHtml(row.NIP || '-')}</td>
+        <td class="py-2.5 px-2 font-mono font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(row['Nomor BAST'] || '-')}</td>
+        <td class="py-2.5 px-2 font-bold font-mono text-xs text-slate-500">${escapeHtml(row.NIP || '-')}</td>
         <td class="py-2.5 px-2 font-bold">${escapeHtml(row.Nama || '-')}</td>
-        <td class="py-2.5 px-2">${escapeHtml(row.Pangkat || '-')}</td>
-        <td class="py-2.5 px-2">${escapeHtml(row.Jabatan || '-')}</td>
-        <td class="py-2.5 px-2 font-mono">${escapeHtml(row['Nomor Barang'] || '-')}</td>
-        <td class="py-2.5 px-2">${escapeHtml(row.NUP || '-')}</td>
-        <td class="py-2.5 px-2">${escapeHtml(row.Barang || '-')}</td>
-        <td class="py-2.5 px-2">${escapeHtml(row.Letak || '-')}</td>
+        <td class="py-2.5 px-2 text-xs text-slate-500">${escapeHtml(row.Pangkat || '-')}</td>
+        <td class="py-2.5 px-2 text-xs text-slate-500">${escapeHtml(row.Jabatan || '-')}</td>
+        <td class="py-2.5 px-2 font-mono text-xs text-slate-500">${escapeHtml(row['Nomor Barang'] || '-')}</td>
+        <td class="py-2.5 px-2 font-bold">${escapeHtml(row.NUP || '-')}</td>
+        <td class="py-2.5 px-2 font-semibold text-teal-600 dark:text-teal-400">${escapeHtml(row.Barang || '-')}</td>
+        <td class="py-2.5 px-2 text-xs font-semibold">${escapeHtml(row.Letak || '-')}</td>
         <td class="py-2.5 px-2">
           <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${status === 'DONE' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300'}">${escapeHtml(status || 'PENDING')}</span>
         </td>
         <td class="py-2.5 px-2 text-right whitespace-nowrap">
-          ${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-700 text-slate-700 dark:text-slate-100 hover:bg-emerald-200 dark:hover:bg-emerald-700 transition">${icon('link')}</a>` : ''}
+          ${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : ''}
           ${editable ? `<button type="button" title="Edit BAST" onclick="fillBastForm(JSON.parse(decodeURIComponent('${safeRow}')), ${row._row_num || 0}, true)" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
           ${deletable ? `<button type="button" title="Hapus BAST" onclick="deleteRecord('DB_BAST', ${row._row_num || 0}, 'BAST ${escapeHtml(row['Nomor BAST'] || '').replace(/'/g, '')}') " class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
         </td>
@@ -1961,7 +1969,7 @@ async function generateBastDocument(event) {
   if (!out) return;
   showToast(out.message, out.ok ? 'success' : 'error');
   if (out.ok) {
-    if (out.pdf_url) window.open(out.pdf_url, '_blank', 'noopener');
+    closeBastGenerateModal();
     await loadBastRecords(true);
   }
 }
@@ -2006,7 +2014,7 @@ function renderBmnArsip() {
       <td class="py-3 px-3 font-mono text-xs font-bold">${escapeHtml(a['Nomor Dokumen'] || '-')}</td>
       <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold">${escapeHtml(a.Jenis || '-')}</span></td>
       <td class="py-3 px-3 font-bold">${escapeHtml(a['Judul Dokumen'] || '-')}</td>
-      <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(a.Tanggal || '-')}</td>
+      <td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(a.Tanggal || '-')}</td>
       <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(a.Keterangan || '-')}</td>
       <td class="py-3 px-3">${a.Link ? `<a href="${escapeHtml(a.Link)}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
     </tr>
@@ -2025,7 +2033,7 @@ function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
   const subInput = form.querySelector('input[name="Sub Menu"]');
   if (subInput && subMenuName) { subInput.value = subMenuName; subInput.readOnly = true; }
 
-  const tglInput = form.querySelector('input[name="Tanggal Upload"]');
+  const tglInput = form.querySelector('input[name="Tanggal Buat"]');
   if (tglInput && !tglInput.value) tglInput.value = new Date().toISOString().slice(0, 10);
 
   if (categoryOptions && categoryOptions.length) {
@@ -2050,18 +2058,21 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
   });
 
   const pagKey = `${groupName}_${subMenuName}`.replace(/[^a-zA-Z0-9]/g, '_');
-  const rows = paginateArray(pagKey, list, pagId, () => renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pagId));
+  const rerenderFn = `() => renderBmnDokumenView('${groupName}', '${subMenuName}', '${filterInputId}', '${tbodyId}', '${pagId}')`;
+  const rows = paginateArray(pagKey, list, pagId, rerenderFn);
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
-
+  const deletable = canFull(pagKey) || canUpdate(pagKey);
   tbody.innerHTML = rows.map(d => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 text-xs font-bold text-teal-600 whitespace-nowrap">${escapeHtml(d.Periode || '-')}</td>
-      <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(d['Kategori Item'] || '-')}</td>
-      <td class="py-3 px-3 font-bold">${escapeHtml(d['Judul Dokumen'] || '-')}</td>
-      <td class="py-3 px-3 text-xs text-slate-400 whitespace-nowrap">${escapeHtml(d['Tanggal Upload'] || '-')}</td>
+      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(d['Judul Dokumen'] || '-')}</td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold">${escapeHtml(d['Kategori Item'] || '-')}</span></td>
+      <td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(d['Tanggal Buat'] || '-')}</td>
       <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(d.Keterangan || '-')}</td>
-      <td class="py-3 px-3">${d['Link File'] ? `<a href="${escapeHtml(d['Link File'])}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
+      <td class="py-3 px-3">
+        ${d['Link File'] ? `<a href="${escapeHtml(d['Link File'])}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : '-'}
+        ${deletable ? `<button type="button" title="Hapus BAST" onclick="deleteRecord('DB_BMN_Dokumen', ${d._row_num || 0}, 'Dokumen ${escapeHtml(d['Judul Dokumen'] || '').replace(/'/g, '')}') " class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
+      </td>
     </tr>
   `).join('') || `<tr><td colspan="6" class="py-8 text-center text-xs text-slate-400">Belum ada dokumen ${escapeHtml(subMenuName)} yang diunggah.</td></tr>`;
 }

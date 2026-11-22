@@ -7,7 +7,7 @@
       <h2 class="text-xl font-extrabold">Master Assets (KIR)</h2>
       <p class="text-xs text-slate-400">Inventaris BMN per ruangan</p>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
       <div class="flex sm:w-auto w-full items-center">
         <select id="filterAsetKategori" onchange="renderMasterBarang()"
           class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold w-full">
@@ -70,7 +70,7 @@
     </div>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Nomor Ruangan</th>
@@ -91,17 +91,17 @@
 <!-- ========================================================= -->
 <!-- BMN ASET 3: BAST OTOMATIS                                 -->
 <!-- ========================================================= -->
-<section id="mod-bast_otomatis" class="mod-section hidden space-y-5">
+<section id="mod-bast_otomatis" class="mod-section hidden">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <h2 class="text-xl font-extrabold">Berita Acara Serah Terima</h2>
     </div>
-    <button type="button" onclick="openBastGenerateModal()" class="text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      + Generate BAST
+    <button type="button" onclick="openBastGenerateModal()" aria-label="Tambah BAST" title="Tambah BAST" class="text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-full sm:w-auto">
+        <i class="ti ti-plus" aria-hidden="true"></i> Tambah BAST
     </button>
   </div>
 
-  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto my-5">
     <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
@@ -123,7 +123,7 @@
     <div id="pagBast" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
   </div>
 
-  <div id="bastGenerateModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 overflow-y-auto">
+  <div id="bastGenerateModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center z-50 m-0 p-4 overflow-y-auto">
     <div class="bg-white dark:bg-[#111827] rounded-3xl max-w-4xl w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl my-8">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-sm font-extrabold">Input / Generate BAST</h3>
@@ -157,27 +157,28 @@
 <section id="mod-aset_tutup_buku" class="mod-section hidden space-y-5">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <h2 class="text-xl font-extrabold">Tutup Buku — BMN Aset</h2>
+      <h2 class="text-xl font-extrabold">Tutup Buku</h2>
       <p class="text-xs text-slate-400">Kelengkapan dokumen tutup buku BMN Aset: <strong>Invoice</strong> &amp; <strong>BAST</strong></p>
     </div>
-    <div class="flex items-center gap-2">
-      <input type="text" id="filterAsetTutupBukuPeriode" oninput="renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku')"
-        placeholder="Filter Periode (mis. Semester II 2026)..."
-        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-60" />
-      <button id="btnAddAsetTutupBuku" onclick="openBmnDokModal('Aset', 'Tutup Buku', ['Invoice', 'BAST'])"
-        class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-        + Upload Invoice / BAST
-      </button>
+    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <div class="flex sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="filterAsetTutupBukuPeriode" oninput="renderBmnDokumenView('Aset', 'Tutup Buku', 'filterAsetTutupBukuPeriode', 'tbodyAsetTutupBuku', 'pagAsetTutupBuku')"
+          placeholder="Cari dokumen"
+          class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
+        <button id="btnAddAsetTutupBuku" onclick="openBmnDokModal('Aset', 'Tutup Buku', ['Invoice', 'BAST'])"
+          class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
+            <i class="ti ti-plus" aria-hidden="true"></i><span class="hidden sm:inline"> Upload Berkas</span>
+        </button>
+      </div>  
     </div>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
-          <th class="py-3 px-3">Periode</th>
-          <th class="py-3 px-3">Kategori (Invoice / BAST)</th>
-          <th class="py-3 px-3">Judul Dokumen</th>
-          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Nama Dokumen</th>
+          <th class="py-3 px-3">Kategori</th>
+          <th class="py-3 px-3">Tanggal</th>
           <th class="py-3 px-3">Keterangan</th>
           <th class="py-3 px-3">File</th>
         </tr>
@@ -221,13 +222,13 @@
   </details>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Semester / Periode</th>
           <th class="py-3 px-3">Item Kelengkapan</th>
           <th class="py-3 px-3">Judul Dokumen</th>
-          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Tanggal</th>
           <th class="py-3 px-3">Keterangan</th>
           <th class="py-3 px-3">File</th>
         </tr>
@@ -272,13 +273,13 @@
   </div>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Semester / Periode</th>
           <th class="py-3 px-3">Item Kelengkapan</th>
           <th class="py-3 px-3">Judul Dokumen</th>
-          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Tanggal</th>
           <th class="py-3 px-3">Keterangan</th>
           <th class="py-3 px-3">File</th>
         </tr>
@@ -325,13 +326,13 @@
   </div>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Tahun / Periode</th>
           <th class="py-3 px-3">Item Kelengkapan</th>
           <th class="py-3 px-3">Judul Dokumen</th>
-          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Tanggal</th>
           <th class="py-3 px-3">Keterangan</th>
           <th class="py-3 px-3">File</th>
         </tr>
@@ -362,13 +363,13 @@
     </div>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Tahun</th>
           <th class="py-3 px-3">Kategori Dokumen</th>
           <th class="py-3 px-3">Judul Dokumen</th>
-          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Tanggal</th>
           <th class="py-3 px-3">Keterangan</th>
           <th class="py-3 px-3">File</th>
         </tr>
@@ -399,13 +400,13 @@
     </div>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Tahun</th>
           <th class="py-3 px-3">Kategori Dokumen</th>
           <th class="py-3 px-3">Judul Dokumen</th>
-          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Tanggal</th>
           <th class="py-3 px-3">Keterangan</th>
           <th class="py-3 px-3">File</th>
         </tr>
@@ -430,7 +431,7 @@
     </button>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Nomor Dokumen</th>
@@ -529,7 +530,7 @@
     </div>
   </div>
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Kode Barang</th>
@@ -580,13 +581,13 @@
   </div>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Bulan / Periode</th>
           <th class="py-3 px-3">Item Kelengkapan</th>
           <th class="py-3 px-3">Judul Dokumen</th>
-          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Tanggal</th>
           <th class="py-3 px-3">Keterangan</th>
           <th class="py-3 px-3">File</th>
         </tr>
@@ -651,13 +652,13 @@
   </div>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
           <th class="py-3 px-3">Periode</th>
           <th class="py-3 px-3">Item Kelengkapan</th>
           <th class="py-3 px-3">Judul Dokumen</th>
-          <th class="py-3 px-3">Tanggal Upload</th>
+          <th class="py-3 px-3">Tanggal</th>
           <th class="py-3 px-3">Keterangan</th>
           <th class="py-3 px-3">File</th>
         </tr>
