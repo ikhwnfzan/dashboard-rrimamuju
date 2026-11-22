@@ -683,22 +683,125 @@
 </section>
 
 <!-- ========================================================= -->
-<!-- PERSEDIAAN 3: FORM PENGAJUAN                              -->
+<!-- PERSEDIAAN 3: FORM PENGAJUAN (INTERNAL FORM)              -->
 <!-- ========================================================= -->
-<section id="mod-persediaan_form_pengajuan" class="mod-section hidden space-y-5">
-  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-8 max-w-2xl mx-auto text-center space-y-4">
-    <span class="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">Google Form Resmi</span>
-    <h2 class="text-xl font-extrabold">Form Pengajuan Barang Persediaan</h2>
-    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-      Setiap bidang/tim kerja mengajukan permintaan ATK dan kebutuhan operasional melalui formulir resmi berikut sebelum dicatat pada transaksi keluar persediaan.
-    </p>
-    <div class="pt-2">
-      <a href="https://forms.gle/CNNbu8FHkUFqJnuZ7" target="_blank" rel="noopener"
-        class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold shadow-xs transition">
-        Buka Form Pengajuan Persediaan ↗
-      </a>
+<section id="mod-persediaan_form_pengajuan" class="mod-section hidden space-y-6">
+  <div class="max-w-3xl mx-auto space-y-5">
+    <!-- Form Header & Instructions Card -->
+    <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
+      <div class="h-2.5 bg-gradient-to-r from-teal-600 via-cyan-600 to-sky-600"></div>
+      <div class="p-6 sm:p-7 space-y-4 text-xs sm:text-sm">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight">Formulir Pengajuan Barang Persediaan LPP RRI Mamuju</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+            Silakan mengisi formulir ini untuk melakukan pengajuan barang persediaan yang dibutuhkan.<br />
+            Pengisian formulir hanya dapat dilakukan pada <strong>tanggal 20 – 25 setiap bulannya</strong>.<br />
+            Sebelum mengisi, mohon pastikan:
+          </p>
+        </div>
+
+        <ol class="list-decimal list-inside space-y-1 text-xs text-slate-600 dark:text-slate-300 pl-1">
+          <li>Jenis barang yang diajukan sesuai kebutuhan operasional.</li>
+          <li>Jumlah barang yang diusulkan realistis dan dapat dipertanggungjawabkan.</li>
+          <li>Melampirkan dokumen surat pengajuan barang resmi sebagai syarat kelengkapan.</li>
+        </ol>
+
+        <div class="p-3.5 rounded-2xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/70 flex flex-wrap items-center justify-between gap-3">
+          <div class="text-xs">
+            <p class="font-extrabold text-teal-900 dark:text-teal-200">Unduh Dokumen Surat Pengajuan Barang di sini:</p>
+            <p class="text-[11px] text-teal-700 dark:text-teal-300">Gunakan template resmi (.doc) dan biarkan kolom tanda tangan kosong.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="https://docs.google.com/document/d/1p4phNhCWhD9ndVZPyw1QzR475XkQ_EuD_-Ixde9DWlY/export?format=doc"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold transition">
+              <i class="ti ti-download" aria-hidden="true"></i> Download Template (.doc)
+            </a>
+            <a href="https://docs.google.com/document/d/1p4phNhCWhD9ndVZPyw1QzR475XkQ_EuD_-Ixde9DWlY/edit?tab=t.0" target="_blank" rel="noopener"
+              class="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 transition">
+              Lihat Docs ↗
+            </a>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-xs space-y-1">
+          <p class="font-extrabold text-amber-800 dark:text-amber-300">Catatan:</p>
+          <ul class="list-disc list-inside text-amber-900/90 dark:text-amber-200/90 space-y-0.5">
+            <li>Barang akan diproses sesuai ketersediaan persediaan dan prioritas.</li>
+            <li>Pengisian di luar jadwal (tanggal 20–25) tidak akan diproses.</li>
+          </ul>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+          <span>Pengaju aktif: <strong class="text-slate-700 dark:text-slate-200">{{ user.nama }}</strong> ({{ user.nip }})</span>
+          <span class="text-rose-500 font-bold">* Wajib diisi</span>
+        </div>
+      </div>
     </div>
+
+    <!-- Internal Submission Form -->
+    <form id="formPengajuanPersediaan" onsubmit="submitPengajuanPersediaan(event)" class="space-y-4 text-xs">
+      <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-2">
+        <label for="pengajuanNama" class="block text-sm font-extrabold">
+          Nama Pengaju <span class="text-rose-500">*</span>
+        </label>
+        <input type="text" id="pengajuanNama" name="nama_pengaju" value="{{ user.nama }}" required placeholder="Jawaban Anda"
+          class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500" />
+      </div>
+
+      <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-2">
+        <label for="pengajuanTim" class="block text-sm font-extrabold">
+          Tim <span class="text-rose-500">*</span>
+        </label>
+        <select id="pengajuanTim" name="tim" required
+          class="w-full sm:w-80 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <option value="">Pilih Tim...</option>
+          <option value="Tata Usaha">Tata Usaha</option>
+          <option value="Perencanaan">Perencanaan</option>
+          <option value="KMB">KMB (Konten Media Baru)</option>
+          <option value="Pemberitaan">Pemberitaan</option>
+          <option value="LPU">LPU (Layanan &amp; Pengembangan Usaha)</option>
+          <option value="Keuangan">Keuangan</option>
+          <option value="SDM">SDM</option>
+          <option value="Siaran">Siaran</option>
+          <option value="TMB">TMB (Teknologi &amp; Media Baru)</option>
+          <option value="BMN">BMN</option>
+        </select>
+      </div>
+
+      <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-2">
+        <label for="pengajuanKegiatan" class="block text-sm font-extrabold">
+          Nama Kegiatan <span class="font-normal text-slate-400">(diisi untuk keperluan insidental)</span>
+        </label>
+        <input type="text" id="pengajuanKegiatan" name="nama_kegiatan" placeholder="Jawaban Anda"
+          class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500" />
+      </div>
+
+      <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 space-y-2.5">
+        <label for="pengajuanDokumen" class="block text-sm font-extrabold">
+          Dokumen Surat Pengajuan Barang: <span class="text-rose-500">*</span>
+        </label>
+        <p class="text-xs italic text-slate-500 dark:text-slate-400">
+          (Silakan unduh template surat pengajuan barang melalui tautan yang tersedia pada deskripsi di atas, dokumen dikirim dalam bentuk <strong>.doc / .docx</strong> dan belum di tanda tangani)
+        </p>
+        <div class="pt-1">
+          <input type="file" id="pengajuanDokumen" name="dokumen" accept=".doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf" required
+            class="block w-full text-xs text-slate-500 dark:text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal-50 dark:file:bg-teal-950 file:text-teal-700 dark:file:text-teal-300 hover:file:bg-teal-100 cursor-pointer" />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-1">
+        <button type="submit" id="btnSubmitPengajuan"
+          class="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold shadow-xs transition">
+          Submit Pengajuan
+        </button>
+        <button type="button" onclick="resetPengajuanForm()"
+          class="text-xs font-bold text-slate-500 hover:text-rose-600 px-3 py-2 rounded-xl transition">
+          Clear form
+        </button>
+      </div>
+    </form>
   </div>
+
 </section>
 
 <!-- ========================================================= -->

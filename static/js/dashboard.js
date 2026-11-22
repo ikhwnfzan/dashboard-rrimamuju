@@ -81,10 +81,10 @@ const MODULE_NAV_CONFIG = [
   { key: 'aset_sisporja', label: 'SISPORJA', group: 'BMN', section: 'ASET' },
   { key: 'bmn_arsip', label: 'Dokumen BMN', group: 'BMN', section: 'ASET' },
   { key: 'pemeliharaan_aset', label: 'Monitoring Pemeliharaan Aset', group: 'BMN', section: 'ASET' },
-  { key: 'master_persediaan', label: 'Monitoring Persediaan', group: 'BMN', section: 'Persediaan' },
-  { key: 'persediaan_tutup_buku', label: 'Tutup Buku', group: 'BMN', section: 'Persediaan' },
   { key: 'persediaan_form_pengajuan', label: 'Form Pengajuan', group: 'BMN', section: 'Persediaan' },
+  { key: 'master_persediaan', label: 'Monitoring Persediaan', group: 'BMN', section: 'Persediaan' },
   { key: 'persediaan_pipk', label: 'PIPK', group: 'BMN', section: 'Persediaan' },
+  { key: 'persediaan_tutup_buku', label: 'Tutup Buku', group: 'BMN', section: 'Persediaan' },
   { key: 'manage_users', label: 'Manage User', group: 'Admin' },
   { key: 'manage_modules', label: 'Manage Module', group: 'Admin' },
   { key: 'app_settings', label: 'Pengaturan Aplikasi', group: 'Admin', adminOnly: true },
@@ -506,6 +506,7 @@ function renderAllModules() {
   else if (ACTIVE_MODULE === 'aset_sisporja') renderBmnDokumenView('Aset', 'SISPORJA', 'filterSisporjaPeriode', 'tbodySisporja', 'pagSisporja', 'selectSisporjaPeriode');
   else if (ACTIVE_MODULE === 'master_persediaan') renderMasterPersediaan();
   else if (ACTIVE_MODULE === 'persediaan_tutup_buku') renderBmnDokumenView('Persediaan', 'Tutup Buku', 'filterPersediaanTutupBukuPeriode', 'tbodyPersediaanTutupBuku', 'pagPersediaanTutupBuku', 'selectPersediaanTutupBukuPeriode');
+  else if (ACTIVE_MODULE === 'persediaan_form_pengajuan') renderBmnDokumenView('Persediaan', 'Form Pengajuan', 'filterPengajuanPeriode', 'tbodyPengajuanPersediaan', 'pagPengajuanPersediaan', 'selectPengajuanPeriode');
   else if (ACTIVE_MODULE === 'persediaan_pipk') renderBmnDokumenView('Persediaan', 'PIPK', 'filterPipkPeriode', 'tbodyPipk', 'pagPipk', 'selectPipkPeriode');
   else if (ACTIVE_MODULE === 'master_ruangan') renderMasterRuangan();
   else if (ACTIVE_MODULE === 'manage_users') renderManageUsers();
@@ -2321,6 +2322,7 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
     'Aset|SISPORJA': 'aset_sisporja',
     'Aset|Arsip': 'bmn_arsip',
     'Persediaan|Tutup Buku': 'persediaan_tutup_buku',
+    'Persediaan|Form Pengajuan': 'persediaan_form_pengajuan',
     'Persediaan|PIPK': 'persediaan_pipk'
   };
   const moduleKey = permissionKeys[`${groupName}|${subMenuName}`];
@@ -2345,6 +2347,44 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
     </tr>
   `;
   }).join('') || `<tr><td colspan="${groupName === 'Persediaan' ? 6 : 5}" class="py-8 text-center text-xs text-slate-400">Belum ada dokumen ${escapeHtml(subMenuName)} yang diunggah.</td></tr>`;
+}
+
+
+function resetPengajuanForm() {
+  const form = document.getElementById('formPengajuanPersediaan');
+  if (!form) return;
+  form.reset();
+  const namaInput = document.getElementById('pengajuanNama');
+  if (namaInput && typeof USER !== 'undefined' && USER.nama) {
+    namaInput.value = USER.nama;
+  }
+}
+
+async function submitPengajuanPersediaan(event) {
+  event.preventDefault();
+  const form = event.target;
+  const btn = document.getElementById('btnSubmitPengajuan');
+  if (btn) btn.disabled = true;
+
+  try {
+    const formData = new FormData(form);
+    const out = await processWithLoading(async () => {
+      const res = await fetch('/api/persediaan/pengajuan', {
+        method: 'POST',
+        body: formData
+      });
+      return res.json();
+    }, 'Gagal mengirim pengajuan persediaan');
+
+    if (!out) return;
+    showToast(out.message, out.ok ? 'success' : 'error');
+    if (out.ok) {
+      resetPengajuanForm();
+      await loadDashboard();
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 initTheme();
