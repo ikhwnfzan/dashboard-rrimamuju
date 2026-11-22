@@ -981,8 +981,8 @@ function renderMasterBarang() {
     const rowNum = a._row_num ?? a.row_num;
     return `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-3 px-3 font-bold">${escapeHtml(a['Kode Ruang'] || '-')} <span class="block text-[10px] text-slate-400">${escapeHtml(a['Nama Ruangan'] || '')}</span></td>
-        <td class="py-3 px-3 font-mono text-slate-500">${escapeHtml(a['Nomor Kode Barang'] || '-')}</td>
+        <td class="py-3 px-3 text-[10px] font-bold">${escapeHtml(a['Kode Ruang'] || '-')} <span class="block text-slate-400">${escapeHtml(a['Nama Ruangan'] || '')}</span></td>
+        <td class="py-3 px-3 font-mono text-slate-500">${escapeHtml(a['Kode Barang'] || '-')}</td>
         <td class="py-3 px-3 font-bold">${escapeHtml(a['Nama Barang'] || '-')}</td>
         <td class="py-3 px-3">${escapeHtml(a['Merk Model'] || '-')}</td>
         <td class="py-3 px-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400">${escapeHtml(a.Tipe || '-')}</td>
@@ -1350,7 +1350,7 @@ const SCHEMAS = {
   DB_Program: { title: 'Tambah Program Siaran', fields: ['Kode Program', 'Programa', 'Nama Program', 'Hari', 'Jam', 'Format', 'Produser', 'Status'] },
   DB_Konten: { title: 'Tambah Konten (Planner)', fields: ['Tanggal Tayang', 'Platform', 'Akun', 'Judul Konten', 'Jenis', 'Divisi', 'PIC', 'Status', 'Link Asset'] },
   DB_Jadwal_TMB: { title: 'Tambah Jadwal TMB', fields: ['Tanggal', 'Shift', 'Lokasi Pemancar', 'Teknisi TMB', 'Tugas', 'Status'] },
-  DB_Aset: { title: 'Tambah Barang', fields: ['Nomor Kode Barang', 'Kode Ruang', 'Tipe', 'Nama Barang', 'Merk Model', 'Tahun', 'NUP', 'Kondisi', 'Tindak Lanjut', 'Keterangan'] },
+  DB_Aset: { title: 'Tambah Barang', fields: ['Kode Barang', 'Kode Ruang', 'Tipe', 'Nama Barang', 'Merk Model', 'Tahun', 'NUP', 'Kondisi', 'Tindak Lanjut', 'Keterangan'] },
   DB_Ruangan: { title: 'Tambah Master Ruangan', fields: ['Nomor Ruangan', 'Nama Ruangan', 'Lokasi', 'NIP Penanggung Jawab', 'Nama', 'Jabatan'] },
   DB_Stok_Master: { title: 'Tambah Master Persediaan', fields: ['Kode Barang', 'Nama Barang', 'Unit', 'Stok Awal', 'Keterangan'] },
   DB_Stok_Masuk: { title: 'Catat Persediaan Masuk', fields: ['Tanggal', 'Penanggung Jawab', 'Nama Barang', 'Jumlah Masuk', 'Unit', 'Pcs', 'Keterangan'] },
@@ -1359,7 +1359,7 @@ const SCHEMAS = {
   DB_Socmed_Analytics: { title: 'Input Laporan Analitik', fields: ['Periode', 'Platform', 'Akun', 'Followers', 'Reach', 'Engagement', 'Top Konten', 'Catatan'] },
   DB_Monitoring_Produksi: { title: 'Catat Monitoring Produksi', fields: ['Tanggal', 'Program', 'Studio', 'Operator TMB', 'Kualitas Audio', 'Stream Status', 'Kendala Teknis', 'Tindak Lanjut'] },
   DB_Pemeliharaan_Header: { title: 'Tambah Jadwal Pemeliharaan Aset', fields: ['Tanggal', 'Judul Pemeliharaan', 'Lokasi', 'Teknisi Vendor', 'Status', 'Keterangan'] },
-  DB_Pemeliharaan_Detail: { title: 'Tambah Detail Aset Dipelihara', fields: ['ID Jadwal', 'Nomor Kode Barang', 'Nama Barang', 'NUP', 'Kondisi Sebelum', 'Tindakan', 'Kondisi Sesudah', 'Biaya'] },
+  DB_Pemeliharaan_Detail: { title: 'Tambah Detail Aset Dipelihara', fields: ['ID Jadwal', 'Kode Barang', 'Nama Barang', 'NUP', 'Kondisi Sebelum', 'Tindakan', 'Kondisi Sesudah', 'Biaya'] },
   DB_BMN_Arsip: { title: 'Tambah Arsip BMN (Surat & Nodin)', fields: ['Nomor Dokumen', 'Jenis', 'Judul Dokumen', 'Tanggal', 'Keterangan', 'Link'] },
   DB_BMN_Dokumen: { title: 'Upload Dokumen Pelaporan BMN', fields: ['Group', 'Sub Menu', 'Periode', 'Kategori Item', 'Judul Dokumen', 'Tanggal Upload', 'Link File', 'Keterangan'] },
 };
@@ -1510,8 +1510,8 @@ function openAssetModal(asset = null) {
 
   form.innerHTML = `
     <div>
-      <label class="block font-bold mb-1">Nomor Kode Barang</label>
-      <input type="text" name="Nomor Kode Barang" value="${escapeHtml(asset?.['Nomor Kode Barang'] || '')}" ${editing ? 'readonly' : 'required'}
+      <label class="block font-bold mb-1">Kode Barang</label>
+      <input type="text" name="Kode Barang" value="${escapeHtml(asset?.['Kode Barang'] || '')}" ${editing ? 'readonly' : 'required'}
         class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 ${editing ? 'opacity-70 cursor-not-allowed' : ''}" />
     </div>
     <div>
@@ -1601,7 +1601,7 @@ async function submitGenericRecord(e) {
   const key = e.target.dataset.targetKey;
   const payload = Object.fromEntries(new FormData(e.target).entries());
   const editRowNum = e.target.dataset.editRowNum;
-  if (key === 'DB_Aset' && editRowNum) delete payload['Nomor Kode Barang'];
+  if (key === 'DB_Aset' && editRowNum) delete payload['Kode Barang'];
   if (key === 'DB_Ruangan' && editRowNum) delete payload['Nomor Ruangan'];
   const out = await processWithLoading(async () => {
     const url = key === 'DB_Aset' && editRowNum
@@ -1827,7 +1827,7 @@ function initBastSelects(selectedNip = '', selectedAssetCode = '', selectedNup =
   }
   if (assetSelect) {
     assetSelect.innerHTML = '<option value="">Pilih Barang</option>' + (DATA.assets || []).map(asset => {
-      const code = asset['Nomor Kode Barang'] || '';
+      const code = asset['Kode Barang'] || '';
       const selected = String(code).trim() === String(selectedAssetCode).trim() ? ' selected' : '';
       return `<option value="${escapeHtml(code)}"${selected}>${escapeHtml(code)} - ${escapeHtml(asset['Nama Barang'] || '')}</option>`;
     }).join('');
@@ -1849,7 +1849,7 @@ function syncBastEmployee() {
 
 function syncBastAsset() {
   const code = document.getElementById('bastNomorBarang')?.value || '';
-  const asset = (DATA.assets || []).find(item => String(item['Nomor Kode Barang'] || '').trim() === String(code).trim());
+  const asset = (DATA.assets || []).find(item => String(item['Kode Barang'] || '').trim() === String(code).trim());
   if (!asset) return;
   document.getElementById('bastNup').value = asset.NUP || '';
   document.getElementById('bastBarang').value = asset['Nama Barang'] || '';
@@ -1985,7 +1985,7 @@ function renderPemeliharaanAset() {
     td.innerHTML = (DATA.pemeliharaan_detail || []).map(d => `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
         <td class="py-2.5 px-3 font-mono font-bold text-indigo-600">${escapeHtml(d['ID Jadwal'] || '-')}</td>
-        <td class="py-2.5 px-3 font-mono">${escapeHtml(d['Nomor Kode Barang'] || '-')}</td>
+        <td class="py-2.5 px-3 font-mono">${escapeHtml(d['Kode Barang'] || '-')}</td>
         <td class="py-2.5 px-3 font-bold">${escapeHtml(d['Nama Barang'] || '-')}</td>
         <td class="py-2.5 px-3">${escapeHtml(d.NUP || '-')}</td>
         <td class="py-2.5 px-3">${escapeHtml(d['Kondisi Sebelum'] || '-')}</td>

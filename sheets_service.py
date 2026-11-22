@@ -188,14 +188,14 @@ DB_SCHEMAS = {
     "DB_Arsip_SDM": ["Nomor Dokumen", "Nama Dokumen", "Tanggal", "Jenis", "Link"],
     "DB_Info_Board": ["Tanggal", "Prioritas", "Judul", "Isi", "Target Divisi", "Lampiran"],
     "DB_Ruangan": ["Nomor Ruangan", "Nama Ruangan", "Lokasi", "NIP Penanggung Jawab"],
-    "DB_Aset": ["Nomor Kode Barang", "Kode Ruang", "Tipe", "Nama Barang", "Merk Model", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"],
+    "DB_Aset": ["Kode Barang", "Kode Ruang", "Tipe", "Nama Barang", "Merk Model", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"],
     "DB_Stok_Master": ["Kode Barang", "Nama Barang", "Unit", "Stok Awal", "Keterangan"],
     "DB_Stok_Detail": ["ID Transaksi", "Tanggal", "Jenis", "Kode Barang", "Nama Barang", "Jumlah", "Unit", "Pcs", "Bidang", "Penanggung Jawab", "Keterangan"],
     "DB_Produksi_Paket": ["ID", "Tanggal", "Program", "Judul Paket", "Jenis Paket", "Produser", "Reporter", "Editor", "Status", "Link File"],
     "DB_Socmed_Analytics": ["Periode", "Platform", "Akun", "Followers", "Reach", "Engagement", "Top Konten", "Catatan"],
     "DB_Monitoring_Produksi": ["Tanggal", "Program", "Studio", "Operator TMB", "Kualitas Audio", "Stream Status", "Kendala Teknis", "Tindak Lanjut"],
     "DB_Pemeliharaan_Header": ["ID Jadwal", "Tanggal", "Judul Pemeliharaan", "Lokasi", "Teknisi Vendor", "Status", "Keterangan"],
-    "DB_Pemeliharaan_Detail": ["ID Jadwal", "Nomor Kode Barang", "Nama Barang", "NUP", "Kondisi Sebelum", "Tindakan", "Kondisi Sesudah", "Biaya"],
+    "DB_Pemeliharaan_Detail": ["ID Jadwal", "Kode Barang", "Nama Barang", "NUP", "Kondisi Sebelum", "Tindakan", "Kondisi Sesudah", "Biaya"],
     "DB_BMN_Arsip": ["Nomor Dokumen", "Jenis", "Judul Dokumen", "Tanggal", "Keterangan", "Link"],
     "DB_BMN_Dokumen": ["Group", "Sub Menu", "Periode", "Kategori Item", "Judul Dokumen", "Tanggal Upload", "Link File", "Keterangan"],
 }
@@ -257,7 +257,7 @@ DEMO_DATA = {
         {"Nomor Ruangan": "1.13", "Nama Ruangan": "Gudang TMB", "Lokasi": "Lantai 1", "NIP Penanggung Jawab": "199006082022211012"},
     ],
     "DB_Aset": [
-        {"Nomor Kode Barang": "3030205002", "Kode Ruang": "1.13", "Tipe": "Peralatan Studio & Transmisi", "Nama Barang": "Tool Kit Box", "Merk Model": "Hand Toolset", "Tahun": "2026", "NUP": "1", "Kondisi": "Baik", "Tindak Lanjut": "", "Keterangan": ""},
+        {"Kode Barang": "3030205002", "Kode Ruang": "1.13", "Tipe": "Peralatan Studio & Transmisi", "Nama Barang": "Tool Kit Box", "Merk Model": "Hand Toolset", "Tahun": "2026", "NUP": "1", "Kondisi": "Baik", "Tindak Lanjut": "", "Keterangan": ""},
     ],
     "DB_Stok_Master": [
         {"Kode Barang": "ATK-001", "Nama Barang": "Kertas HVS F4", "Unit": "Rim", "Stok Awal": 10, "Keterangan": "Kertas F4 70gsm"},
@@ -756,7 +756,7 @@ class SheetsDB:
             for emp in employees
         }
         asset_lookup = {
-            str(asset.get("Nomor Kode Barang", "")).strip(): asset
+            str(asset.get("Kode Barang", "")).strip(): asset
             for asset in assets
         }
         room_lookup = {
@@ -1068,8 +1068,8 @@ class SheetsDB:
             return False, f"Gagal memperbarui data ruangan: {e}"
 
     def update_asset_row(self, row_num, updates_dict):
-        if "Nomor Kode Barang" in updates_dict:
-            return False, "Nomor Kode Barang tidak dapat diubah."
+        if "Kode Barang" in updates_dict:
+            return False, "Kode Barang tidak dapat diubah."
 
         ws = self._find_ws(["DB_Aset"])
         if not ws:

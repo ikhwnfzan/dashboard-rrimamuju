@@ -520,7 +520,7 @@ def api_update_asset():
 
     allowed_fields = {"Kode Ruang", "Tipe", "Nama Barang", "Merk Model", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"}
     if not set(updates).issubset(allowed_fields):
-        return jsonify({"ok": False, "message": "Nomor Kode Barang tidak dapat diubah."}), 400
+        return jsonify({"ok": False, "message": "Kode Barang tidak dapat diubah."}), 400
 
     updates = {key: str(value or "").strip() for key, value in updates.items()}
     ok, msg = db.update_asset_row(row_num, updates)
