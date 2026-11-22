@@ -938,7 +938,7 @@ class SheetsDB:
         bridge_url = cfg_map.get("drive_bridge_url", "").strip()
         root_folder_id = cfg_map.get("drive_root_folder_id", "").strip()
         bridge_secret = cfg_map.get("drive_bridge_secret", "").strip()
-        subfolder_name = str(payload.get("subfolder_name") or "BAST").strip()
+        subfolder_name = str(payload.get("subfolder_name") or "Tutup Buku").strip()
 
         from datetime import datetime
         try:
@@ -1041,16 +1041,33 @@ class SheetsDB:
             docs = build("docs", "v1", credentials=creds, cache_discovery=False)
 
             target_parent_id = root_folder_id
-            if root_folder_id and subfolder_name:
-                q = (
-                    f"'{root_folder_id}' in parents and "
-                    f"mimeType = 'application/vnd.google-apps.folder' and "
-                    f"name = '{subfolder_name}' and trashed = false"
-                )
-                sub_res = drive.files().list(q=q, fields="files(id,name)", supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
-                sub_files = sub_res.get("files", [])
-                if sub_files:
-                    target_parent_id = sub_files[0]["id"]
+            if root_folder_id:
+                for folder_name in ("Aset", subfolder_name):
+                    q = (
+                        f"'{target_parent_id}' in parents and "
+                        f"mimeType = 'application/vnd.google-apps.folder' and "
+                        f"name = '{folder_name}' and trashed = false"
+                    )
+                    folder_result = drive.files().list(
+                        q=q,
+                        fields="files(id,name)",
+                        supportsAllDrives=True,
+                        includeItemsFromAllDrives=True,
+                    ).execute()
+                    folders = folder_result.get("files", [])
+                    if folders:
+                        target_parent_id = folders[0]["id"]
+                    else:
+                        created_folder = drive.files().create(
+                            body={
+                                "name": folder_name,
+                                "mimeType": "application/vnd.google-apps.folder",
+                                "parents": [target_parent_id],
+                            },
+                            fields="id",
+                            supportsAllDrives=True,
+                        ).execute()
+                        target_parent_id = created_folder["id"]
 
             copy_body = {"name": f"TEMP_{pdf_name}"}
             if target_parent_id:
@@ -1490,6 +1507,75 @@ class SheetsDB:
             return True, f"Data berhasil disimpan!"
         except Exception as e:
             return False, f"Gagal menyimpan data!': {e}"
+
+    def delete_bast_linked_record(self, target_key, row_num):
+        if target_key not in {"DB_BAST", "DB_BMN_Dokumen"}:
+            return False, "Jenis data BAST tidak valid."
+        try:
+            row_num = int(row_num)
+        except (TypeError, ValueError):
+            return False, "Nomor baris tidak valid."
+
+        self._sync_snapshot(force=True)
+        bast_rows = self.get_tab_records(["DB_BAST"], include_row_num=True)
+        document_rows = self.get_tab_records(["DB_BMN_Dokumen"], include_row_num=True)
+        source_rows = bast_rows if target_key == "DB_BAST" else document_rows
+        source = next((row for row in source_rows if int(row.get("_row_num") or 0) == row_num), None)
+        if not source:
+            return False, "Dokumen BAST tidak ditemukan."
+
+        def is_bast_document(row):
+            return (
+                str(row.get("Group", "")).strip().lower() == "aset"
+                and str(row.get("Sub Menu", "")).strip().lower() == "tutup buku"
+                and str(row.get("Kategori Item", "")).strip().lower() == "bast"
+            )
+
+        def matching_document(bast_row):
+            pdf_link = str(bast_row.get("Link PDF", "")).strip()
+            bast_number = str(bast_row.get("Nomor BAST", "")).strip()
+            expected_title = f"BAST {bast_number}.pdf".lower()
+            for document in document_rows:
+                if not is_bast_document(document):
+                    continue
+                if pdf_link and str(document.get("Link File", "")).strip() == pdf_link:
+                    return document
+                if expected_title != "bast .pdf" and str(document.get("Judul Dokumen", "")).strip().lower() == expected_title:
+                    return document
+            return None
+
+        def matching_bast(document_row):
+            pdf_link = str(document_row.get("Link File", "")).strip()
+            title = str(document_row.get("Judul Dokumen", "")).strip().lower()
+            for bast_row in bast_rows:
+                if pdf_link and str(bast_row.get("Link PDF", "")).strip() == pdf_link:
+                    return bast_row
+                bast_number = str(bast_row.get("Nomor BAST", "")).strip()
+                if bast_number and title == f"bast {bast_number}.pdf".lower():
+                    return bast_row
+            return None
+
+        if target_key == "DB_BAST":
+            paired_row = matching_document(source)
+            paired_key = "DB_BMN_Dokumen"
+        elif is_bast_document(source):
+            paired_row = matching_bast(source)
+            paired_key = "DB_BAST"
+        else:
+            return self.delete_record(target_key, row_num)
+
+        if paired_row:
+            ok, message = self.delete_record(paired_key, paired_row["_row_num"])
+            if not ok:
+                return False, f"Gagal menghapus data BAST terkait: {message}"
+
+        ok, message = self.delete_record(target_key, row_num)
+        if not ok:
+            if paired_row:
+                return False, f"Baris terkait sudah dihapus, tetapi penghapusan baris ini gagal: {message}"
+            return False, message
+
+        return True, "Data BAST dan dokumen terkait berhasil dihapus." if paired_row else message
 
     def delete_record(self, target_key, row_num):
         tab_lookup = {

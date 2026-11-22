@@ -560,7 +560,12 @@ async function submitAppSettings(event) {
 
 async function deleteRecord(targetKey, rowNum, label = 'data ini') {
   if (!rowNum) { showToast('Nomor baris tidak ditemukan.', 'error'); return; }
-  if (!confirm(`Hapus ${label}?`)) return;
+  const isLinkedBast = targetKey === 'DB_BAST'
+    || (targetKey === 'DB_BMN_Dokumen' && /bast/i.test(label));
+  const confirmation = isLinkedBast
+    ? `Hapus ${label} dan baris BAST terkait dari kedua modul?`
+    : `Hapus ${label}?`;
+  if (!confirm(confirmation)) return;
   const out = await processWithLoading(async () => {
     const res = await fetch(`/api/delete/${targetKey}`, {
       method: 'POST',
@@ -1602,11 +1607,78 @@ function closeGenericModal() {
   m.classList.add('hidden');
   m.classList.remove('flex');
   const form = document.getElementById('genericAddForm');
-  if (form) form.dataset.editRowNum = '';
+  if (form) {
+    form.reset();
+    form.dataset.editRowNum = '';
+  }
+  selectedBmnFile = null;
+  const modalPanel = document.querySelector('#genericAddModal > div');
+  if (modalPanel) modalPanel.classList.replace('max-w-lg', 'max-w-md');
 }
+
+async function submitBmnDocument(event) {
+  const form = event.target;
+  const payload = Object.fromEntries(new FormData(form).entries());
+  const source = payload.BmnSource || 'upload';
+  delete payload.BmnSource;
+
+  let linkFile = '';
+  if (source === 'upload') {
+    if (!selectedBmnFile) {
+      showToast('Pilih atau seret file yang akan diunggah.', 'error');
+      return;
+    }
+    const uploadData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => uploadData.append(key, String(value)));
+    uploadData.append('file', selectedBmnFile);
+    const uploadOut = await processWithLoading(async () => {
+      const res = await fetch('/api/upload/bmn', { method: 'POST', body: uploadData });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || 'Gagal mengunggah dokumen.');
+      if (result.ok) {
+        closeGenericModal();
+        await loadDashboard();
+      }
+      return result;
+    }, 'Mengunggah dokumen ke Google Drive');
+    if (!uploadOut?.ok) {
+      showToast(uploadOut?.message || 'Gagal mengunggah dokumen.', 'error');
+      return;
+    }
+    showToast(uploadOut.message, 'success');
+    return;
+  } else {
+    linkFile = (document.getElementById('bmnDriveLink')?.value || '').trim();
+    if (!/^https?:\/\/\S+/i.test(linkFile)) {
+      showToast('Masukkan link Google Drive yang valid.', 'error');
+      return;
+    }
+  }
+
+  payload['Link File'] = linkFile;
+  const out = await processWithLoading(async () => {
+    const res = await fetch('/api/add/DB_BMN_Dokumen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if (result.ok) {
+      closeGenericModal();
+      await loadDashboard();
+    }
+    return result;
+  }, 'Menyimpan dokumen');
+  if (out) showToast(out.message, out.ok ? 'success' : 'error');
+}
+
 async function submitGenericRecord(e) {
   e.preventDefault();
   const key = e.target.dataset.targetKey;
+  if (key === 'DB_BMN_Dokumen') {
+    await submitBmnDocument(e);
+    return;
+  }
   const payload = Object.fromEntries(new FormData(e.target).entries());
   const editRowNum = e.target.dataset.editRowNum;
   if (key === 'DB_Aset' && editRowNum) delete payload['Kode Barang'];
@@ -1900,7 +1972,7 @@ async function loadBastRecords(force = false) {
   if (!tbody) return;
   const rows = paginateArray('bast', BAST_RECORDS, 'pagBast', 'loadBastRecords');
   const editable = canUpdate('bast_otomatis');
-  const deletable = canFull('bast_otomatis');
+  const deletable = canFull('bast_otomatis') && canFull('aset_tutup_buku');
   tbody.innerHTML = rows.map((row, index) => {
     const safeRow = encodeURIComponent(JSON.stringify(row));
     const status = String(row.Status || '').trim();
@@ -2040,29 +2112,133 @@ function renderBmnArsip() {
 }
 
 function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
-  openAddModal('DB_BMN_Dokumen');
-  document.getElementById('genericModalTitle').textContent = `Upload Dokumen ${subMenuName || groupName}`;
   const form = document.getElementById('genericAddForm');
   if (!form) return;
+  selectedBmnFile = null;
+  form.dataset.targetKey = 'DB_BMN_Dokumen';
+  form.dataset.editRowNum = '';
 
-  const grpInput = form.querySelector('input[name="Group"]');
-  if (grpInput) { grpInput.value = groupName; grpInput.readOnly = true; }
+  const periodPlaceholder = subMenuName === 'CALBMN' || subMenuName === 'WASDAL'
+    ? 'Contoh: Semester I 2026'
+    : subMenuName === 'Tutup Buku'
+      ? 'Contoh: November 2026'
+      : 'Contoh: 2026';
+  const categorySelect = categoryOptions.map(option =>
+    `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`
+  ).join('');
 
-  const subInput = form.querySelector('input[name="Sub Menu"]');
-  if (subInput && subMenuName) { subInput.value = subMenuName; subInput.readOnly = true; }
+  form.innerHTML = `
+    <input type="hidden" name="Group" value="${escapeHtml(groupName)}" />
+    <input type="hidden" name="Sub Menu" value="${escapeHtml(subMenuName)}" />
 
-  const tglInput = form.querySelector('input[name="Tanggal Buat"]');
-  if (tglInput && !tglInput.value) tglInput.value = new Date().toISOString().slice(0, 10);
+    <div>
+      <label class="block font-bold mb-1">Periode</label>
+      <input type="text" name="Periode" placeholder="${periodPlaceholder}"
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Kategori Item</label>
+      <select name="Kategori Item" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        ${categorySelect}
+      </select>
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Judul Dokumen</label>
+      <input type="text" name="Judul Dokumen" required placeholder="Judul dokumen"
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Tanggal</label>
+      <input type="date" name="Tanggal Buat" required
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
 
-  if (categoryOptions && categoryOptions.length) {
-    const catInput = form.querySelector('input[name="Kategori Item"]');
-    if (catInput) {
-      const sel = document.createElement('select');
-      sel.name = 'Kategori Item';
-      sel.className = catInput.className;
-      sel.innerHTML = categoryOptions.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('');
-      catInput.replaceWith(sel);
-    }
+    <fieldset>
+      <legend class="block font-bold mb-2">Sumber File</legend>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="cursor-pointer">
+          <input type="radio" name="BmnSource" value="upload" checked class="peer sr-only" onchange="toggleBmnFileSource(this.value)" />
+          <span class="block text-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-teal-600 peer-checked:bg-teal-50 peer-checked:text-teal-700 dark:peer-checked:bg-teal-900/30 dark:peer-checked:text-teal-300">Upload File</span>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="BmnSource" value="drive" class="peer sr-only" onchange="toggleBmnFileSource(this.value)" />
+          <span class="block text-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-teal-600 peer-checked:bg-teal-50 peer-checked:text-teal-700 dark:peer-checked:bg-teal-900/30 dark:peer-checked:text-teal-300">Link Google Drive</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <div id="bmnUploadSource">
+      <label id="bmnDropZone" for="bmnFileInput"
+        class="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-4 py-5 text-center hover:border-teal-500 transition">
+        <i class="ti ti-cloud-upload text-2xl text-teal-600"></i>
+        <span class="mt-1 font-bold">Seret file ke sini</span>
+        <span class="text-slate-400">atau klik Browse</span>
+        <span id="bmnFileName" class="mt-2 hidden font-bold text-teal-600"></span>
+      </label>
+      <input id="bmnFileInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.zip" class="hidden"
+        onchange="handleBmnFileSelection(this.files?.[0])" />
+    </div>
+    <div id="bmnDriveSource" class="hidden">
+      <label class="block font-bold mb-1">Link Google Drive</label>
+      <input type="url" id="bmnDriveLink" placeholder="https://drive.google.com/file/d/..."
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+
+    <div>
+      <label class="block font-bold mb-1">Keterangan</label>
+      <textarea name="Keterangan" rows="3" placeholder="Tambahkan keterangan"
+        class="w-full resize-y px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"></textarea>
+    </div>
+    <input type="hidden" name="Link File" id="bmnLinkFile" value="" />
+    <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">Simpan Dokumen</button>
+  `;
+
+  const dateInput = form.querySelector('input[name="Tanggal Buat"]');
+  if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+
+  const modalPanel = document.querySelector('#genericAddModal > div');
+  if (modalPanel) modalPanel.classList.replace('max-w-md', 'max-w-lg');
+  const dropZone = document.getElementById('bmnDropZone');
+  if (dropZone) {
+    ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, event => {
+      event.preventDefault();
+      dropZone.classList.add('border-teal-500', 'bg-teal-50', 'dark:bg-teal-900/20');
+    }));
+    ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, event => {
+      event.preventDefault();
+      dropZone.classList.remove('border-teal-500', 'bg-teal-50', 'dark:bg-teal-900/20');
+    }));
+    dropZone.addEventListener('drop', event => {
+      event.preventDefault();
+      const file = event.dataTransfer?.files?.[0];
+      if (file) handleBmnFileSelection(file);
+    });
+  }
+
+  document.getElementById('genericModalTitle').textContent = `Upload Dokumen ${subMenuName || groupName}`;
+  const modal = document.getElementById('genericAddModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function toggleBmnFileSource(source) {
+  document.getElementById('bmnUploadSource')?.classList.toggle('hidden', source !== 'upload');
+  document.getElementById('bmnDriveSource')?.classList.toggle('hidden', source !== 'drive');
+}
+
+let selectedBmnFile = null;
+
+function handleBmnFileSelection(file) {
+  if (!file) return;
+  selectedBmnFile = file;
+  const nameElement = document.getElementById('bmnFileName');
+  if (nameElement) {
+    nameElement.textContent = file.name;
+    nameElement.classList.remove('hidden');
+  }
+  const titleInput = document.querySelector('#genericAddForm input[name="Judul Dokumen"]');
+  if (titleInput && !titleInput.value.trim()) {
+    titleInput.value = file.name.replace(/\.[^/.]+$/, '');
   }
 }
 
@@ -2080,8 +2256,24 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
   const rows = paginateArray(pagKey, list, pagId, rerenderFn);
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
-  const deletable = canFull(pagKey) || canUpdate(pagKey);
-  tbody.innerHTML = rows.map(d => `
+  const permissionKeys = {
+    'Aset|Tutup Buku': 'aset_tutup_buku',
+    'Aset|CALBMN': 'aset_calbmn',
+    'Aset|WASDAL': 'aset_wasdal',
+    'Aset|RKBMN': 'aset_rkbmn',
+    'Aset|Manajemen Risiko': 'aset_manajemen_risiko',
+    'Aset|SISPORJA': 'aset_sisporja',
+    'Persediaan|Tutup Buku': 'persediaan_tutup_buku',
+    'Persediaan|PIPK': 'persediaan_pipk'
+  };
+  const moduleKey = permissionKeys[`${groupName}|${subMenuName}`];
+  tbody.innerHTML = rows.map(d => {
+    const linkedBast = groupName === 'Aset'
+      && subMenuName === 'Tutup Buku'
+      && String(d['Kategori Item'] || '').trim().toLowerCase() === 'bast';
+    const deletable = Boolean(moduleKey && canFull(moduleKey) && (!linkedBast || canFull('bast_otomatis')));
+    const label = linkedBast ? 'BAST Dokumen' : 'Dokumen';
+    return `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
       <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(d['Judul Dokumen'] || '-')}</td>
       <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold">${escapeHtml(d['Kategori Item'] || '-')}</span></td>
@@ -2089,10 +2281,11 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
       <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(d.Keterangan || '-')}</td>
       <td class="py-3 px-3">
         ${d['Link File'] ? `<a href="${escapeHtml(d['Link File'])}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : '-'}
-        ${deletable ? `<button type="button" title="Hapus BAST" onclick="deleteRecord('DB_BMN_Dokumen', ${d._row_num || 0}, 'Dokumen ${escapeHtml(d['Judul Dokumen'] || '').replace(/'/g, '')}') " class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
+        ${deletable ? `<button type="button" title="Hapus Dokumen" onclick="deleteRecord('DB_BMN_Dokumen', ${d._row_num || 0}, '${label} ${escapeHtml(d['Judul Dokumen'] || '').replace(/'/g, '')}') " class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
       </td>
     </tr>
-  `).join('') || `<tr><td colspan="6" class="py-8 text-center text-xs text-slate-400">Belum ada dokumen ${escapeHtml(subMenuName)} yang diunggah.</td></tr>`;
+  `;
+  }).join('') || `<tr><td colspan="5" class="py-8 text-center text-xs text-slate-400">Belum ada dokumen ${escapeHtml(subMenuName)} yang diunggah.</td></tr>`;
 }
 
 initTheme();

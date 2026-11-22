@@ -1,6 +1,8 @@
 import os
+import base64
 from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, request, jsonify, session, send_from_directory, redirect, url_for
+from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from sheets_service import (
     APP_CONFIG_DEFAULTS,
@@ -15,6 +17,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "rri-mamuju-digital-board-secret-2026")
+app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 
 db = SheetsDB()
 media_feed = MediaFeedService()
@@ -591,6 +594,138 @@ def api_update_stok_detail():
     return jsonify({"ok": ok, "message": msg})
 
 
+@app.route("/api/upload/bmn", methods=["POST"])
+def api_upload_bmn_document():
+    user = session.get("user")
+    if not user:
+        return jsonify({"ok": False, "message": "Restricted access!"}), 401
+
+    module_by_submenu = {
+        ("Aset", "Tutup Buku"): "aset_tutup_buku",
+        ("Aset", "CALBMN"): "aset_calbmn",
+        ("Aset", "WASDAL"): "aset_wasdal",
+        ("Aset", "RKBMN"): "aset_rkbmn",
+        ("Aset", "Manajemen Risiko"): "aset_manajemen_risiko",
+        ("Aset", "SISPORJA"): "aset_sisporja",
+        ("Persediaan", "Tutup Buku"): "persediaan_tutup_buku",
+        ("Persediaan", "PIPK"): "persediaan_pipk",
+    }
+    group_name = request.form.get("Group", "").strip()
+    sub_menu = request.form.get("Sub Menu", "").strip()
+    output_name = request.form.get("Judul Dokumen", "").strip()
+    module_key = module_by_submenu.get((group_name, sub_menu))
+    if not module_key:
+        return jsonify({"ok": False, "message": "Bagian dokumen BMN tidak valid."}), 400
+    if not _has_perm(user, module_key, "full"):
+        return jsonify({"ok": False, "message": "Anda tidak memiliki hak upload dokumen."}), 403
+
+    uploaded = request.files.get("file")
+    if not uploaded or not uploaded.filename:
+        return jsonify({"ok": False, "message": "Pilih file yang akan diunggah."}), 400
+
+    allowed_extensions = {
+        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+        "jpg", "jpeg", "png", "zip",
+    }
+    original_name = secure_filename(os.path.basename(uploaded.filename).strip())
+    if not original_name:
+        return jsonify({"ok": False, "message": "Nama file tidak valid."}), 400
+    extension = original_name.rsplit(".", 1)[-1].lower() if "." in original_name else ""
+    if extension not in allowed_extensions:
+        return jsonify({"ok": False, "message": "Format file tidak didukung."}), 400
+    drive_file_name = output_name.replace("\\", "-").replace("/", "-").strip()
+    if not drive_file_name:
+        return jsonify({"ok": False, "message": "Nama dokumen tidak valid."}), 400
+    if not drive_file_name.lower().endswith(f".{extension}"):
+        drive_file_name = f"{drive_file_name}.{extension}"
+
+    row_data = {
+        "Group": group_name,
+        "Sub Menu": sub_menu,
+        "Periode": request.form.get("Periode", "").strip(),
+        "Kategori Item": request.form.get("Kategori Item", "").strip(),
+        "Judul Dokumen": drive_file_name,
+        "Tanggal Buat": request.form.get("Tanggal Buat", "").strip(),
+        "Keterangan": request.form.get("Keterangan", "").strip(),
+    }
+    if not row_data["Judul Dokumen"] or not row_data["Tanggal Buat"]:
+        return jsonify({"ok": False, "message": "Judul dan tanggal dokumen wajib diisi."}), 400
+
+    settings = {item["key"]: item["value"] for item in db.get_app_settings()}
+    bridge_url = settings.get("drive_bridge_url", "").strip()
+    root_folder_id = settings.get("drive_root_folder_id", "").strip()
+    bridge_secret = settings.get("drive_bridge_secret", "").strip()
+    if not bridge_url or not root_folder_id:
+        return jsonify({
+            "ok": False,
+            "message": "Google Drive belum dikonfigurasi. Isi Folder ID Utama dan URL Apps Script di App Setting.",
+        }), 503
+
+    try:
+        import requests
+        file_bytes = uploaded.read()
+        if not file_bytes:
+            return jsonify({"ok": False, "message": "File yang dipilih kosong."}), 400
+        bridge_response = requests.post(
+            bridge_url,
+            json={
+                "secret": bridge_secret,
+                "action": "upload_file",
+                "root_folder_id": root_folder_id,
+                "group_name": group_name,
+                "subfolder_name": sub_menu,
+                "drive_file_name": drive_file_name,
+                "mime_type": uploaded.mimetype or "application/octet-stream",
+                "file_base64": base64.b64encode(file_bytes).decode("ascii"),
+            },
+            timeout=120,
+            allow_redirects=True,
+        )
+        drive_result = bridge_response.json()
+    except Exception as exc:
+        app.logger.exception("BMN file upload to Drive failed")
+        return jsonify({"ok": False, "message": f"Gagal mengunggah file ke Google Drive: {exc}"}), 502
+
+    if (
+        not bridge_response.ok
+        or not isinstance(drive_result, dict)
+        or not drive_result.get("ok")
+    ):
+        return jsonify({
+            "ok": False,
+            "message": (
+                drive_result.get("message")
+                if isinstance(drive_result, dict)
+                else None
+            ) or "Google Drive gagal menyimpan file.",
+        }), 502
+
+    drive_file_id = str(drive_result.get("file_id", "")).strip()
+    drive_file_url = str(drive_result.get("file_url", "")).strip()
+    saved_file_name = str(drive_result.get("file_name", "")).strip()
+    if not drive_file_id or not drive_file_url or saved_file_name != drive_file_name:
+        return jsonify({
+            "ok": False,
+            "message": "Google Drive belum mengonfirmasi file tersimpan dengan nama yang diminta.",
+        }), 502
+
+    row_data["Link File"] = drive_file_url
+    ok, message = db.append_record("DB_BMN_Dokumen", row_data)
+    if not ok:
+        app.logger.error("Uploaded BMN file %s but failed to save its record: %s", drive_file_id, message)
+        return jsonify({
+            "ok": False,
+            "message": f"File sudah tersimpan di Google Drive, tetapi data dokumen gagal disimpan: {message}",
+        }), 500
+    return jsonify({
+        "ok": True,
+        "message": "Dokumen dan file berhasil disimpan ke Google Drive.",
+        "url": row_data["Link File"],
+        "filename": drive_file_name,
+        "folder": drive_result.get("folder_path", ""),
+    })
+
+
 @app.route("/api/add/<target_key>", methods=["POST"])
 def api_add_record(target_key):
     user = session.get("user")
@@ -649,7 +784,45 @@ def api_delete_record(target_key):
     if not row_num:
         return jsonify({"ok": False, "message": "Invalid row number!"}), 400
 
-    ok, msg = db.delete_record(target_key, row_num)
+    if target_key == "DB_BAST" and not _has_perm(user, "aset_tutup_buku", "full"):
+        return jsonify({
+            "ok": False,
+            "message": "Penghapusan BAST terkait memerlukan hak penuh pada modul Tutup Buku.",
+        }), 403
+
+    is_bast_document = False
+    if target_key == "DB_BMN_Dokumen":
+        try:
+            target_row_num = int(row_num)
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "message": "Invalid row number!"}), 400
+        db._sync_snapshot(force=True)
+        document = next(
+            (
+                row for row in db.get_tab_records(["DB_BMN_Dokumen"], include_row_num=True)
+                if int(row.get("_row_num") or 0) == target_row_num
+            ),
+            None,
+        )
+        is_bast_document = bool(
+            document
+            and str(document.get("Group", "")).strip().lower() == "aset"
+            and str(document.get("Sub Menu", "")).strip().lower() == "tutup buku"
+            and str(document.get("Kategori Item", "")).strip().lower() == "bast"
+        )
+        if is_bast_document and (
+            not _has_perm(user, "aset_tutup_buku", "full")
+            or not _has_perm(user, "bast_otomatis", "full")
+        ):
+            return jsonify({
+                "ok": False,
+                "message": "Penghapusan dokumen BAST terkait memerlukan hak penuh pada modul BAST dan Tutup Buku.",
+            }), 403
+
+    if target_key == "DB_BAST" or is_bast_document:
+        ok, msg = db.delete_bast_linked_record(target_key, row_num)
+    else:
+        ok, msg = db.delete_record(target_key, row_num)
     return jsonify({"ok": ok, "message": msg})
 
 
