@@ -70,8 +70,8 @@ const MODULE_NAV_CONFIG = [
   { key: 'socmed_analytics', label: 'Social Media Analytics', group: 'KMB' },
   { key: 'jadwal_tmb', label: 'Jadwal TMB', group: 'TMB' },
   { key: 'tmb_working_progresss', label: 'TMB Working Progress', group: 'TMB' },
-  { key: 'master_barang', label: 'Master Assets (KIR)', group: 'BMN', section: 'ASET' },
-  { key: 'master_ruangan', label: 'Master Room (DBR)', group: 'BMN', section: 'ASET' },
+  { key: 'master_ruangan', label: 'Daftar Barang Ruangan', group: 'BMN', section: 'ASET' },
+  { key: 'master_barang', label: 'Kartu Inventaris Ruangan', group: 'BMN', section: 'ASET' },
   { key: 'bast_otomatis', label: 'BAST Otomatis', group: 'BMN', section: 'ASET' },
   { key: 'aset_tutup_buku', label: 'Tutup Buku', group: 'BMN', section: 'ASET' },
   { key: 'aset_calbmn', label: 'CALBMN', group: 'BMN', section: 'ASET' },
@@ -279,6 +279,7 @@ async function loadDashboard() {
   activateModuleScreen(ACTIVE_MODULE);
   populateNipDatalist();
   applyActionButtonVisibility();
+  clearModuleFilters(ACTIVE_MODULE);
   renderAllModules();
   updateBreadcrumb();
   updateModuleUrl(ACTIVE_MODULE, false);
@@ -322,6 +323,19 @@ function activateModuleScreen(modKey) {
   });
   document.querySelectorAll('.mod-section').forEach(section => section.classList.add('hidden'));
   document.getElementById(`mod-${modKey}`)?.classList.remove('hidden');
+}
+
+function clearModuleFilters(modKey) {
+  const section = document.getElementById(`mod-${modKey}`);
+  if (!section) return;
+
+  section.querySelectorAll(
+    'input[id^="search"], input[id^="filter"], input[id*="Filter"], ' +
+    'select[id^="filter"], select[id^="select"][id$="Periode"]'
+  ).forEach(field => {
+    if (field.tagName === 'SELECT') field.selectedIndex = 0;
+    else field.value = '';
+  });
 }
 
 function populateNipDatalist() {
@@ -464,9 +478,11 @@ async function switchModule(modKey, updateHistory = true) {
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.message || 'Gagal memuat modul.');
       DATA = { ...DATA, ...payload };
+      clearModuleFilters(modKey);
       renderAllModules();
     }, 'Gagal memuat data modul');
   } else {
+    clearModuleFilters(modKey);
     renderAllModules();
   }
 }
@@ -1225,14 +1241,17 @@ function renderMasterRuangan() {
     const emp = employeesByNip.get(nipClean);
     const rowNum = r._row_num ?? r.row_num ?? ((DATA.rooms || []).indexOf(r) + 2);
     const safeRoom = encodeURIComponent(JSON.stringify(r));
+    const roomCode = String(r['Nomor Ruangan'] || '').trim();
     return `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-semibold">${r['Nomor Ruangan'] || '-'}</span></td>
-        <td class="py-3 px-3 font-bold text-indigo-600 dark:text-indigo-400">${r['Nama Ruangan'] || '-'}</td>
-        <td class="py-3 px-3 text-xs font-semibold">${r.Lokasi || '-'}</td>
-        <td class="py-3 px-3 font-mono text-xs text-slate-500">${rawPjNip || '-'}</td>
-        <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300">${emp?.['Nama Pegawai'] || r.pj_nama || '-'}</td>
-        <td class="py-3 px-3 text-xs font-semibold">${emp?.Jabatan || emp?.Posisi || r.pj_jabatan || '-'}</td>
+        <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-semibold">${roomCode}</span></td>
+        <td class="py-3 px-3">${roomCode
+          ? `<span onclick="openRoomAssetsModal(this)" data-room-code="${escapeHtml(roomCode)}" data-room-name="${escapeHtml(r['Nama Ruangan'] || '')}" class="font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer transition">${escapeHtml(r['Nama Ruangan'] || '')}</span>`
+          : `<span class="ont-bold text-indigo-600 dark:text-indigo-400">${escapeHtml(r['Nama Ruangan'] || '-')}</span>`}</td>
+        <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(r.Lokasi || '-')}</td>
+        <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(rawPjNip || '-')}</td>
+        <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300">${escapeHtml(emp?.['Nama Pegawai'] || r.pj_nama || '-')}</td>
+        <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(emp?.Jabatan || emp?.Posisi || r.pj_jabatan || '-')}</td>
         <td class="py-3 px-3 text-right">
           ${editable && rowNum > 1 ? `<button type="button" title="Edit ruangan" aria-label="Edit ruangan" onclick="openRoomModal(JSON.parse(decodeURIComponent('${safeRoom}')))" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
           ${deletable && rowNum > 1 ? `<button type="button" title="Hapus ruangan" aria-label="Hapus ruangan" onclick="deleteRecord('DB_Ruangan', ${rowNum}, '${(r['Nama Ruangan'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
@@ -1240,6 +1259,72 @@ function renderMasterRuangan() {
       </tr>
     `;
   }).join('');
+}
+
+let ACTIVE_ROOM_ASSETS_CODE = '';
+
+function renderRoomAssetsModal() {
+  const roomCode = ACTIVE_ROOM_ASSETS_CODE;
+  if (!roomCode) return;
+
+  const assets = (DATA.assets || []).filter(asset =>
+    String(asset['Kode Ruang'] || '').trim() === roomCode
+  );
+  const rows = paginateArray(`room_assets_${roomCode}`, assets, 'pagRoomAssets', 'renderRoomAssetsModal');
+
+  document.getElementById('tbodyRoomAssets').innerHTML = rows.map(asset => `
+    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+      <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-semibold">${escapeHtml(asset['Kode Barang'] || '-')}</span></td>
+      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400">${escapeHtml(asset['Nama Barang'] || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(asset['Merk Model'] || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(asset.Tipe || '-')}</td>
+      <td class="py-3 px-3">${escapeHtml(asset.Tahun || '-')}</td>
+      <td class="py-3 px-3 font-bold">${escapeHtml(asset.NUP || '-')}</td>
+      <td class="py-3 px-3 font-bold ${String(asset.Kondisi).toLowerCase() === 'baik' ? 'text-emerald-600' : 'text-rose-500'}">${escapeHtml(asset.Kondisi || '-')}</td>
+      <td class="py-3 px-3 text-amber-600">${escapeHtml(asset['Tindak Lanjut'] || '-')}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="8" class="py-8 text-center text-xs text-slate-400">Belum ada aset untuk ruangan ini.</td></tr>';
+}
+
+function openRoomAssetsModal(button) {
+  const modal = document.getElementById('roomAssetsModal');
+  const roomCode = String(button?.dataset.roomCode || '').trim();
+  if (!modal || !roomCode) return;
+
+  document.getElementById('roomAssetsModalTitle').textContent = button.dataset.roomName || 'Aset Ruangan';
+  document.getElementById('roomAssetsModalCode').innerHTML = `Ruangan: <span class="px-2.5 py-0.5 rounded-lg bg-teal-900 dark:bg-teal-700 text-white text-xs font-semibold">${escapeHtml(roomCode)}</span>`;
+  const notice = document.getElementById('roomAssetsNotice');
+  const tableContainer = document.getElementById('roomAssetsTableContainer');
+
+  if (!canView('master_barang')) {
+    notice.textContent = 'Anda tidak memiliki akses untuk melihat data aset.';
+    notice.classList.remove('hidden');
+    tableContainer.classList.add('hidden');
+  } else {
+    notice.classList.add('hidden');
+    tableContainer.classList.remove('hidden');
+
+    let pagination = document.getElementById('pagRoomAssets');
+    if (!pagination) {
+      pagination = document.createElement('div');
+      pagination.id = 'pagRoomAssets';
+      pagination.className = 'pt-3';
+      tableContainer.appendChild(pagination);
+    }
+
+    ACTIVE_ROOM_ASSETS_CODE = roomCode;
+    PAGE_STATE[`room_assets_${roomCode}`] = PAGE_STATE[`room_assets_${roomCode}`] || { page: 1, size: DEFAULT_PAGE_SIZE };
+    renderRoomAssetsModal();
+  }
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeRoomAssetsModal() {
+  const modal = document.getElementById('roomAssetsModal');
+  modal?.classList.add('hidden');
+  modal?.classList.remove('flex');
 }
 
 function renderManageUsers() {
@@ -1367,7 +1452,7 @@ const SCHEMAS = {
   DB_Konten: { title: 'Tambah Konten (Planner)', fields: ['Tanggal Tayang', 'Platform', 'Akun', 'Judul Konten', 'Jenis', 'Divisi', 'PIC', 'Status', 'Link Asset'] },
   DB_Jadwal_TMB: { title: 'Tambah Jadwal TMB', fields: ['Tanggal', 'Shift', 'Lokasi Pemancar', 'Teknisi TMB', 'Tugas', 'Status'] },
   DB_Aset: { title: 'Tambah Barang', fields: ['Kode Barang', 'Kode Ruang', 'Tipe', 'Nama Barang', 'Merk Model', 'Tahun', 'NUP', 'Kondisi', 'Tindak Lanjut', 'Keterangan'] },
-  DB_Ruangan: { title: 'Tambah Master Ruangan', fields: ['Nomor Ruangan', 'Nama Ruangan', 'Lokasi', 'NIP Penanggung Jawab', 'Nama', 'Jabatan'] },
+  DB_Ruangan: { title: 'Tambah Daftar Barang Ruangan', fields: ['Nomor Ruangan', 'Nama Ruangan', 'Lokasi', 'NIP Penanggung Jawab', 'Nama', 'Jabatan'] },
   DB_Stok_Master: { title: 'Tambah Master Persediaan', fields: ['Kode Barang', 'Nama Barang', 'Unit', 'Stok Awal', 'Keterangan'] },
   DB_Stok_Masuk: { title: 'Catat Persediaan Masuk', fields: ['Tanggal', 'Penanggung Jawab', 'Nama Barang', 'Jumlah Masuk', 'Unit', 'Pcs', 'Keterangan'] },
   DB_Stok_Keluar: { title: 'Catat Persediaan Keluar', fields: ['Tanggal', 'Nama Barang', 'Bidang', 'Penerima Barang', 'Jumlah Keluar', 'Unit', 'Pcs', 'Keterangan'] },

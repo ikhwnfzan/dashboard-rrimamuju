@@ -131,7 +131,7 @@ MODULE_DATA_DEPENDENCIES = {
     "jadwal_tmb": {"jadwal_tmb"},
     "tmb_working_progresss": {"tmb_working_progresss"},
     "master_barang": {"assets", "rooms", "employees"},
-    "master_ruangan": {"rooms", "employees"},
+    "master_ruangan": {"rooms", "employees", "assets"},
     "bast_otomatis": {"rooms", "assets", "employees"},
     "pemeliharaan_aset": {"pemeliharaan_header", "pemeliharaan_detail", "assets"},
     "bmn_arsip": {"bmn_dokumen"},
