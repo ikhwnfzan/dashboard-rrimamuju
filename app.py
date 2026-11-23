@@ -1,5 +1,7 @@
 import os
 import base64
+import copy
+import json
 from datetime import datetime, timedelta, timezone
 from flask import Flask, abort, render_template, request, jsonify, session, send_from_directory, redirect, url_for
 from werkzeug.utils import secure_filename
@@ -16,14 +18,16 @@ from media_service import MediaFeedService
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "rri-mamuju-digital-board-secret-2026")
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+if not app.secret_key:
+    raise RuntimeError("FLASK_SECRET_KEY belum diatur di environment.")
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 
 db = SheetsDB()
 media_feed = MediaFeedService()
 
 APP_CONFIG_CHOICES = {
-    "timezone": ("Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura", "UTC"),
+    "timezone": ("WIB", "WITA", "WIT", "UTC"),
     "language": ("id", "en"),
     "default_theme": ("light", "dark"),
     "active_year": tuple(
@@ -36,9 +40,9 @@ APP_CONFIG_CHOICES = {
     ),
 }
 APP_TIMEZONES = {
-    "Asia/Jakarta": timezone(timedelta(hours=7), "WIB"),
-    "Asia/Makassar": timezone(timedelta(hours=8), "WITA"),
-    "Asia/Jayapura": timezone(timedelta(hours=9), "WIT"),
+    "WIB": timezone(timedelta(hours=7), "WIB"),
+    "WITA": timezone(timedelta(hours=8), "WITA"),
+    "WIT": timezone(timedelta(hours=9), "WIT"),
     "UTC": timezone.utc,
 }
 
@@ -49,10 +53,25 @@ def _is_admin(user):
 
 def _get_app_config():
     config = dict(APP_CONFIG_DEFAULTS)
+    config["station_info"] = copy.deepcopy(STATION_INFO)
     for setting in db.get_app_settings():
         key = str(setting.get("key", "")).strip()
         if key in config:
-            config[key] = str(setting.get("value", "")).strip()
+            value = str(setting.get("value", "")).strip()
+            if key == "station_info":
+                if not value:
+                    continue
+                try:
+                    station_info = json.loads(value)
+                except json.JSONDecodeError:
+                    app.logger.warning("Ignoring invalid CFG_App station_info JSON.")
+                    continue
+                if _is_valid_station_info(station_info):
+                    config[key] = station_info
+                else:
+                    app.logger.warning("Ignoring invalid CFG_App station_info structure.")
+            else:
+                config[key] = value
 
     for key, options in APP_CONFIG_CHOICES.items():
         if config[key] not in options:
@@ -80,7 +99,7 @@ STATION_INFO = {
             "share": "https://play.rri.co.id/sharing/radio/015293"
         }
     },
-    "office_systems": [
+    "links": [
         {"label": "PPID", "url": "https://mamuju.ppid.rri.go.id/"},
         {"label": "ASN-DIGITAL", "url": "https://asndigital.bkn.go.id/"},
         {"label": "SRIKANDI", "url": "https://srikandi.arsip.go.id/"},
@@ -88,6 +107,38 @@ STATION_INFO = {
         {"label": "RRI Digital", "url": "https://dashboard-rri.svara.id/"}
     ]
 }
+
+def _get_station_info():
+    return _get_app_config()["station_info"]
+
+
+def _is_valid_station_info(value):
+    if not isinstance(value, dict) or set(value) != set(STATION_INFO):
+        return False
+    for key in ("name", "subtitle", "address", "phone", "email"):
+        if not isinstance(value.get(key), str):
+            return False
+
+    streams = value.get("streams")
+    if not isinstance(streams, dict) or set(streams) != set(STATION_INFO["streams"]):
+        return False
+    for stream_key, default_stream in STATION_INFO["streams"].items():
+        stream = streams.get(stream_key)
+        if not isinstance(stream, dict) or set(stream) != set(default_stream):
+            return False
+        if any(not isinstance(stream.get(field), str) for field in default_stream):
+            return False
+
+    links = value.get("links")
+    if not isinstance(links, list):
+        return False
+    return all(
+        isinstance(link, dict)
+        and set(link) == {"label", "url"}
+        and isinstance(link.get("label"), str)
+        and isinstance(link.get("url"), str)
+        for link in links
+    )
 
 TARGET_PERMISSION_MAP = {
     "DB_Timeline": ("dialog", "full"),
@@ -102,7 +153,6 @@ TARGET_PERMISSION_MAP = {
     "DB_Info_Board": ("info_board", "full"),
     "DB_Arsip_Program": ("arsip_program", "full"),
     "DB_SDM_Arsip": ("arsip_sdm", "full"),
-    "DB_Arsip_SDM": ("arsip_sdm", "full"),
     "DB_Pegawai": ("data_pegawai", "full"),
     "DB_Aset": ("master_barang", "full"),
     "DB_Ruangan": ("master_ruangan", "full"),
@@ -186,7 +236,7 @@ def _get_module_payload(user, module_key):
     if "dialogs" in dependencies:
         payload["dialogs"] = db.get_agenda_setting() if can_fetch("dialog") or module_key == "bestcut_monitoring" else []
     if "info_board" in dependencies:
-        payload["info_board"] = db.get_tab_records(["DB_Info_Board", "Info_Board"], include_row_num=True)
+        payload["info_board"] = db.get_tab_records(["DB_Info_Board"], include_row_num=True)
     if "produksi_paket" in dependencies:
         payload["produksi_paket"] = db.get_tmb_working_progress()
     if "content_planner" in dependencies:
@@ -235,7 +285,6 @@ def _get_module_payload(user, module_key):
     if "role_matrix" in dependencies:
         payload["role_matrix"] = db.get_role_matrix() if is_admin else {}
 
-
     return payload
 
 
@@ -267,7 +316,7 @@ def inject_now():
 @app.route("/")
 def index():
     user = session.get("user")
-    return render_template("index.html", station=STATION_INFO, user=user)
+    return render_template("index.html", station=_get_station_info(), user=user)
 
 
 @app.route("/dashboard")
@@ -291,7 +340,7 @@ def dashboard(module_key="overview"):
 
     return render_template(
         "dashboard.html",
-        station=STATION_INFO,
+        station=_get_station_info(),
         user=user,
         all_roles=ALL_ROLES,
         all_modules=ALL_MODULES,
@@ -341,7 +390,7 @@ def api_user():
 
     return jsonify({
         "connected": db.connected,
-        "status_msg": "Database Synced" if db.connected else (db.last_error or "Mode Demo"),
+        "status_msg": "Database Synced" if db.connected else (db.last_error or "Database tidak terhubung"),
         "server_time": datetime.now(timezone.utc).astimezone(APP_TIMEZONES[app_config["timezone"]]).strftime("%d %b %Y • %H:%M %Z"),
         "app_config": app_config,
         "authenticated": bool(user),
@@ -359,7 +408,7 @@ def api_public_landing():
     app_config = _get_app_config()
     return jsonify({
         "connected": db.connected,
-        "status_msg": "Database Synced" if db.connected else (db.last_error or "Mode Demo"),
+        "status_msg": "Database Synced" if db.connected else (db.last_error or "Database tidak terhubung"),
         "server_time": datetime.now(timezone.utc).astimezone(APP_TIMEZONES[app_config["timezone"]]).strftime("%d %b %Y • %H:%M %Z"),
         "app_config": app_config,
         "timeline": db.get_timeline(),
@@ -424,19 +473,29 @@ def api_admin_save_settings():
     if not isinstance(data, dict):
         return jsonify({"ok": False, "message": "Invalid data format!"}), 400
     settings = data.get("settings")
-    if not isinstance(settings, dict) or set(settings) != set(APP_CONFIG_CHOICES):
+    allowed_settings = set(APP_CONFIG_DEFAULTS) | set(APP_CONFIG_CHOICES)
+    if (
+        not isinstance(settings, dict)
+        or set(settings) - allowed_settings
+        or not set(APP_CONFIG_CHOICES).issubset(settings)
+        or "station_info" not in settings
+    ):
         return jsonify({"ok": False, "message": "Invalid data format!"}), 400
+    settings_to_save = dict(settings)
     for key, value in settings.items():
-        if value not in APP_CONFIG_CHOICES[key]:
+        if key in APP_CONFIG_CHOICES and value not in APP_CONFIG_CHOICES[key]:
+            return jsonify({"ok": False, "message": f"'{key}' data is invalid!"}), 400
+        if key == "station_info":
+            if not _is_valid_station_info(value):
+                return jsonify({"ok": False, "message": "'station_info' data is invalid!"}), 400
+            settings_to_save[key] = json.dumps(value, ensure_ascii=False)
+        elif not isinstance(value, str):
             return jsonify({"ok": False, "message": f"'{key}' data is invalid!"}), 400
 
-    ok, msg = db.save_app_settings(settings)
+    ok, msg = db.save_app_settings(settings_to_save)
     if not ok:
         return jsonify({"ok": False, "message": msg})
     return jsonify({"ok": True, "message": msg, "app_config": _get_app_config()})
-
-
-BAST_TEMPLATE_DOC_ID = "1LtyvE6jcMYWueQZv62KnXhG8Y4AweOW1oOjJRrh14dw"
 
 
 @app.route("/api/bast/records", methods=["GET"])
@@ -459,7 +518,8 @@ def api_bast_generate():
     if missing:
         return jsonify({"ok": False, "message": "Data BAST belum lengkap."}), 400
 
-    ok, result = db.generate_bast_document(payload, template_doc_id=BAST_TEMPLATE_DOC_ID)
+    template_doc_id = os.getenv("BAST_TEMPLATE_DOC_ID", "").strip()
+    ok, result = db.generate_bast_document(payload, template_doc_id=template_doc_id)
     return jsonify({"ok": ok, **result})
 
 
@@ -673,10 +733,9 @@ def api_upload_bmn_document():
     if not row_data["Judul Dokumen"] or not row_data["Tanggal Buat"]:
         return jsonify({"ok": False, "message": "Judul dan tanggal dokumen wajib diisi."}), 400
 
-    settings = {item["key"]: item["value"] for item in db.get_app_settings()}
-    bridge_url = settings.get("drive_bridge_url", "").strip()
-    root_folder_id = settings.get("drive_root_folder_id", "").strip()
-    bridge_secret = settings.get("drive_bridge_secret", "").strip()
+    bridge_url = os.getenv("DRIVE_BRIDGE_URL", "").strip()
+    root_folder_id = os.getenv("DRIVE_ROOT_FOLDER_ID", "").strip()
+    bridge_secret = os.getenv("DRIVE_BRIDGE_SECRET", "").strip()
     if not bridge_url or not root_folder_id:
         return jsonify({
             "ok": False,
@@ -777,10 +836,8 @@ def api_submit_persediaan_pengajuan():
     if not file_bytes:
         return jsonify({"ok": False, "message": "File dokumen kosong."}), 400
 
-    settings = {item["key"]: item["value"] for item in db.get_app_settings()}
-    bridge_url = settings.get("drive_bridge_url", "").strip()
-    root_folder_id = settings.get("drive_root_folder_id", "").strip()
-    bridge_secret = settings.get("drive_bridge_secret", "").strip()
+    bridge_url = os.getenv("DRIVE_BRIDGE_URL", "").strip()
+    root_folder_id = os.getenv("DRIVE_ROOT_FOLDER_ID", "").strip()
     if not bridge_url or not root_folder_id:
         return jsonify({
             "ok": False,

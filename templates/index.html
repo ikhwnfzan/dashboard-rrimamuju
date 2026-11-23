@@ -33,8 +33,8 @@
       <a href="#" class="flex items-center gap-2.5 shrink-0">
         <img src="{{ url_for('favicon') }}" alt="RRI" class="w-10 h-10 rounded-xl border border-slate-200 object-cover" />
         <div class="leading-tight">
-          <span class="font-extrabold text-base text-slate-900 tracking-tight hidden sm:block">RRI MAMUJU</span>
-          <span class="text-[11px] text-slate-500 hidden sm:block">Portal Publik &amp; Digital Board</span>
+          <span class="font-extrabold text-base text-slate-900 tracking-tight hidden sm:block">{{ station.name | upper }}</span>
+          <span class="text-[11px] text-slate-500 hidden sm:block">{{ station.subtitle }}</span>
         </div>
       </a>
 
@@ -243,11 +243,11 @@
 
         <div class="md:col-span-4 space-y-4 text-xs sm:text-[13px] leading-relaxed">
           <p class="font-bold text-[#2C5282]">
-            Jl. R.E Martadinata, Kecamatan Simboro dan Kepulauan, Kabupaten Mamuju, Sulawesi Barat
+            {{ station.address }}
           </p>
           <div class="space-y-0.5 text-slate-600">
-            <p>Phone: +62 82-9609-0996</p>
-            <p>Email: lpprrimamuju@gmail.com</p>
+            <p>Phone: {{ station.phone }}</p>
+            <p>Email: {{ station.email }}</p>
           </div>
           <div class="flex items-center justify-center md:justify-start">
             <img src="{{ url_for('static', filename='logo/rri-mamuju-blue.png') }}" alt="Logo RRI Mamuju" class="h-12 w-auto object-contain">          
@@ -257,12 +257,9 @@
         <div class="md:col-span-2 space-y-2.5 text-xs sm:text-[13px]">
           <h4 class="font-bold text-slate-900">Links</h4>
           <ul class="space-y-1.5 list-disc list-inside marker:text-slate-700">
-            <li><a href="https://mamuju.ppid.rri.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">PPID</a></li>
-            <li><a href="https://asndigital.bkn.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">ASN-DIGITAL</a></li>
-            <li><a href="https://srikandi.arsip.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">SRIKANDI</a></li>
-            <li><a href="https://sakti.kemenkeu.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">SAKTI</a></li>
-            <li><a href="https://tetrak.rri.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">Te-Track</a></li>
-            <li><a href="https://pusdatin.rri.go.id/" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">Pusdatin</a></li>
+            {% for system in station.links %}
+            <li><a href="{{ system.url }}" target="_blank" rel="noopener" class="text-[#2C5282] underline hover:text-slate-900">{{ system.label }}</a></li>
+            {% endfor %}
           </ul>
         </div>
 

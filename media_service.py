@@ -9,7 +9,6 @@ from googleapiclient.discovery import build
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_YT_HANDLE = "@LPPRRIMamuju"
-DEFAULT_DRIVE_FOLDER_ID = "1CwKdnqac1S3MrZApAzPpZKvrRZ8r8iZn"
 
 _MEDIA_CACHE = {"youtube": (0, None), "flyers": (0, None), "channel_id": None}
 MEDIA_TTL = 300
@@ -19,7 +18,7 @@ def _extract_folder_id(val):
     val = str(val or "").strip()
     if "/folders/" in val:
         return val.split("/folders/")[1].split("?")[0].split("/")[0]
-    return val or DEFAULT_DRIVE_FOLDER_ID
+    return val
 
 
 def _load_sa_credentials():
@@ -46,9 +45,9 @@ def _load_sa_credentials():
 
 class MediaFeedService:
     def __init__(self):
-        self.yt_handle = os.getenv("YOUTUBE_HANDLE", DEFAULT_YT_HANDLE).strip()
+        self.yt_handle = os.getenv("YOUTUBE_HANDLE", "").strip() or DEFAULT_YT_HANDLE
         self.yt_channel_id = os.getenv("YOUTUBE_CHANNEL_ID", "").strip()
-        self.drive_folder_id = _extract_folder_id(os.getenv("FLYER_DRIVE_FOLDER_ID", DEFAULT_DRIVE_FOLDER_ID))
+        self.drive_folder_id = _extract_folder_id(os.getenv("FLYER_DRIVE_FOLDER_ID", ""))
 
     def _resolve_youtube_channel_id(self):
         if self.yt_channel_id:

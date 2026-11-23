@@ -301,7 +301,7 @@ function updateBreadcrumb() {
   const breadcrumb = document.getElementById('breadcrumbNav');
   if (breadcrumb) {
     breadcrumb.innerHTML = `
-      <button type="button" onclick="switchModule('overview')" class="hover:text-teal-600 transition">Dashboard</button>
+      <button type="button" onclick="switchModule('overview')" class="hover:text-teal-600 transition"><i aria-hidden="true" class="ti ti-home text-sm leading-none"></i></button>
       ${item?.group ? `<span class="text-slate-300 dark:text-slate-600">/</span><span>${escapeHtml(item.group)}</span>` : ''}
       ${section}
       <span class="text-slate-300 dark:text-slate-600">/</span><span class="text-sm text-teal-600 dark:text-teal-300">${escapeHtml(label)}</span>
@@ -536,14 +536,31 @@ function renderAllModules() {
 
 function renderAppSettings() {
   const config = DATA.app_config || APP_CONFIG;
-  document.getElementById('appTimezone').value = config.timezone || 'Asia/Makassar';
+  const station = config.station_info || {};
+  document.getElementById('appTimezone').value = config.timezone || 'WITA';
   document.getElementById('appLanguage').value = config.language || 'id';
   document.getElementById('appDefaultTheme').value = config.default_theme || 'light';
   document.getElementById('appActiveYear').value = config.active_year || APP_CONFIG.active_year;
-  if (document.getElementById('appDriveRootFolderId')) document.getElementById('appDriveRootFolderId').value = config.drive_root_folder_id || '';
-  if (document.getElementById('appBastTemplateDocId')) document.getElementById('appBastTemplateDocId').value = config.bast_template_doc_id || '';
-  if (document.getElementById('appDriveBridgeUrl')) document.getElementById('appDriveBridgeUrl').value = config.drive_bridge_url || '';
-  if (document.getElementById('appDriveBridgeSecret')) document.getElementById('appDriveBridgeSecret').value = config.drive_bridge_secret || 'beacon-rri-secret-2026';
+  if (document.getElementById('appStationName')) document.getElementById('appStationName').value = station.name || '';
+  if (document.getElementById('appStationSubtitle')) document.getElementById('appStationSubtitle').value = station.subtitle || '';
+  if (document.getElementById('appStationAddress')) document.getElementById('appStationAddress').value = station.address || '';
+  if (document.getElementById('appStationPhone')) document.getElementById('appStationPhone').value = station.phone || '';
+  if (document.getElementById('appStationEmail')) document.getElementById('appStationEmail').value = station.email || '';
+  if (document.getElementById('appStationPro1Name')) document.getElementById('appStationPro1Name').value = station.streams?.pro1?.name || '';
+  if (document.getElementById('appStationPro1Freq')) document.getElementById('appStationPro1Freq').value = station.streams?.pro1?.freq || '';
+  if (document.getElementById('appStationPro1Url')) document.getElementById('appStationPro1Url').value = station.streams?.pro1?.url || '';
+  if (document.getElementById('appStationPro1Share')) document.getElementById('appStationPro1Share').value = station.streams?.pro1?.share || '';
+  if (document.getElementById('appStationPro2Name')) document.getElementById('appStationPro2Name').value = station.streams?.pro2?.name || '';
+  if (document.getElementById('appStationPro2Freq')) document.getElementById('appStationPro2Freq').value = station.streams?.pro2?.freq || '';
+  if (document.getElementById('appStationPro2Url')) document.getElementById('appStationPro2Url').value = station.streams?.pro2?.url || '';
+  if (document.getElementById('appStationPro2Share')) document.getElementById('appStationPro2Share').value = station.streams?.pro2?.share || '';
+  for (let index = 1; index <= 5; index++) {
+    if (document.getElementById(`appStationOffice${index}Label`)) {
+      const link = station.links?.[index - 1] || {};
+      document.getElementById(`appStationOffice${index}Label`).value = link.label || '';
+      document.getElementById(`appStationOffice${index}Url`).value = link.url || '';
+    }
+  }
 }
 
 async function submitAppSettings(event) {
@@ -555,11 +572,35 @@ async function submitAppSettings(event) {
     language: document.getElementById('appLanguage').value,
     default_theme: document.getElementById('appDefaultTheme').value,
     active_year: document.getElementById('appActiveYear').value,
-    drive_root_folder_id: (document.getElementById('appDriveRootFolderId')?.value || '').trim(),
-    bast_template_doc_id: (document.getElementById('appBastTemplateDocId')?.value || '').trim(),
-    drive_bridge_url: (document.getElementById('appDriveBridgeUrl')?.value || '').trim(),
-    drive_bridge_secret: (document.getElementById('appDriveBridgeSecret')?.value || '').trim()
+    station_info: {
+      name: (document.getElementById('appStationName')?.value || '').trim(),
+      subtitle: (document.getElementById('appStationSubtitle')?.value || '').trim(),
+      address: (document.getElementById('appStationAddress')?.value || '').trim(),
+      phone: (document.getElementById('appStationPhone')?.value || '').trim(),
+      email: (document.getElementById('appStationEmail')?.value || '').trim(),
+      streams: {
+        pro1: {
+          name: (document.getElementById('appStationPro1Name')?.value || '').trim(),
+          freq: (document.getElementById('appStationPro1Freq')?.value || '').trim(),
+          url: (document.getElementById('appStationPro1Url')?.value || '').trim(),
+          share: (document.getElementById('appStationPro1Share')?.value || '').trim()
+        },
+        pro2: {
+          name: (document.getElementById('appStationPro2Name')?.value || '').trim(),
+          freq: (document.getElementById('appStationPro2Freq')?.value || '').trim(),
+          url: (document.getElementById('appStationPro2Url')?.value || '').trim(),
+          share: (document.getElementById('appStationPro2Share')?.value || '').trim()
+        }
+      },
+      links: []
+    }
   };
+  for (let index = 1; index <= 5; index++) {
+    settings.station_info.links.push({
+      label: (document.getElementById(`appStationOffice${index}Label`)?.value || '').trim(),
+      url: (document.getElementById(`appStationOffice${index}Url`)?.value || '').trim()
+    });
+  }
   try {
     const result = await processWithLoading(async () => {
       const response = await fetch('/api/admin/settings', {
@@ -1072,7 +1113,7 @@ function renderMasterPersediaan() {
       <tr onclick="openStokItemDetailModal(JSON.parse(decodeURIComponent('${safeItem}')))"
         class="cursor-pointer hover:bg-teal-50/60 dark:hover:bg-slate-800/70 transition">
         <td class="py-3 px-3 font-mono text-xs text-slate-400">${escapeHtml(s['Kode Barang'] || '-')}</td>
-        <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300 underline decoration-dotted underline-offset-4">${escapeHtml(s['Nama Barang'])}</td>
+        <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300 hover:text-teal-800 dark:hover:text-teal-200 underline decoration-dotted hover:decoration-solid underline-offset-4 cursor-pointer">${escapeHtml(s['Nama Barang'])}</td>
         <td class="py-3 px-3 text-slate-400">${escapeHtml(s.Unit || '-')}</td>
         <td class="py-3 px-3 text-right">${escapeHtml(String(s['Stok Awal']))}</td>
         <td class="py-3 px-3 text-right text-emerald-600 font-bold">+${escapeHtml(String(s['Barang Masuk']))}</td>
@@ -1272,7 +1313,7 @@ function renderMasterRuangan() {
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
         <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-semibold">${roomCode}</span></td>
         <td class="py-3 px-3">${roomCode
-          ? `<span onclick="openRoomAssetsModal(this)" data-room-code="${escapeHtml(roomCode)}" data-room-name="${escapeHtml(r['Nama Ruangan'] || '')}" class="font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer transition">${escapeHtml(r['Nama Ruangan'] || '')}</span>`
+          ? `<span onclick="openRoomAssetsModal(this)" data-room-code="${escapeHtml(roomCode)}" data-room-name="${escapeHtml(r['Nama Ruangan'] || '')}" class="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 underline decoration-dotted hover:decoration-solid underline-offset-4 cursor-pointer transition">${escapeHtml(r['Nama Ruangan'] || '')}</span>`
           : `<span class="ont-bold text-indigo-600 dark:text-indigo-400">${escapeHtml(r['Nama Ruangan'] || '-')}</span>`}</td>
         <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(r.Lokasi || '-')}</td>
         <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(rawPjNip || '-')}</td>
@@ -1473,7 +1514,7 @@ const SCHEMAS = {
   DB_Pegawai: { title: 'Tambah Data Pegawai', fields: ['Nama Pegawai', 'NIP', 'Pangkat Golongan', 'Jabatan', 'Status', 'Posisi'] },
   DB_Arsip_Program: { title: 'Tambah Arsip Program & Perencanaan', fields: ['Kategori', 'Jenis', 'Tanggal Upload', 'Nama Dokumen', 'Keterangan', 'Link'] },
   DB_SDM_Arsip: { title: 'Tambah Arsip SDM', fields: ['Nomor Dokumen', 'Nama Dokumen', 'Tanggal', 'Jenis', 'Link'] },
-  DB_Arsip_SDM: { title: 'Tambah Arsip SDM', fields: ['Nomor Dokumen', 'Nama Dokumen', 'Tanggal', 'Jenis', 'Link'] },
+  DB_SDM_Arsip: { title: 'Tambah Arsip SDM', fields: ['Nomor Dokumen', 'Nama Dokumen', 'Tanggal', 'Jenis', 'Link'] },
   DB_Dialog: { title: 'Tambah Agenda Dialog', fields: ['Tanggal Surat', 'Tanggal Dialog', 'Program', 'Topik', 'Narasumber', 'Instansi', 'Kehadiran', 'PIC Narasumber', 'Operator', 'Penyiar', 'Flyer', 'Bestcut', 'Link Live', 'Status', 'Catatan'] },
   DB_Flyer: { title: 'Tambah Flyer Dialog', fields: ['ID Dialog', 'Nama File', 'Link Flyer'] },
   DB_Jadwal_Operasional: { title: 'Tambah Jadwal Penyiar / TMB', fields: ['Tanggal', 'Shift', 'Bidang', 'Pegawai', 'Status'] },
@@ -2222,22 +2263,6 @@ function renderPemeliharaanAset() {
     `).join('');
   }
 }
-
-// function renderBmnArsip() {
-//   const rows = paginateArray('bmn_arsip', DATA.bmn_arsip || [], 'pagBmnArsip', 'renderBmnArsip');
-//   const tbody = document.getElementById('tbodyBmnArsip');
-//   if (!tbody) return;
-//   tbody.innerHTML = rows.map(a => `
-//     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-//       <td class="py-3 px-3 font-mono text-xs font-bold">${escapeHtml(a['Nomor Dokumen'] || '-')}</td>
-//       <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold">${escapeHtml(a.Jenis || '-')}</span></td>
-//       <td class="py-3 px-3 font-bold">${escapeHtml(a['Judul Dokumen'] || '-')}</td>
-//       <td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(a.Tanggal || '-')}</td>
-//       <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(a.Keterangan || '-')}</td>
-//       <td class="py-3 px-3">${a.Link ? `<a href="${escapeHtml(a.Link)}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
-//     </tr>
-//   `).join('');
-// }
 
 function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
   const form = document.getElementById('genericAddForm');

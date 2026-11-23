@@ -160,14 +160,11 @@ DEFAULT_ROLE_PERMISSIONS = {
 }
 
 APP_CONFIG_DEFAULTS = {
-    "timezone": "Asia/Makassar",
+    "timezone": "WITA",
     "language": "id",
     "default_theme": "light",
     "active_year": str(time.localtime().tm_year),
-    "drive_root_folder_id": os.getenv("DRIVE_ROOT_FOLDER_ID", "").strip(),
-    "drive_bridge_url": os.getenv("DRIVE_BRIDGE_URL", "").strip(),
-    "drive_bridge_secret": os.getenv("DRIVE_BRIDGE_SECRET", "beacon-rri-secret-2026").strip(),
-    "bast_template_doc_id": os.getenv("BAST_TEMPLATE_DOC_ID", "1LtyvE6jcMYWueQZv62KnXhG8Y4AweOW1oOjJRrh14dw").strip(),
+    "station_info": "",
 }
 
 APP_CONFIG_DESCRIPTIONS = {
@@ -175,10 +172,7 @@ APP_CONFIG_DESCRIPTIONS = {
     "language": "Preferensi bahasa untuk dukungan lokalisasi mendatang.",
     "default_theme": "Tema dashboard yang digunakan untuk semua pengguna.",
     "active_year": "Tahun aktif untuk data dan laporan.",
-    "drive_root_folder_id": "Folder ID utama BEACON pada Google Drive akun pemilik storage.",
-    "drive_bridge_url": "URL Web App Google Apps Script (/exec) untuk generate PDF memakai kuota Drive pemilik akun.",
-    "drive_bridge_secret": "Token rahasia validasi request antara Flask dan Google Apps Script.",
-    "bast_template_doc_id": "Google Docs Template ID untuk dokumen BAST Otomatis.",
+    "station_info": "Informasi stasiun mengikuti struktur STATION_INFO.",
 }
 
 # Unified Database (`DB_*`) & Configuration (`CFG_*`) Schemas with standardized Title Case Headers
@@ -235,64 +229,6 @@ AUTO_ID_FIELDS = {
 }
 AUTO_ID_LOCK = threading.Lock()
 
-DEMO_DATA = {
-    "CFG_Users": [
-        {"NIP": "199806212025041001", "Password": "rri2026", "Role": "Admin; TMB"},
-        {"NIP": "200112082025042004", "Password": "bmn2026", "Role": "TMB; BMN"},
-        {"NIP": "199203252024212001", "Password": "sdm2026", "Role": "SDM"},
-        {"NIP": "199210252025042002", "Password": "ren2026", "Role": "Siaran; Perencanaan"},
-        {"NIP": "199010302022211010", "Password": "kmb2026", "Role": "KMB; Siaran"},
-    ],
-    "DB_Timeline": [
-        {"Kegiatan": "Bintang Radio", "Tahapan": "Pendaftaran dibuka", "Tanggal Mulai": "08/01/2026", "Tanggal Selesai": "08/01/2026", "Keterangan": "Online & Kantor LPP RRI Mamuju", "Tanggal": "1 Agustus 2026"},
-        {"Kegiatan": "RRI Fest", "Tahapan": "Bersih-Bersih Lingkungan", "Tanggal Mulai": "08/28/2026", "Tanggal Selesai": "08/28/2026", "Keterangan": "Pantai Manakarra", "Tanggal": "28 Agustus 2026"},
-        {"Kegiatan": "Hari Radio", "Tahapan": "Upacara dan Penyuluhan Obor", "Tanggal Mulai": "09/11/2026", "Tanggal Selesai": "09/11/2026", "Keterangan": "Auditorium LPP RRI Mamuju", "Tanggal": "11 September 2026"},
-    ],
-    "DB_Dialog": [
-        {"No": "1", "Tanggal": "Tuesday, 01 September 2026", "Program": "Dialog Interaktif Pro 1", "Topik": "Kesiapan Pelaksanaan RRI Fest & Bintang Radio Mamuju 2026", "Narasumber": "Ketua Panitia RRI Fest Mamuju", "Foto Narasumber": "", "Jabatan": "Koordinator LPU LPP RRI Mamuju", "Kehadiran": "Hadir di Studio", "PIC Narasumber": "Tim Siaran Pro 1", "Flyer": "https://www.instagram.com/rri_mamuju/", "Bestcut": "https://www.youtube.com/@LPPRRIMamuju", "Keterlaksanaan": "Terlaksana", "Kendala": "-"}
-    ],
-    "DB_Jadwal_Operasional": [
-        {"ID Jadwal": "1", "Tanggal": "2026-11-16", "Shift": "Pagi", "Bidang": "Pro 1", "Pegawai": "199210252025042000", "Status": "On Duty"},
-        {"ID Jadwal": "2", "Tanggal": "2026-11-16", "Shift": "Dinas Kantor", "Bidang": "Pro 1", "Pegawai": "199110312024042000", "Status": "On Duty"},
-        {"ID Jadwal": "3", "Tanggal": "2026-11-17", "Shift": "Siang", "Bidang": "Pro 2", "Pegawai": "199312132022212000", "Status": "On Duty"},
-        {"ID Jadwal": "4", "Tanggal": "2026-11-17", "Shift": "Pagi", "Bidang": "TMB", "Pegawai": "199905142025041000", "Status": "On Duty"},
-        {"ID Jadwal": "5", "Tanggal": "2026-11-17", "Shift": "Dinas Kantor", "Bidang": "TMB", "Pegawai": "199910062024211000", "Status": "Standby"},
-    ],
-    "DB_Program": [
-        {"Kode Program": "PRG-P1-01", "Programa": "Pro 1", "Nama Program": "Halo Sulbar", "Hari": "Setiap Hari", "Jam": "09:00 - 10:00 WITA", "Format": "Dialog", "Produser": "Pengelola Pro 1", "Status": "Aktif"},
-        {"Kode Program": "PRG-P2-03", "Programa": "Pro 2", "Nama Program": "Music Live Chat", "Hari": "Sabtu", "Jam": "19:00 - 20:00 WITA", "Format": "Dialog & Live Music", "Produser": "Sugiyanto", "Status": "Aktif"},
-    ],
-    "DB_Konten": [
-        {"ID": "CNT-01", "Tanggal Tayang": "2026-11-17", "Platform": "Instagram & TikTok", "Akun": "@pro2_mamuju", "Judul Konten": "Teaser Reels Pro 2 Music Live Chat", "Jenis": "Reels / Short Video", "Divisi": "KMB / Pro 2", "PIC": "Tim Kreatif Pro 2", "Status": "Review", "Link Asset": "https://drive.google.com"}
-    ],
-    "DB_Pegawai": [
-        {"No": "1", "Nama Pegawai": "Rina Irfantini, S.H., M.Si.", "NIP": "197312051999032007", "Pangkat Golongan": "Pembina Tk.I IV/b", "Jabatan": "Kepala Stasiun", "Status": "Aktif", "Posisi": "Kepala Stasiun LPP RRI Mamuju"},
-        {"No": "2", "Nama Pegawai": "Muhamad Dirsan, S.E.", "NIP": "197506231998031002", "Pangkat Golongan": "Penata Tk.I III/d", "Jabatan": "Kepala Sub Bagian Tata Usaha", "Status": "Aktif", "Posisi": "Kepala Sub Bagian Tata Usaha"},
-        {"No": "9", "Nama Pegawai": "Ikhwan Fauzan, A.Md.T", "NIP": "199806212025041001", "Pangkat Golongan": "Pengatur II/c", "Jabatan": "Asisten Teknisi Siaran Terampil", "Status": "Aktif", "Posisi": "Staf"},
-        {"No": "14", "Nama Pegawai": "Muthiah Azizah Ijsam, A.Md.T", "NIP": "200112082025042004", "Pangkat Golongan": "Pengatur II/c", "Jabatan": "Asisten Teknisi Siaran Terampil", "Status": "Aktif", "Posisi": "Staf"},
-    ],
-    "DB_Arsip_SDM": [
-        {"Nomor Dokumen": "SK-014/RRI-MMJ/SDM/2026", "Nama Dokumen": "SK Tim Pengelola BMN & Persediaan 2026", "Tanggal": "2026-01-10", "Jenis": "Surat Keputusan", "Link": "https://drive.google.com"},
-    ],
-    "DB_Info_Board": [
-        {"Tanggal": "2026-11-17", "Prioritas": "Urgent", "Judul": "Pemutakhiran Data Kepegawaian & SK Jabatan", "Isi": "Seluruh pegawai dimohon mengecek kesesuaian NIP, Pangkat/Golongan, dan Jabatan pada modul Data Pegawai.", "Target Divisi": "Semua Pegawai", "Lampiran": ""}
-    ],
-    "DB_Ruangan": [
-        {"Nomor Ruangan": "1", "Nama Ruangan": "Lantai 1", "Lokasi": "Kantor RRI Mamuju", "NIP Penanggung Jawab": "200112082025042004"},
-        {"Nomor Ruangan": "1.13", "Nama Ruangan": "Gudang TMB", "Lokasi": "Lantai 1", "NIP Penanggung Jawab": "199006082022211012"},
-    ],
-    "DB_Aset": [
-        {"Kode Barang": "3030205002", "Kode Ruang": "1.13", "Tipe": "Peralatan Studio & Transmisi", "Nama Barang": "Tool Kit Box", "Merk Model": "Hand Toolset", "Tahun": "2026", "NUP": "1", "Kondisi": "Baik", "Tindak Lanjut": "", "Keterangan": ""},
-    ],
-    "DB_Stok_Master": [
-        {"Kode Barang": "ATK-001", "Nama Barang": "Kertas HVS F4", "Unit": "Rim", "Stok Awal": 10, "Keterangan": "Kertas F4 70gsm"},
-    ],
-    "DB_Stok_Detail": [
-        {"ID Transaksi": "TRX-01", "Tanggal": "14 Januari 2026", "Jenis": "Masuk", "Kode Barang": "ATK-001", "Nama Barang": "Kertas HVS F4", "Jumlah": 5, "Unit": "Rim", "Pcs": 5, "Bidang": "BMN / Gudang", "Penanggung Jawab": "Operator Barang Persediaan", "Keterangan": "Pengadaan Triwulan I"},
-        {"ID Transaksi": "TRX-02", "Tanggal": "15 Januari 2026", "Jenis": "Keluar", "Kode Barang": "ATK-001", "Nama Barang": "Kertas HVS F4", "Jumlah": 2, "Unit": "Rim", "Pcs": 2, "Bidang": "Tim Penyiaran", "Penanggung Jawab": "Meydiana Indah", "Keterangan": "Kebutuhan Naskah Siaran"},
-    ],
-}
-
 
 def _parse_service_account_env(raw_val):
     text = raw_val.strip()
@@ -335,7 +271,7 @@ class SheetsDB:
 
     def _connect(self):
         if not self.sheet_id:
-            self.last_error = "GOOGLE_SHEET_ID belum diisi di .env (Mode Demo)."
+            self.last_error = "GOOGLE_SHEET_ID belum diisi di konfigurasi."
             return
 
         sa_path = self._find_local_sa_file()
@@ -352,7 +288,7 @@ class SheetsDB:
                 creds = Credentials.from_service_account_info(info, scopes=SCOPES)
                 self.client = gspread.authorize(creds)
             else:
-                self.last_error = "service_account.json belum ditemukan (Mode Demo)."
+                self.last_error = "service_account.json belum ditemukan."
                 return
 
             self.spreadsheet = self.client.open_by_key(self.sheet_id)
@@ -515,6 +451,7 @@ class SheetsDB:
                     ws.append_row(new_row, value_input_option="USER_ENTERED")
 
             self._sync_snapshot(force=True)
+
             return True, "Pengaturan aplikasi berhasil disimpan!"
         except Exception as e:
             return False, f"Gagal menyimpan pengaturan: {e}"
@@ -543,7 +480,7 @@ class SheetsDB:
         DEFAULT_ROLE_PERMISSIONS.setdefault(role_name, {})[module_key] = level
         ws = self._find_ws(["CFG_Role_Modules", "Role_Modules"])
         if not ws:
-            return True, f"Akses {role_name} → {module_key} diubah ke '{level}' (Mode Demo)."
+            return False, "Tabel Modul tidak ditemukan."
 
         try:
             all_vals = self._get_values_from_snapshot(["CFG_Role_Modules", "Role_Modules"]) or ws.get_all_values()
@@ -595,7 +532,7 @@ class SheetsDB:
     def get_timeline(self):
         vals = self._get_values_from_snapshot(["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"])
         if vals is None:
-            return [dict(row, _row_num=idx) for idx, row in enumerate(DEMO_DATA["DB_Timeline"], start=2)]
+             return False, "Tidak ada tahapan kegiatan ditemukan"
         rows = _rows_to_dicts(vals, include_row_num=True)
         for r in rows:
             r.setdefault("Tanggal Mulai", r.get("Start Date", ""))
@@ -611,12 +548,7 @@ class SheetsDB:
             return False, "Nomor baris timeline tidak valid."
 
         if not self._find_ws(["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"]):
-            rows = DEMO_DATA["DB_Timeline"]
-            idx = target_row - 2
-            if idx < 0 or idx >= len(rows):
-                return False, "Baris timeline tidak ditemukan."
-            rows[idx].update(updates_dict)
-            return True, "Timeline diperbarui (Mode Demo)."
+            return False, "Tab DB_Timeline tidak ditemukan."
 
         ws = self._find_ws(["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"])
         try:
@@ -694,7 +626,7 @@ class SheetsDB:
     def get_agenda_setting(self):
         all_values = self._get_values_from_snapshot(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"])
         if all_values is None:
-            return DEMO_DATA["DB_Dialog"]
+            return []
         if not all_values:
             return []
 
@@ -772,9 +704,7 @@ class SheetsDB:
     def update_dialog_row(self, row_num, updates_dict):
         ws = self._find_ws(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"])
         if not ws:
-            for d in DEMO_DATA["DB_Dialog"]:
-                d.update(updates_dict)
-            return True, "Dialog diperbarui (Mode Demo)."
+            return False, "Tabel Dialog tidak ditemukan."
         try:
             all_values = self._get_values_from_snapshot(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"]) or ws.get_all_values()
             header_idx = 0
@@ -821,10 +751,7 @@ class SheetsDB:
             candidates = [candidates]
         vals = self._get_values_from_snapshot(candidates)
         if vals is None:
-            rows = DEMO_DATA.get(candidates[0], [])
-            if include_row_num:
-                return [dict(r, _row_num=idx) for idx, r in enumerate(rows, start=2)]
-            return rows
+            return []
         return _rows_to_dicts(vals, include_row_num=include_row_num)
 
     # ---------------------------------------------------------
@@ -885,7 +812,7 @@ class SheetsDB:
         return enriched
 
     def get_arsip_sdm(self):
-        rows = self.get_tab_records(["DB_SDM_Arsip", "DB_Arsip_SDM", "Arsip_SDM"], include_row_num=True)
+        rows = self.get_tab_records(["DB_SDM_Arsip", "DB_SDM_Arsip", "Arsip_SDM"], include_row_num=True)
         enriched = []
         for r in rows:
             item = dict(r)
@@ -1051,10 +978,7 @@ class SheetsDB:
     def update_stok_detail_row(self, row_num, updates_dict):
         ws = self._find_ws(["DB_Stok_Detail"])
         if not ws:
-            for item in DEMO_DATA["DB_Stok_Detail"]:
-                if str(item.get("ID Transaksi")) == str(updates_dict.get("ID Transaksi")):
-                    item.update(updates_dict)
-            return True, "Transaksi persediaan diperbarui (Mode Demo)."
+            return False, "Tabel Stok Detail tidak ditemukan."
         try:
             all_values = self._get_values_from_snapshot(["DB_Stok_Detail"]) or ws.get_all_values()
             headers = [h.strip() for h in all_values[0]]
@@ -1088,15 +1012,14 @@ class SheetsDB:
         cfg_map = {item["key"]: item["value"] for item in self.get_app_settings()}
         resolved_template_id = (
             str(payload.get("template_doc_id") or "").strip()
-            or cfg_map.get("bast_template_doc_id", "").strip()
             or str(template_doc_id or "").strip()
         )
         if not resolved_template_id:
-            return False, {"message": "Template ID Google Docs BAST belum diatur di App Setting."}
+            return False, {"message": "BAST_TEMPLATE_DOC_ID belum diatur di .env."}
 
-        bridge_url = cfg_map.get("drive_bridge_url", "").strip()
-        root_folder_id = cfg_map.get("drive_root_folder_id", "").strip()
-        bridge_secret = cfg_map.get("drive_bridge_secret", "").strip()
+        bridge_url = os.getenv("DRIVE_BRIDGE_URL", "").strip()
+        root_folder_id = os.getenv("DRIVE_ROOT_FOLDER_ID", "").strip()
+        bridge_secret = os.getenv("DRIVE_BRIDGE_SECRET", "").strip()
         subfolder_name = str(payload.get("subfolder_name") or "Tutup Buku").strip()
 
         from datetime import datetime
@@ -1283,7 +1206,7 @@ class SheetsDB:
             err_msg = str(exc)
             if "storageQuotaExceeded" in err_msg:
                 return False, {
-                    "message": "Storage Service Account penuh (0 GB). Isi 'drive_bridge_url' & 'drive_root_folder_id' di menu Admin → App Setting agar menggunakan Google Drive akun Anda."
+                    "message": "Storage Service Account penuh (0 GB). Konfigurasikan DRIVE_BRIDGE_URL dan DRIVE_ROOT_FOLDER_ID melalui .env agar menggunakan Google Drive akun Anda."
                 }
             return False, {"message": f"Gagal membuat dokumen BAST: {exc}"}
 
@@ -1291,101 +1214,73 @@ class SheetsDB:
         sheet_row = int(sheet_row_raw or 0)
         worksheet = self._find_ws(["DB_BAST"])
         if not worksheet:
-            if payload:
-                DEMO_DATA.setdefault("DB_BAST", []).append({
-                    "Nomor BAST": str(payload.get("nomor_bast", "")).strip(),
-                    "NIP": _normalize_nip(payload.get("nip", "")),
-                    "Nomor Barang": str(payload.get("nomor_barang", "")).strip(),
-                    "NUP": str(payload.get("nup", "")).strip(),
-                    "Nilai": str(payload.get("nilai", "")).strip(),
-                    "Jumlah": str(payload.get("jumlah", "")).strip(),
-                    "Tanggal Dokumen": document_date,
-                    "Status": "DONE",
-                    "Link PDF": pdf_url,
-                })
-        else:
-            headers = [str(header).strip() for header in worksheet.row_values(1)]
-            if "Tanggal Dokumen" not in headers:
-                worksheet.update_cell(1, len(headers) + 1, "Tanggal Dokumen")
-                headers.append("Tanggal Dokumen")
-            if sheet_row >= 2:
-                row_values = {
-                    "Status": "DONE",
-                    "Link PDF": pdf_url,
-                    "Tanggal Dokumen": document_date,
-                }
-                for field, value in row_values.items():
-                    if field in headers:
-                        worksheet.update_cell(sheet_row, headers.index(field) + 1, value)
-            elif payload:
-                asset_match = next(
-                    (
-                        item for item in self.get_assets()
-                        if str(item.get("ID Barang", "")).strip() == str(payload.get("nomor_barang", "")).strip()
-                        or str(item.get("Kode Barang", "")).strip() == str(payload.get("nomor_barang", "")).strip()
-                    ),
-                    {},
-                )
-                row_map = {
-                    "Nomor BAST": str(payload.get("nomor_bast", "")).strip(),
-                    "Tanggal Dokumen": document_date,
-                    "NIP": self._resolve_emp_nip_for_write(payload.get("nip", "")),
-                    "Nomor Barang": str(asset_match.get("ID Barang") or payload.get("nomor_barang", "")).strip(),
-                    "NUP": str(payload.get("nup", "")).strip(),
-                    "Nilai": str(payload.get("nilai", "")).strip(),
-                    "Jumlah": str(payload.get("jumlah", "")).strip(),
-                    "Letak": str(asset_match.get("Kode Ruang") or payload.get("letak", "")).strip(),
-                    "Status": "DONE",
-                    "Link PDF": pdf_url,
-                }
-                new_row = [row_map.get(h, "") for h in headers]
-                worksheet.append_row(new_row, value_input_option="USER_ENTERED")
+            return False
+        headers = [str(header).strip() for header in worksheet.row_values(1)]
+        if "Tanggal Dokumen" not in headers:
+            worksheet.update_cell(1, len(headers) + 1, "Tanggal Dokumen")
+            headers.append("Tanggal Dokumen")
+        if sheet_row >= 2:
+            row_values = {
+                "Status": "DONE",
+                "Link PDF": pdf_url,
+                "Tanggal Dokumen": document_date,
+            }
+            for field, value in row_values.items():
+                if field in headers:
+                    worksheet.update_cell(sheet_row, headers.index(field) + 1, value)
+        elif payload:
+            asset_match = next(
+                (
+                    item for item in self.get_assets()
+                    if str(item.get("ID Barang", "")).strip() == str(payload.get("nomor_barang", "")).strip()
+                    or str(item.get("Kode Barang", "")).strip() == str(payload.get("nomor_barang", "")).strip()
+                ),
+                {},
+            )
+            row_map = {
+                "Nomor BAST": str(payload.get("nomor_bast", "")).strip(),
+                "Tanggal Dokumen": document_date,
+                "NIP": self._resolve_emp_nip_for_write(payload.get("nip", "")),
+                "Nomor Barang": str(asset_match.get("ID Barang") or payload.get("nomor_barang", "")).strip(),
+                "NUP": str(payload.get("nup", "")).strip(),
+                "Nilai": str(payload.get("nilai", "")).strip(),
+                "Jumlah": str(payload.get("jumlah", "")).strip(),
+                "Letak": str(asset_match.get("Kode Ruang") or payload.get("letak", "")).strip(),
+                "Status": "DONE",
+                "Link PDF": pdf_url,
+            }
+            new_row = [row_map.get(h, "") for h in headers]
+            worksheet.append_row(new_row, value_input_option="USER_ENTERED")
 
         if not self._find_ws(["DB_BMN_Dokumen"]):
-            DEMO_DATA.setdefault("DB_BMN_Dokumen", []).append({
-                "Group": "Aset",
-                "Sub Menu": "Tutup Buku",
-                "Periode": document_period,
-                "Kategori Item": "BAST",
-                "Judul Dokumen": f"BAST {payload.get('nomor_bast', '')}.pdf".replace("/", "-") if payload else "",
-                "Tanggal Buat": document_date,
-                "Tanggal Buat": document_date,
-                "Link File": pdf_url,
-                "Keterangan": "DONE",
-            })
-        else:
-            dokumen_ws = self._find_ws(["DB_BMN_Dokumen"])
-            dokumen_headers = [str(header).strip() for header in dokumen_ws.row_values(1)]
-            if not dokumen_headers:
-                dokumen_headers = list(DB_SCHEMAS["DB_BMN_Dokumen"])
-                dokumen_ws.append_row(dokumen_headers, value_input_option="USER_ENTERED")
+            return False
+        dokumen_ws = self._find_ws(["DB_BMN_Dokumen"])
+        dokumen_headers = [str(header).strip() for header in dokumen_ws.row_values(1)]
+        if not dokumen_headers:
+            dokumen_headers = list(DB_SCHEMAS["DB_BMN_Dokumen"])
+            dokumen_ws.append_row(dokumen_headers, value_input_option="USER_ENTERED")
 
-            judul_dokumen = f"BAST {payload.get('nomor_bast', '')}.pdf".replace("/", "-") if payload else ""
-            row_map = {
-                "Group": "Aset",
-                "Sub Menu": "Tutup Buku",
-                "Periode": document_period,
-                "Kategori Item": "BAST",
-                "Judul Dokumen": judul_dokumen,
-                "Tanggal Buat": document_date,
-                "Tanggal Buat": document_date,
-                "Link File": pdf_url,
-                "Keterangan": "DONE",
-            }
-            dokumen_ws.append_row(
-                [row_map.get(header, "") for header in dokumen_headers],
-                value_input_option="USER_ENTERED",
-            )
+        judul_dokumen = f"BAST {payload.get('nomor_bast', '')}.pdf".replace("/", "-") if payload else ""
+        row_map = {
+            "Group": "Aset",
+            "Sub Menu": "Tutup Buku",
+            "Periode": document_period,
+            "Kategori Item": "BAST",
+            "Judul Dokumen": judul_dokumen,
+            "Tanggal Buat": document_date,
+            "Link File": pdf_url,
+            "Keterangan": "DONE",
+        }
+        dokumen_ws.append_row(
+            [row_map.get(header, "") for header in dokumen_headers],
+            value_input_option="USER_ENTERED",
+        )
+        return True
 
     def update_bast_row(self, row_num, updates_dict):
         ws = self._find_ws(["DB_BAST"])
         if not ws:
-            rows = DEMO_DATA.setdefault("DB_BAST", [])
-            idx = int(row_num) - 2
-            if 0 <= idx < len(rows):
-                rows[idx].update(updates_dict)
-                return True, "Data BAST diperbarui (Mode Demo)."
-            return False, "Baris BAST tidak ditemukan."
+            return False, "Tabel BAST tidak ditemukan."
 
         try:
             all_vals = self._get_values_from_snapshot(["DB_BAST"]) or ws.get_all_values()
@@ -1405,13 +1300,7 @@ class SheetsDB:
 
         ws = self._find_ws(["DB_Ruangan"])
         if not ws:
-            rows = DEMO_DATA.get("DB_Ruangan", [])
-            target_row = int(row_num)
-            idx = target_row - 2
-            if 0 <= idx < len(rows):
-                rows[idx].update(updates_dict)
-                return True, "Data ruangan diperbarui (Mode Demo)."
-            return False, "Baris ruangan tidak ditemukan."
+            return False, "Baris Ruangan tidak ditemukan."
 
         try:
             all_vals = self._get_values_from_snapshot(["DB_Ruangan"]) or ws.get_all_values()
@@ -1436,12 +1325,6 @@ class SheetsDB:
 
         ws = self._find_ws(["DB_Aset"])
         if not ws:
-            rows = DEMO_DATA.get("DB_Aset", [])
-            target_row = int(row_num)
-            idx = target_row - 2
-            if 0 <= idx < len(rows):
-                rows[idx].update(updates_dict)
-                return True, "Data barang diperbarui (Mode Demo)."
             return False, "Baris barang tidak ditemukan."
 
         try:
@@ -1469,10 +1352,7 @@ class SheetsDB:
             return False, "Kolom No adalah ID otomatis dan tidak dapat diubah."
         ws = self._find_ws(["DB_Pegawai"])
         if not ws:
-            for idx, e in enumerate(DEMO_DATA["DB_Pegawai"], start=2):
-                if idx == int(row_num or 0) or _normalize_nip(e.get("NIP")) == _normalize_nip(updates_dict.get("NIP")):
-                    e.update(updates_dict)
-            return True, "Data pegawai diperbarui (Mode Demo)."
+            return False, "Data pegawai tidak ditemukan."
         try:
             all_vals = self._get_values_from_snapshot(["DB_Pegawai"]) or ws.get_all_values()
             headers = [h.strip() for h in all_vals[0]]
@@ -1561,13 +1441,7 @@ class SheetsDB:
 
         ws_usr = self._find_ws(["CFG_Users", "Users"])
         if not ws_usr:
-            existing = next((u for u in DEMO_DATA["CFG_Users"] if _normalize_nip(u.get("NIP", "")) == nip_clean), None)
-            if existing:
-                if password_input:
-                    existing["Password"] = password_input
-                existing["Role"] = role_str
-            else:
-                DEMO_DATA["CFG_Users"].append({"NIP": nip_clean, "Password": password_input or "rri2026", "Role": role_str})
+            return False, "Tabel Users tidak ditemukan."
         else:
             try:
                 all_vals = self._get_values_from_snapshot(["CFG_Users", "Users"]) or ws_usr.get_all_values()
@@ -1634,21 +1508,16 @@ class SheetsDB:
             return False, "Format data harus berupa objek."
         row_dict = dict(row_dict)
         tab_lookup = {
-            "DB_Timeline": ["DB_Timeline", self.timeline_tab, "Sheet1"],
-            "DB_Dialog": ["DB_Dialog", self.dialog_tab, "Agenda Setting"],
-            "DB_SDM_Arsip": ["DB_SDM_Arsip", "DB_Arsip_SDM", "Arsip_SDM"],
-            "DB_Arsip_SDM": ["DB_SDM_Arsip", "DB_Arsip_SDM", "Arsip_SDM"],
-            "DB_Info_Board": ["DB_Info_Board", "Info_Board"],
+            "DB_Timeline": ["DB_Timeline"],
+            "DB_Dialog": ["DB_Dialog"],
+            "DB_SDM_Arsip": ["DB_SDM_Arsip"],
+            "DB_Info_Board": ["DB_Info_Board"],
         }
         candidates = tab_lookup.get(target_key, [target_key])
         ws = self._find_ws(candidates)
 
         if not ws:
-            if target_key in AUTO_ID_FIELDS:
-                field, _ = AUTO_ID_FIELDS[target_key]
-                row_dict[field] = self._next_auto_id(target_key, DEMO_DATA.get(target_key, []))
-            DEMO_DATA.setdefault(target_key, []).append(row_dict)
-            return True, f"Disimpan sementara ke {target_key} (Klik 'Initial Data' sebagai Admin untuk sinkronisasi tab)."
+            return False, f"Tabel {target_key.replace('DB_', '').replace('_', ' ')} tidak ditemukan."
 
         try:
             snap_vals = ws.get_all_values() if target_key in AUTO_ID_FIELDS else self._get_values_from_snapshot(candidates)
@@ -1761,20 +1630,15 @@ class SheetsDB:
 
     def delete_record(self, target_key, row_num):
         tab_lookup = {
-            "DB_Timeline": ["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"],
-            "DB_Dialog": ["DB_Dialog", self.dialog_tab, "Agenda Setting"],
-            "DB_Info_Board": ["DB_Info_Board", "Info_Board"],
-            "DB_SDM_Arsip": ["DB_SDM_Arsip", "DB_Arsip_SDM", "Arsip_SDM"],
-            "DB_Arsip_SDM": ["DB_SDM_Arsip", "DB_Arsip_SDM", "Arsip_SDM"],
+            "DB_Timeline": ["DB_Timeline"],
+            "DB_Dialog": ["DB_Dialog"],
+            "DB_SDM_Arsip": ["DB_SDM_Arsip"],
+            "DB_Info_Board": ["DB_Info_Board"],
         }
         candidates = tab_lookup.get(target_key, [target_key])
         ws = self._find_ws(candidates)
         if not ws:
-            rows = DEMO_DATA.get(target_key, [])
-            idx = int(row_num) - 2
-            if 0 <= idx < len(rows):
-                rows.pop(idx)
-            return True, f"Baris dihapus dari {target_key} (Mode Demo)."
+            return False, f"Tabel {target_key.replace('DB_', '').replace('_', ' ')} tidak ditemukan."
         try:
             ws.delete_rows(int(row_num))
             self._sync_snapshot(force=True)

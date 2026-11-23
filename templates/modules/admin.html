@@ -46,7 +46,7 @@
 <section id="mod-app_settings" class="mod-section hidden space-y-5">
   <div>
     <h2 class="text-xl font-extrabold">App Setting &amp; Google Drive Bridge</h2>
-    <p class="text-xs text-slate-400">Konfigurasi sistem dan koneksi folder <strong>BEACON</strong> untuk penyimpanan PDF otomatis memakai kuota Google Drive Anda</p>
+    <p class="text-xs text-slate-400">Konfigurasi informasi stasiun dan preferensi dashboard. Kredensial serta ID integrasi hanya tersedia melalui <code>.env</code>.</p>
   </div>
 
   <form onsubmit="submitAppSettings(event)" class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-5">
@@ -54,9 +54,9 @@
       <label class="space-y-1.5">
         <span class="block text-xs font-bold">Zona waktu</span>
         <select id="appTimezone" name="timezone" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
-          <option value="Asia/Jakarta">WIB — Asia/Jakarta</option>
-          <option value="Asia/Makassar">WITA — Asia/Makassar</option>
-          <option value="Asia/Jayapura">WIT — Asia/Jayapura</option>
+          <option value="WIB">WIB (Asia/Jakarta)</option>
+          <option value="WITA">WITA (Asia/Makassar)</option>
+          <option value="WIT">WIT (Asia/Jayapura)</option>
           <option value="UTC">UTC</option>
         </select>
       </label>
@@ -86,29 +86,65 @@
     </div>
 
     <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-      <h3 class="text-xs font-extrabold uppercase tracking-wider text-teal-600 dark:text-teal-400">Penyimpanan Google Drive (Folder BEACON &amp; Template PDF)</h3>
+      <h3 class="text-xs font-extrabold uppercase tracking-wider text-teal-600 dark:text-teal-400">Informasi Stasiun</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label class="space-y-1.5">
-          <span class="block text-xs font-bold">Folder ID Utama <code>BEACON</code></span>
-          <input type="text" id="appDriveRootFolderId" name="drive_root_folder_id" placeholder="Tempel ID folder BEACON dari URL Drive..."
-            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono" />
+          <span class="block text-xs font-bold">Nama Stasiun</span>
+          <input type="text" id="appStationName" name="station_info.name" placeholder="Nama stasiun"
+            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
         </label>
         <label class="space-y-1.5">
-          <span class="block text-xs font-bold">Template Google Docs ID (BAST)</span>
-          <input type="text" id="appBastTemplateDocId" name="bast_template_doc_id" placeholder="ID Google Docs Template BAST..."
-            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono" />
+          <span class="block text-xs font-bold">Subjudul Stasiun</span>
+          <input type="text" id="appStationSubtitle" name="station_info.subtitle" placeholder="Subjudul stasiun"
+            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
         </label>
         <label class="space-y-1.5">
-          <span class="block text-xs font-bold">Google Apps Script Web App URL (<code>/exec</code>)</span>
-          <input type="url" id="appDriveBridgeUrl" name="drive_bridge_url" placeholder="https://script.google.com/macros/s/.../exec"
-            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono" />
+          <span class="block text-xs font-bold">Alamat Stasiun</span>
+          <input type="text" id="appStationAddress" name="station_info.address" placeholder="Alamat stasiun"
+            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
         </label>
         <label class="space-y-1.5">
-          <span class="block text-xs font-bold">Bridge Secret Token</span>
-          <input type="text" id="appDriveBridgeSecret" name="drive_bridge_secret" placeholder="beacon-rri-secret-2026"
-            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono" />
+          <span class="block text-xs font-bold">Telepon Stasiun</span>
+          <input type="tel" id="appStationPhone" name="station_info.phone" placeholder="Nomor telepon stasiun"
+            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
+        </label>
+        <label class="space-y-1.5">
+          <span class="block text-xs font-bold">Email Stasiun</span>
+          <input type="email" id="appStationEmail" name="station_info.email" placeholder="Email stasiun"
+            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
         </label>
       </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <fieldset class="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+          <legend class="px-1 text-[10px] font-extrabold uppercase text-teal-600">Stream Pro 1</legend>
+          <input type="text" id="appStationPro1Name" placeholder="Nama Pro 1" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
+          <input type="text" id="appStationPro1Freq" placeholder="Frekuensi" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
+          <input type="url" id="appStationPro1Url" placeholder="Stream URL" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono" />
+          <input type="url" id="appStationPro1Share" placeholder="Link berbagi" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono" />
+        </fieldset>
+        <fieldset class="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+          <legend class="px-1 text-[10px] font-extrabold uppercase text-teal-600">Stream Pro 2</legend>
+          <input type="text" id="appStationPro2Name" placeholder="Nama Pro 2" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
+          <input type="text" id="appStationPro2Freq" placeholder="Frekuensi" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
+          <input type="url" id="appStationPro2Url" placeholder="Stream URL" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono" />
+          <input type="url" id="appStationPro2Share" placeholder="Link berbagi" class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono" />
+        </fieldset>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {% for index in range(1, 6) %}
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="appStationOffice{{ index }}Label" placeholder="Nama sistem {{ index }}"
+            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
+          <input type="url" id="appStationOffice{{ index }}Url" placeholder="URL sistem {{ index }}"
+            class="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono" />
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+      <h3 class="text-xs font-extrabold uppercase tracking-wider text-teal-600 dark:text-teal-400">Konfigurasi Kredensial</h3>
+      <p class="text-xs text-slate-500">Google Spreadsheet, folder/ID Drive, YouTube, template BAST, bridge URL, dan secret token dikonfigurasi melalui variabel <code>.env</code> saja.</p>
     </div>
 
     <div class="flex justify-end">
