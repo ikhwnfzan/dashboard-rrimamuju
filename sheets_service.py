@@ -96,6 +96,7 @@ ALL_MODULES = [
     {"key": "produksi_paket", "label": "Produksi Paket", "group": "Perencanaan"},
     {"key": "dialog", "label": "Jadwal Dialog", "group": "Perencanaan"},
     {"key": "program_siaran", "label": "Program Siaran", "group": "Perencanaan"},
+    {"key": "arsip_program", "label": "Arsip Program", "group": "Perencanaan"},
     {"key": "konten", "label": "Content Planner", "group": "KMB"},
     {"key": "bestcut_monitoring", "label": "Bestcut Monitoring", "group": "KMB"},
     {"key": "socmed_analytics", "label": "Social Media Analytics", "group": "KMB"},
@@ -138,9 +139,9 @@ ALL_ROLES = [
 DEFAULT_ROLE_PERMISSIONS = {
     "Admin": {m["key"]: "full" for m in ALL_MODULES},
     "SDM": {"data_pegawai": "full", "arsip_sdm": "full", "info_board": "full"},
-    "Perencanaan": {"info_board": "view", "produksi_paket": "full", "dialog": "full", "jadwal_siaran": "full", "program_siaran": "full"},
+    "Perencanaan": {"info_board": "view", "produksi_paket": "full", "dialog": "full", "jadwal_siaran": "full", "program_siaran": "full", "arsip_program": "full"},
     "KMB": {"info_board": "view", "konten": "full", "bestcut_monitoring": "full", "socmed_analytics": "full", "dialog": "update"},
-    "Siaran": {"info_board": "view", "jadwal_siaran": "view", "produksi_paket": "view", "dialog": "update", "program_siaran": "view"},
+    "Siaran": {"info_board": "view", "jadwal_siaran": "view", "produksi_paket": "view", "dialog": "update", "program_siaran": "view", "arsip_program": "view"},
     "TMB": {"info_board": "view", "jadwal_tmb": "full", "tmb_working_progresss": "full"},
     "BMN": {
         "info_board": "view",
@@ -154,7 +155,7 @@ DEFAULT_ROLE_PERMISSIONS = {
     "LPU": {"info_board": "view"},
     "Berita": {"info_board": "view", "produksi_paket": "view"},
     "Keuangan": {"info_board": "view", "master_barang": "view", "master_persediaan": "view"},
-    "Pimpinan": {"info_board": "view", "data_pegawai": "view", "produksi_paket": "view", "dialog": "view", "jadwal_siaran": "view", "program_siaran": "view", "socmed_analytics": "view", "master_barang": "view", "master_persediaan": "view"},
+    "Pimpinan": {"info_board": "view", "data_pegawai": "view", "produksi_paket": "view", "dialog": "view", "jadwal_siaran": "view", "program_siaran": "view", "arsip_program": "view", "socmed_analytics": "view", "master_barang": "view", "master_persediaan": "view"},
     "Kasubag TU": {"info_board": "view", "data_pegawai": "view", "arsip_sdm": "view", "master_barang": "view", "master_persediaan": "view", "pemeliharaan_aset": "view"},
 }
 
@@ -182,40 +183,55 @@ APP_CONFIG_DESCRIPTIONS = {
 
 # Unified Database (`DB_*`) & Configuration (`CFG_*`) Schemas with standardized Title Case Headers
 DB_SCHEMAS = {
+    "CFG_App": ["key", "value", "description"],
     "CFG_Users": ["NIP", "Password", "Role"],
     "CFG_Role_Modules": ["Role"] + [m["key"] for m in ALL_MODULES],
-    "CFG_App": ["Key", "Value", "Description"],
-    "DB_Timeline": ["Kegiatan", "Tahapan", "Tanggal Mulai", "Tanggal Selesai", "Keterangan", "Tanggal"],
-    "DB_Dialog": ["No", "Tanggal", "Program", "Topik", "Narasumber", "Foto Narasumber", "Jabatan", "Kehadiran", "PIC Narasumber", "Flyer", "Bestcut", "Keterlaksanaan", "Kendala"],
-    "DB_Siaran": ["Tanggal", "Shift", "Programa", "Penyiar", "Operator", "Status"],
-    "DB_Program": ["Kode Program", "Programa", "Nama Program", "Hari", "Jam", "Format", "Produser", "Status"],
-    "DB_Konten": ["ID", "Tanggal Tayang", "Platform", "Akun", "Judul Konten", "Jenis", "Divisi", "PIC", "Status", "Link Asset"],
-    "DB_Jadwal_TMB": ["Tanggal", "Shift", "Lokasi Pemancar", "Teknisi TMB", "Tugas", "Status"],
     "DB_Pegawai": ["No", "Nama Pegawai", "NIP", "Pangkat Golongan", "Jabatan", "Status", "Posisi"],
-    "DB_BAST": ["Nomor BAST", "NIP", "Nomor Barang", "NUP", "Nilai", "Jumlah", "Tanggal Dokumen", "Status", "Link PDF"],
-    "DB_Arsip_SDM": ["Nomor Dokumen", "Nama Dokumen", "Tanggal", "Jenis", "Link"],
+    "DB_SDM_Arsip": ["Nomor Dokumen", "Nama Dokumen", "Tanggal", "Jenis", "Link"],
     "DB_Info_Board": ["Tanggal", "Prioritas", "Judul", "Isi", "Target Divisi", "Lampiran"],
+    "DB_Timeline": ["ID Kegiatan", "Kegiatan", "Tahapan", "Tanggal Mulai", "Tanggal Selesai", "Keterangan"],
+    "DB_Jadwal_Operasional": ["ID Jadwal", "Tanggal", "Shift", "Bidang", "Pegawai", "Status"],
+    "DB_Program": ["Kode Program", "Programa", "Nama Program", "Hari", "Jam", "Kategori", "Status"],
+    "DB_Dialog": [
+        "ID Dialog", "Tanggal Surat", "Program", "Topik", "Narasumber", "Kehadiran",
+        "PIC Narasumber", "Flyer", "Bestcut", "Status", "Catatan", "Tanggal Dialog",
+        "Instansi", "Link Live", "Operator", "Penyiar"
+    ],
+    "DB_Flyer": ["ID File", "ID Dialog", "Nama File", "Link Flyer"],
+    "DB_Konten": ["ID Konten", "Tanggal Tayang", "Platform", "Akun", "Judul Konten", "Jenis", "Keterangan", "PIC", "Status", "Link Asset", "Catatan"],
     "DB_Ruangan": ["Nomor Ruangan", "Nama Ruangan", "Lokasi", "NIP Penanggung Jawab"],
-    "DB_Aset": ["Kode Barang", "Kode Ruang", "Tipe", "Nama Barang", "Merk Model", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"],
-    "DB_Stok_Master": ["Kode Barang", "Nama Barang", "Unit", "Stok Awal", "Keterangan"],
-    "DB_Stok_Detail": ["ID Transaksi", "Tanggal", "Jenis", "Kode Barang", "Nama Barang", "Jumlah", "Unit", "Pcs", "Bidang", "Penanggung Jawab", "Keterangan"],
-    "DB_Produksi_Paket": ["ID", "Tanggal", "Program", "Judul Paket", "Jenis Paket", "Produser", "Reporter", "Editor", "Status", "Link File"],
-    "DB_Socmed_Analytics": ["Periode", "Platform", "Akun", "Followers", "Reach", "Engagement", "Top Konten", "Catatan"],
-    "DB_TMB_Working_Progress": ["Judul", "Jenis", "Tanggal Record", "Record", "Editing", "PIC TMB", "PIC Penyiaran", "Progress", "Deadline", "Kendala", "Link", "Status"],
-    "DB_Pemeliharaan_Header": ["ID Jadwal", "Tanggal", "Judul Pemeliharaan", "Lokasi", "Teknisi Vendor", "Status", "Keterangan"],
-    "DB_Pemeliharaan_Detail": ["ID Jadwal", "Kode Barang", "Nama Barang", "NUP", "Kondisi Sebelum", "Tindakan", "Kondisi Sesudah", "Biaya"],
+    "DB_Aset": ["Kode Barang", "Kode Ruang", "Nama Barang", "Merk Model", "Tipe", "Tahun", "NUP", "Kondisi", "Tindak Lanjut", "Keterangan"],
+    "DB_BAST": ["Nomor BAST", "Tanggal Dokumen", "NIP", "Nomor Barang", "NUP", "Nilai", "Jumlah", "Letak", "Status", "Link PDF"],
+    "DB_Pemeliharaan_Header": ["Kode Jadwal", "Tanggal", "Judul Pemeliharaan", "Lokasi", "Teknisi Vendor", "Status", "Keterangan"],
+    "DB_Pemeliharaan_Detail": ["Kode Detail Pemeliharaan", "Kode Jadwal", "Nomor Kode Barang", "Nama Barang", "NUP", "Kondisi Sebelum", "Tindakan", "Kondisi Sesudah", "Biaya"],
     "DB_BMN_Arsip": ["Nomor Dokumen", "Jenis", "Judul Dokumen", "Tanggal", "Keterangan", "Link"],
-    "DB_BMN_Dokumen": ["Group", "Sub Menu", "Periode", "Kategori Item", "Judul Dokumen", "Tanggal Buat", "Link File", "Keterangan"],
+    "DB_BMN_Dokumen": ["ID Dokumen", "Group", "Sub Menu", "Periode", "Kategori Item", "Judul Dokumen", "Tanggal Buat", "Link File", "Keterangan"],
+    "DB_Stok_Master": ["Kode Barang", "Nama Barang", "Unit", "Stok Awal", "Keterangan"],
+    "DB_Stok_Detail": ["ID Transaksi", "Tanggal", "Jenis", "Bidang", "Penanggung Jawab", "Kode Barang", "Jumlah", "Unit", "Pcs", "Keterangan"],
+    "DB_Socmed_Analytics": ["ID Socmed", "Periode", "Platform", "Akun", "Followers", "Reach", "Engagement", "Top Konten", "Catatan"],
+    "DB_TMB_Working_Progress": [
+        "ID Produksi", "Judul", "Jenis", "Tanggal Record", "Record", "Editing", "PIC TMB", "PIC Penyiaran",
+        "Progress", "Deadline", "Catatan", "Link File", "Status", "Tanggal Tayang",
+        "Keterangan", "Deskripsi"
+    ],
+    "DB_Arsip_Program": ["ID Dokumen", "Kategori", "Jenis", "Tanggal Upload", "Nama Dokumen", "Keterangan", "Link"],
 }
 
 AUTO_ID_FIELDS = {
     "DB_Pegawai": ("No", ""),
-    "DB_Dialog": ("No", ""),
-    "DB_Konten": ("ID", "CNT-"),
+    "DB_Timeline": ("ID Kegiatan", ""),
+    "DB_Jadwal_Operasional": ("ID Jadwal", ""),
+    "DB_Dialog": ("ID Dialog", ""),
     "DB_Program": ("Kode Program", "PRG-"),
-    "DB_Produksi_Paket": ("ID", "PKT-"),
-    "DB_Pemeliharaan_Header": ("ID Jadwal", "MNT-"),
+    "DB_Konten": ("ID Konten", "CNT-"),
+    "DB_Pemeliharaan_Header": ("Kode Jadwal", "MNT-"),
+    "DB_Pemeliharaan_Detail": ("Kode Detail Pemeliharaan", "DMP-"),
+    "DB_BMN_Dokumen": ("ID Dokumen", "DOK-"),
     "DB_Stok_Detail": ("ID Transaksi", "TRX-"),
+    "DB_Socmed_Analytics": ("ID Socmed", "SOC-"),
+    "DB_TMB_Working_Progress": ("ID Produksi", "RRI-"),
+    "DB_Flyer": ("ID File", ""),
+    "DB_Arsip_Program": ("ID Dokumen", "PRC-"),
 }
 AUTO_ID_LOCK = threading.Lock()
 
@@ -235,8 +251,12 @@ DEMO_DATA = {
     "DB_Dialog": [
         {"No": "1", "Tanggal": "Tuesday, 01 September 2026", "Program": "Dialog Interaktif Pro 1", "Topik": "Kesiapan Pelaksanaan RRI Fest & Bintang Radio Mamuju 2026", "Narasumber": "Ketua Panitia RRI Fest Mamuju", "Foto Narasumber": "", "Jabatan": "Koordinator LPU LPP RRI Mamuju", "Kehadiran": "Hadir di Studio", "PIC Narasumber": "Tim Siaran Pro 1", "Flyer": "https://www.instagram.com/rri_mamuju/", "Bestcut": "https://www.youtube.com/@LPPRRIMamuju", "Keterlaksanaan": "Terlaksana", "Kendala": "-"}
     ],
-    "DB_Siaran": [
-        {"Tanggal": "2026-11-17", "Shift": "Pagi (05:00 - 12:00 WITA)", "Programa": "Pro 1 (96.0 FM)", "Penyiar": "Penyiar Shift Pagi A", "Operator": "Operator TMB 1", "Status": "On Duty"}
+    "DB_Jadwal_Operasional": [
+        {"ID Jadwal": "1", "Tanggal": "2026-11-16", "Shift": "Pagi", "Bidang": "Pro 1", "Pegawai": "199210252025042000", "Status": "On Duty"},
+        {"ID Jadwal": "2", "Tanggal": "2026-11-16", "Shift": "Dinas Kantor", "Bidang": "Pro 1", "Pegawai": "199110312024042000", "Status": "On Duty"},
+        {"ID Jadwal": "3", "Tanggal": "2026-11-17", "Shift": "Siang", "Bidang": "Pro 2", "Pegawai": "199312132022212000", "Status": "On Duty"},
+        {"ID Jadwal": "4", "Tanggal": "2026-11-17", "Shift": "Pagi", "Bidang": "TMB", "Pegawai": "199905142025041000", "Status": "On Duty"},
+        {"ID Jadwal": "5", "Tanggal": "2026-11-17", "Shift": "Dinas Kantor", "Bidang": "TMB", "Pegawai": "199910062024211000", "Status": "Standby"},
     ],
     "DB_Program": [
         {"Kode Program": "PRG-P1-01", "Programa": "Pro 1", "Nama Program": "Halo Sulbar", "Hari": "Setiap Hari", "Jam": "09:00 - 10:00 WITA", "Format": "Dialog", "Produser": "Pengelola Pro 1", "Status": "Aktif"},
@@ -244,9 +264,6 @@ DEMO_DATA = {
     ],
     "DB_Konten": [
         {"ID": "CNT-01", "Tanggal Tayang": "2026-11-17", "Platform": "Instagram & TikTok", "Akun": "@pro2_mamuju", "Judul Konten": "Teaser Reels Pro 2 Music Live Chat", "Jenis": "Reels / Short Video", "Divisi": "KMB / Pro 2", "PIC": "Tim Kreatif Pro 2", "Status": "Review", "Link Asset": "https://drive.google.com"}
-    ],
-    "DB_Jadwal_TMB": [
-        {"Tanggal": "2026-11-17", "Shift": "Pagi (06:00 - 14:00 WITA)", "Lokasi Pemancar": "Studio & MCR Kantor", "Teknisi TMB": "A. Mirwan Syam", "Tugas": "Monitoring Tx & Audio Stream", "Status": "On Duty"},
     ],
     "DB_Pegawai": [
         {"No": "1", "Nama Pegawai": "Rina Irfantini, S.H., M.Si.", "NIP": "197312051999032007", "Pangkat Golongan": "Pembina Tk.I IV/b", "Jabatan": "Kepala Stasiun", "Status": "Aktif", "Posisi": "Kepala Stasiun LPP RRI Mamuju"},
@@ -625,6 +642,55 @@ class SheetsDB:
         except Exception as e:
             return False, f"Gagal memperbarui timeline: {e}"
 
+    def _employee_lookups(self):
+        employees = self.get_employees()
+        by_no = {}
+        by_nip = {}
+        by_nip15 = {}
+        by_name = {}
+        for emp in employees:
+            no_val = str(emp.get("No", "")).strip()
+            nip_clean = _normalize_nip(emp.get("NIP", ""))
+            nm_clean = str(emp.get("Nama Pegawai", "")).strip().lower()
+            if no_val:
+                by_no[no_val] = emp
+            if nip_clean:
+                by_nip[nip_clean] = emp
+                if len(nip_clean) >= 15:
+                    by_nip15[nip_clean[:15]] = emp
+            if nm_clean:
+                by_name[nm_clean] = emp
+        return employees, (by_no, by_nip, by_nip15, by_name)
+
+    def _resolve_emp(self, raw_ref, lookups):
+        by_no, by_nip, by_nip15, by_name = lookups
+        s = str(raw_ref or "").strip()
+        if not s:
+            return {}
+        if s in by_no:
+            return by_no[s]
+        digits = _normalize_nip(s)
+        if digits:
+            if digits in by_nip:
+                return by_nip[digits]
+            if len(digits) >= 15 and digits[:15] in by_nip15:
+                return by_nip15[digits[:15]]
+        low = s.lower()
+        if low in by_name:
+            return by_name[low]
+        return {}
+
+    def _resolve_emp_nip_for_write(self, raw_ref):
+        s = str(raw_ref or "").strip()
+        if not s:
+            return ""
+        _, lookups = self._employee_lookups()
+        emp = self._resolve_emp(s, lookups)
+        if emp and emp.get("NIP"):
+            return _normalize_nip(emp.get("NIP"))
+        digits = _normalize_nip(s)
+        return digits if digits else s
+
     def get_agenda_setting(self):
         all_values = self._get_values_from_snapshot(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"])
         if all_values is None:
@@ -632,10 +698,16 @@ class SheetsDB:
         if not all_values:
             return []
 
+        _, lookups = self._employee_lookups()
+        flyers = self.get_tab_records(["DB_Flyer"])
+        flyer_by_id = {str(fl.get("ID File", "")).strip(): fl for fl in flyers if str(fl.get("ID File", "")).strip()}
+        flyer_by_dlg = {str(fl.get("ID Dialog", "")).strip(): fl for fl in flyers if str(fl.get("ID Dialog", "")).strip()}
+        programs = {str(p.get("Kode Program", "")).strip(): p for p in self.get_tab_records(["DB_Program"])}
+
         header_idx = 0
         for idx, row in enumerate(all_values[:10]):
             lowered = [c.strip().lower() for c in row]
-            if "tanggal" in lowered and ("program" in lowered or "narasumber" in lowered):
+            if ("tanggal" in lowered or "tanggal dialog" in lowered or "tanggal surat" in lowered) and ("program" in lowered or "narasumber" in lowered):
                 header_idx = idx
                 break
         headers = [h.strip() for h in all_values[header_idx]]
@@ -646,19 +718,53 @@ class SheetsDB:
             padded = raw_row + [""] * (len(headers) - len(raw_row))
             item = {headers[i]: padded[i].strip() for i in range(len(headers)) if headers[i]}
             item["_row_num"] = raw_row_idx
-            # Normalize keys so frontend works seamlessly before and after header rename
+
+            id_dlg = item.get("ID Dialog") or item.get("No") or ""
+            if id_dlg:
+                last_no = id_dlg
+            else:
+                id_dlg = last_no
+            item["ID Dialog"] = id_dlg
+            item["No"] = id_dlg
+
+            tgl_dlg = item.get("Tanggal Dialog") or item.get("Tanggal") or item.get("Tanggal Surat") or ""
+            if tgl_dlg:
+                last_tanggal = tgl_dlg
+            else:
+                tgl_dlg = last_tanggal
+            item["Tanggal Dialog"] = tgl_dlg
+            item["Tanggal"] = tgl_dlg
+
+            prog_code = str(item.get("Program", "")).strip()
+            if prog_code in programs:
+                item["Program Kode"] = prog_code
+                item["Program"] = programs[prog_code].get("Nama Program") or prog_code
+
             item["Topik"] = item.get("Topik") or item.get("Topik/ Isu") or ""
-            item["Jabatan"] = item.get("Jabatan") or item.get("Jabatan/ Instansi") or ""
+            item["Instansi"] = item.get("Instansi") or item.get("Jabatan") or item.get("Jabatan/ Instansi") or ""
+            item["Jabatan"] = item["Instansi"]
             item["Kehadiran"] = item.get("Kehadiran") or item.get("KET. Kehadiran") or ""
+            item["Keterlaksanaan"] = item.get("Status") or item.get("Keterlaksanaan") or ""
+            item["Status"] = item["Keterlaksanaan"]
+            item["Kendala"] = item.get("Catatan") or item.get("Kendala") or ""
+            item["Catatan"] = item["Kendala"]
             item.setdefault("Bestcut", "")
-            if item.get("No"):
-                last_no = item["No"]
+
+            for fk_col, label_key in [("PIC Narasumber", "PIC Narasumber Nama"), ("Operator", "Operator Nama"), ("Penyiar", "Penyiar Nama")]:
+                raw_fk = item.get(fk_col, "")
+                emp = self._resolve_emp(raw_fk, lookups)
+                item[label_key] = emp.get("Nama Pegawai") or raw_fk or "-"
+
+            flyer_ref = str(item.get("Flyer", "")).strip()
+            fl_obj = flyer_by_id.get(flyer_ref) or flyer_by_dlg.get(str(id_dlg).strip())
+            if fl_obj:
+                item["Flyer URL"] = fl_obj.get("Link Flyer") or ""
+                item["Flyer Nama"] = fl_obj.get("Nama File") or ""
+                if not flyer_ref.startswith("http"):
+                    item["Flyer"] = item["Flyer URL"] or flyer_ref
             else:
-                item["No"] = last_no
-            if item.get("Tanggal"):
-                last_tanggal = item["Tanggal"]
-            else:
-                item["Tanggal"] = last_tanggal
+                item["Flyer URL"] = flyer_ref if flyer_ref.startswith("http") else ""
+
             if any([item.get("Program", ""), item.get("Topik", ""), item.get("Narasumber", "")]):
                 parsed_rows.append(item)
         return parsed_rows
@@ -674,7 +780,7 @@ class SheetsDB:
             header_idx = 0
             for idx, row in enumerate(all_values[:10]):
                 lowered = [c.strip().lower() for c in row]
-                if "tanggal" in lowered and ("program" in lowered or "narasumber" in lowered):
+                if ("tanggal" in lowered or "tanggal dialog" in lowered or "tanggal surat" in lowered) and ("program" in lowered or "narasumber" in lowered):
                     header_idx = idx
                     break
             headers = [h.strip() for h in all_values[header_idx]]
@@ -684,18 +790,26 @@ class SheetsDB:
                 ws.update_cell(header_idx + 1, new_col, "Bestcut")
                 headers.append("Bestcut")
 
-            # Map normalized keys to whichever header is currently in the sheet
             col_fallbacks = {
                 "Topik": ["Topik", "Topik/ Isu"],
                 "Kehadiran": ["Kehadiran", "KET. Kehadiran"],
-                "Jabatan": ["Jabatan", "Jabatan/ Instansi"],
+                "Jabatan": ["Instansi", "Jabatan", "Jabatan/ Instansi"],
+                "Instansi": ["Instansi", "Jabatan", "Jabatan/ Instansi"],
+                "Keterlaksanaan": ["Status", "Keterlaksanaan"],
+                "Status": ["Status", "Keterlaksanaan"],
+                "Kendala": ["Catatan", "Kendala"],
+                "Catatan": ["Catatan", "Kendala"],
+                "Tanggal": ["Tanggal Dialog", "Tanggal"],
             }
             for col_name, new_val in updates_dict.items():
+                val_to_write = str(new_val)
+                if col_name in ("PIC Narasumber", "Operator", "Penyiar"):
+                    val_to_write = self._resolve_emp_nip_for_write(val_to_write)
                 candidates = col_fallbacks.get(col_name, [col_name])
                 for cand in candidates:
                     if cand in headers:
                         col_idx = headers.index(cand) + 1
-                        ws.update_cell(int(row_num), col_idx, str(new_val))
+                        ws.update_cell(int(row_num), col_idx, val_to_write)
                         break
             self._sync_snapshot(force=True)
             return True, "Data Dialog berhasil diperbarui!"
@@ -714,29 +828,108 @@ class SheetsDB:
         return _rows_to_dicts(vals, include_row_num=include_row_num)
 
     # ---------------------------------------------------------
+    # UNIFIED OPERATIONAL SCHEDULE & TMB WORKING PROGRESS
+    # ---------------------------------------------------------
+    def get_jadwal_operasional(self, mode="all"):
+        _, lookups = self._employee_lookups()
+        rows = self.get_tab_records(["DB_Jadwal_Operasional"], include_row_num=True)
+        enriched = []
+        for r in rows:
+            item = dict(r)
+            bidang = str(item.get("Bidang", "")).strip()
+            is_tmb = "tmb" in bidang.lower()
+            is_siaran = "pro" in bidang.lower()
+            if mode == "siaran" and not is_siaran:
+                continue
+            if mode == "tmb" and not is_tmb:
+                continue
+
+            raw_pegawai = item.get("Pegawai") or item.get("Penyiar") or item.get("Teknisi TMB") or ""
+            emp = self._resolve_emp(raw_pegawai, lookups)
+            emp_name = emp.get("Nama Pegawai") or raw_pegawai or "-"
+            emp_jab = emp.get("Jabatan") or emp.get("Posisi") or "-"
+
+            item["Pegawai NIP"] = emp.get("NIP") or raw_pegawai
+            item["Pegawai Nama"] = emp_name
+            item["Pegawai Jabatan"] = emp_jab
+            # Compatibility fields for Siaran & TMB views
+            item["Programa"] = bidang
+            item["Penyiar"] = emp_name
+            item["Operator"] = emp_jab
+            item["Lokasi Pemancar"] = bidang
+            item["Teknisi TMB"] = emp_name
+            item["Tugas"] = emp_jab
+            enriched.append(item)
+        return enriched
+
+    def get_tmb_working_progress(self):
+        _, lookups = self._employee_lookups()
+        rows = self.get_tab_records(["DB_TMB_Working_Progress"], include_row_num=True)
+        enriched = []
+        for r in rows:
+            item = dict(r)
+            for col in ("Record", "Editing", "PIC TMB", "PIC Penyiaran"):
+                emp = self._resolve_emp(item.get(col, ""), lookups)
+                if emp:
+                    item[col] = emp.get("Nama Pegawai") or item.get(col)
+            item["Kendala"] = item.get("Catatan") or item.get("Kendala") or ""
+            item["Link"] = item.get("Link File") or item.get("Link") or ""
+            item["ID"] = item.get("ID Produksi") or item.get("ID") or ""
+            item["Tanggal"] = item.get("Tanggal Tayang") or item.get("Tanggal Record") or ""
+            item["Program"] = item.get("Keterangan") or item.get("Jenis") or ""
+            item["Judul Paket"] = item.get("Judul") or ""
+            item["Jenis Paket"] = item.get("Jenis") or ""
+            item["Produser"] = item.get("PIC Penyiaran") or ""
+            item["Link File"] = item["Link"]
+            enriched.append(item)
+        return enriched
+
+    def get_arsip_sdm(self):
+        rows = self.get_tab_records(["DB_SDM_Arsip", "DB_Arsip_SDM", "Arsip_SDM"], include_row_num=True)
+        enriched = []
+        for r in rows:
+            item = dict(r)
+            item["Nomor Dokumen"] = item.get("Nomor Dokumen") or f"SDM-{item.get('ID Dokumen', '')}"
+            item["Nama Dokumen"] = item.get("Nama Dokumen") or "-"
+            item["Tanggal"] = item.get("Tanggal") or item.get("Tanggal Upload") or "-"
+            enriched.append(item)
+        return enriched
+
+    def get_arsip_program(self):
+        rows = self.get_tab_records(["DB_Arsip_Program"], include_row_num=True)
+        enriched = []
+        for r in rows:
+            item = dict(r)
+            item["ID Dokumen"] = item.get("ID Dokumen") or "-"
+            item["Tanggal Upload"] = item.get("Tanggal Upload") or item.get("Tanggal") or "-"
+            enriched.append(item)
+        return enriched
+
+    # ---------------------------------------------------------
     # BMN: MASTER ASSET, ROOM & STOCK
     # ---------------------------------------------------------
     def get_rooms(self):
         rooms = self.get_tab_records(["DB_Ruangan"], include_row_num=True)
-        emp_map = {e["nip_clean"]: e for e in self.get_employees() if e.get("nip_clean")}
+        _, lookups = self._employee_lookups()
         enriched = []
         for r in rooms:
             item = dict(r)
             raw_pj = str(item.get("NIP Penanggung Jawab", "") or item.get("Penanggungjawab Ruangan", "")).strip()
-            nip_clean = _normalize_nip(raw_pj.replace("NIPPPK.", "").replace("NIP.", ""))
-            emp = emp_map.get(nip_clean)
+            emp = self._resolve_emp(raw_pj, lookups)
             item["NIP Penanggung Jawab"] = raw_pj
             if emp:
+                item["pj_no"] = emp.get("No") or ""
                 item["pj_nip"] = emp.get("NIP") or raw_pj
                 item["pj_nama"] = emp.get("Nama Pegawai") or "-"
                 item["pj_jabatan"] = emp.get("Jabatan") or emp.get("Posisi") or "-"
                 item["pj_posisi"] = emp.get("Posisi") or "-"
             else:
+                item["pj_no"] = ""
                 item["pj_nip"] = raw_pj or "-"
                 item["pj_nama"] = "-"
                 item["pj_jabatan"] = "-"
                 item["pj_posisi"] = "-"
-            item["nip_clean"] = nip_clean
+            item["nip_clean"] = _normalize_nip(item["pj_nip"])
             enriched.append(item)
         return enriched
 
@@ -745,8 +938,10 @@ class SheetsDB:
         rooms = self.get_rooms()
         room_lookup = {str(rm.get("Nomor Ruangan", "")).strip(): rm.get("Nama Ruangan", "") for rm in rooms}
         enriched = []
-        for a in assets:
+        for idx, a in enumerate(assets, start=1):
             item = dict(a)
+            # 1-based asset index (`1..N`, equal to `_row_num - 1`) used by `DB_BAST.Nomor Barang`
+            item["ID Barang"] = str(idx)
             item["Merk Model"] = item.get("Merk Model") or item.get("Merk/ Model") or ""
             kr = str(item.get("Kode Ruang", "")).strip()
             item["Nama Ruangan"] = room_lookup.get(kr, kr or "-")
@@ -755,37 +950,33 @@ class SheetsDB:
 
     def get_bast_records(self):
         records = self.get_tab_records(["DB_BAST"], include_row_num=True)
-        employees = self.get_employees()
+        _, lookups = self._employee_lookups()
         assets = self.get_assets()
         rooms = self.get_rooms()
 
-        employee_lookup = {
-            _normalize_nip(emp.get("NIP")): emp
-            for emp in employees
-        }
-        asset_lookup = {
-            str(asset.get("Kode Barang", "")).strip(): asset
-            for asset in assets
-        }
-        room_lookup = {
-            str(room.get("Nomor Ruangan", "")).strip(): room
-            for room in rooms
-        }
+        asset_by_id = {str(asset.get("ID Barang", "")).strip(): asset for asset in assets if str(asset.get("ID Barang", "")).strip()}
+        asset_by_kode = {str(asset.get("Kode Barang", "")).strip(): asset for asset in assets if str(asset.get("Kode Barang", "")).strip()}
+        room_lookup = {str(room.get("Nomor Ruangan", "")).strip(): room for room in rooms}
+
         enriched = []
         for record in records:
             item = dict(record)
-            nip = _normalize_nip(item.get("NIP"))
-            employee = employee_lookup.get(nip, {})
-            asset = asset_lookup.get(str(item.get("Nomor Barang", "")).strip(), {})
-            room_code = str(asset.get("Kode Ruang", "")).strip()
+            employee = self._resolve_emp(item.get("NIP"), lookups)
+            asset_ref = str(item.get("Nomor Barang", "")).strip()
+            asset = asset_by_id.get(asset_ref) or asset_by_kode.get(asset_ref) or {}
+            room_code = str(item.get("Letak") or asset.get("Kode Ruang") or "").strip()
             room = room_lookup.get(room_code, {})
+
+            item["NIP Display"] = employee.get("NIP") or item.get("NIP") or ""
             item["Nama"] = employee.get("Nama Pegawai") or ""
             item["Pangkat"] = employee.get("Pangkat Golongan") or ""
             item["Jabatan"] = employee.get("Jabatan") or employee.get("Posisi") or ""
+            item["Kode Barang Display"] = asset.get("Kode Barang") or asset_ref
             item["Barang"] = asset.get("Nama Barang") or ""
             item["Merk"] = asset.get("Merk Model") or ""
             item["Tipe"] = asset.get("Tipe") or ""
             item["Letak"] = room.get("Nama Ruangan") or asset.get("Nama Ruangan") or room_code or ""
+            item["Letak Kode"] = room_code
             if not item.get("Nilai"):
                 item["Nilai"] = ""
             enriched.append(item)
@@ -795,67 +986,54 @@ class SheetsDB:
         master_rows = self.get_tab_records(["DB_Stok_Master"], include_row_num=True)
         detail_rows = self.get_tab_records(["DB_Stok_Detail"], include_row_num=True)
 
-        # Fallback if legacy DB_Stok_Masuk / DB_Stok_Keluar still exist before user merges them
-        if not detail_rows:
-            legacy_in = self.get_tab_records(["DB_Stok_Masuk"])
-            legacy_out = self.get_tab_records(["DB_Stok_Keluar"])
-            for r in legacy_in:
-                detail_rows.append({
-                    "ID Transaksi": "-",
-                    "Tanggal": r.get("Tanggal", ""),
-                    "Jenis": "Masuk",
-                    "Kode Barang": r.get("Kode Barang", ""),
-                    "Nama Barang": r.get("Nama Barang", ""),
-                    "Jumlah": r.get("Jumlah Masuk", 0),
-                    "Unit": r.get("Unit", "Pcs"),
-                    "Pcs": r.get("Pcs", r.get("Jumlah Masuk", 0)),
-                    "Bidang": "BMN / Gudang",
-                    "Penanggung": r.get("Penanggung Jawab", ""),
-                    "Keterangan": r.get("Keterangan", ""),
-                })
-            for r in legacy_out:
-                detail_rows.append({
-                    "ID Transaksi": "-",
-                    "Tanggal": r.get("Tanggal", ""),
-                    "Jenis": "Keluar",
-                    "Kode Barang": r.get("Kode Barang", ""),
-                    "Nama Barang": r.get("Nama Barang", ""),
-                    "Jumlah": r.get("Jumlah Keluar", 0),
-                    "Unit": r.get("Unit", "Pcs"),
-                    "Pcs": r.get("Pcs", r.get("Jumlah Keluar", 0)),
-                    "Bidang": r.get("Bidang", ""),
-                    "Penanggung Jawab": r.get("Penerima Barang", ""),
-                    "Keterangan": r.get("Keterangan", ""),
-                })
+        kode_to_name = {}
+        name_to_kode = {}
+        for m in master_rows:
+            kb = str(m.get("Kode Barang", "")).strip()
+            nb = str(m.get("Nama Barang", "")).strip()
+            if kb and nb:
+                kode_to_name[kb.lower()] = nb
+                name_to_kode[nb.lower()] = kb
 
         in_totals = {}
         out_totals = {}
+        enriched_details = []
         for r in detail_rows:
-            name = str(r.get("Nama Barang", "")).strip()
-            if not name:
+            item = dict(r)
+            kb = str(item.get("Kode Barang", "")).strip()
+            nb = str(item.get("Nama Barang", "")).strip()
+            if not nb and kb:
+                nb = kode_to_name.get(kb.lower(), kb)
+            if not kb and nb:
+                kb = name_to_kode.get(nb.lower(), "")
+            item["Kode Barang"] = kb
+            item["Nama Barang"] = nb
+            enriched_details.append(item)
+
+            key = kb.lower() if kb else nb.lower()
+            if not key:
                 continue
-            jns = str(r.get("Jenis", "")).strip().lower()
-            qty = _parse_num(r.get("Pcs", r.get("Jumlah", 0)))
+            jns = str(item.get("Jenis", "")).strip().lower()
+            qty = _parse_num(item.get("Pcs", item.get("Jumlah", 0)))
             if jns == "keluar":
-                out_totals[name.lower()] = out_totals.get(name.lower(), 0) + qty
+                out_totals[key] = out_totals.get(key, 0) + qty
             else:
-                in_totals[name.lower()] = in_totals.get(name.lower(), 0) + qty
+                in_totals[key] = in_totals.get(key, 0) + qty
 
         computed_master = []
-        seen_names = set()
         for m in master_rows:
+            kb = str(m.get("Kode Barang", "")).strip()
             name = str(m.get("Nama Barang", "")).strip()
-            if not name:
+            if not name and not kb:
                 continue
-            key = name.lower()
-            seen_names.add(key)
+            key = kb.lower() if kb else name.lower()
             awal = _parse_num(m.get("Stok Awal", 0))
             masuk = in_totals.get(key, 0)
             keluar = out_totals.get(key, 0)
             akhir = awal + masuk - keluar
             computed_master.append({
                 "_row_num": m.get("_row_num"),
-                "Kode Barang": m.get("Kode Barang", ""),
+                "Kode Barang": kb,
                 "Nama Barang": name,
                 "Unit": m.get("Unit", "Pcs"),
                 "Stok Awal": awal,
@@ -865,28 +1043,9 @@ class SheetsDB:
                 "Keterangan": m.get("Keterangan", ""),
             })
 
-        for tx in detail_rows:
-            name = str(tx.get("Nama Barang", "")).strip()
-            if name and name.lower() not in seen_names:
-                key = name.lower()
-                seen_names.add(key)
-                masuk = in_totals.get(key, 0)
-                keluar = out_totals.get(key, 0)
-                computed_master.append({
-                    "_row_num": None,
-                    "Kode Barang": tx.get("Kode Barang", "-") or "-",
-                    "Nama Barang": name,
-                    "Unit": tx.get("Unit", "Pcs"),
-                    "Stok Awal": 0,
-                    "Barang Masuk": masuk,
-                    "Barang Keluar": keluar,
-                    "Stok Akhir": masuk - keluar,
-                    "Keterangan": "Otomatis dari transaksi",
-                })
-
         return {
             "master": computed_master,
-            "details": detail_rows,
+            "details": enriched_details,
         }
 
     def update_stok_detail_row(self, row_num, updates_dict):
@@ -954,9 +1113,14 @@ class SheetsDB:
 
         nomor_barang = str(payload.get("nomor_barang") or "").strip()
         asset = next(
-            (item for item in self.get_assets() if str(item.get("Kode Barang", "")).strip() == nomor_barang),
+            (
+                item for item in self.get_assets()
+                if str(item.get("ID Barang", "")).strip() == nomor_barang
+                or str(item.get("Kode Barang", "")).strip() == nomor_barang
+            ),
             {},
         )
+        kode_barang_pdf = str(asset.get("Kode Barang") or nomor_barang).strip()
         room_code = str(asset.get("Kode Ruang") or payload.get("kode_ruang") or payload.get("letak") or "").strip()
         room = next(
             (item for item in self.get_rooms() if str(item.get("Nomor Ruangan", "")).strip() == room_code),
@@ -971,7 +1135,7 @@ class SheetsDB:
             "{{nip}}": str(payload["nip"]),
             "{{pangkat}}": str(payload["pangkat"]),
             "{{jabatan}}": str(payload["jabatan"]),
-            "{{nomor_barang}}": str(payload["nomor_barang"]),
+            "{{nomor_barang}}": kode_barang_pdf,
             "{{nup}}": str(payload["nup"]),
             "{{barang}}": str(payload["barang"]),
             "{{merk}}": str(payload.get("merk") or ""),
@@ -1154,15 +1318,23 @@ class SheetsDB:
                     if field in headers:
                         worksheet.update_cell(sheet_row, headers.index(field) + 1, value)
             elif payload:
+                asset_match = next(
+                    (
+                        item for item in self.get_assets()
+                        if str(item.get("ID Barang", "")).strip() == str(payload.get("nomor_barang", "")).strip()
+                        or str(item.get("Kode Barang", "")).strip() == str(payload.get("nomor_barang", "")).strip()
+                    ),
+                    {},
+                )
                 row_map = {
                     "Nomor BAST": str(payload.get("nomor_bast", "")).strip(),
-                    "NIP": _normalize_nip(payload.get("nip", "")),
-                    "Nomor Barang": str(payload.get("nomor_barang", "")).strip(),
+                    "Tanggal Dokumen": document_date,
+                    "NIP": self._resolve_emp_nip_for_write(payload.get("nip", "")),
+                    "Nomor Barang": str(asset_match.get("ID Barang") or payload.get("nomor_barang", "")).strip(),
                     "NUP": str(payload.get("nup", "")).strip(),
                     "Nilai": str(payload.get("nilai", "")).strip(),
                     "Jumlah": str(payload.get("jumlah", "")).strip(),
-                    "Tanggal Dokumen": document_date,
-                    "Letak": str(payload.get("letak", "")).strip(),
+                    "Letak": str(asset_match.get("Kode Ruang") or payload.get("letak", "")).strip(),
                     "Status": "DONE",
                     "Link PDF": pdf_url,
                 }
@@ -1464,9 +1636,8 @@ class SheetsDB:
         tab_lookup = {
             "DB_Timeline": ["DB_Timeline", self.timeline_tab, "Sheet1"],
             "DB_Dialog": ["DB_Dialog", self.dialog_tab, "Agenda Setting"],
-            "DB_Siaran": ["DB_Siaran", "Siaran"],
-            "DB_Jadwal_TMB": ["DB_Jadwal_TMB", "Jadwal_TMB"],
-            "DB_Arsip_SDM": ["DB_Arsip_SDM", "Arsip_SDM"],
+            "DB_SDM_Arsip": ["DB_SDM_Arsip", "DB_Arsip_SDM", "Arsip_SDM"],
+            "DB_Arsip_SDM": ["DB_SDM_Arsip", "DB_Arsip_SDM", "Arsip_SDM"],
             "DB_Info_Board": ["DB_Info_Board", "Info_Board"],
         }
         candidates = tab_lookup.get(target_key, [target_key])
@@ -1490,9 +1661,20 @@ class SheetsDB:
 
             if target_key == "DB_Ruangan":
                 raw_nip = str(row_dict.get("NIP Penanggung Jawab", "") or row_dict.get("Penanggungjawab Ruangan", "")).replace("NIPPPK.", "").replace("NIP.", "").strip()
-                nip_clean = _normalize_nip(raw_nip)
-                row_dict["NIP Penanggung Jawab"] = nip_clean
-                row_dict["Penanggungjawab Ruangan"] = nip_clean
+                resolved_nip = self._resolve_emp_nip_for_write(raw_nip)
+                row_dict["NIP Penanggung Jawab"] = resolved_nip
+                row_dict["Penanggungjawab Ruangan"] = resolved_nip
+            elif target_key == "DB_Jadwal_Operasional":
+                raw_peg = row_dict.get("Pegawai") or row_dict.get("Penyiar") or ""
+                row_dict["Pegawai"] = self._resolve_emp_nip_for_write(raw_peg)
+            elif target_key == "DB_TMB_Working_Progress":
+                for emp_col in ("Record", "Editing", "PIC TMB", "PIC Penyiaran"):
+                    if row_dict.get(emp_col):
+                        row_dict[emp_col] = self._resolve_emp_nip_for_write(row_dict.get(emp_col))
+            elif target_key == "DB_Dialog":
+                for emp_col in ("PIC Narasumber", "Operator", "Penyiar"):
+                    if row_dict.get(emp_col):
+                        row_dict[emp_col] = self._resolve_emp_nip_for_write(row_dict.get(emp_col))
 
             timeline_fallbacks = {
                 "Start Date": "Tanggal Mulai",
@@ -1582,9 +1764,8 @@ class SheetsDB:
             "DB_Timeline": ["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"],
             "DB_Dialog": ["DB_Dialog", self.dialog_tab, "Agenda Setting"],
             "DB_Info_Board": ["DB_Info_Board", "Info_Board"],
-            "DB_Arsip_SDM": ["DB_Arsip_SDM", "Arsip_SDM"],
-            "DB_Jadwal_TMB": ["DB_Jadwal_TMB", "Jadwal_TMB"],
-            "DB_Siaran": ["DB_Siaran", "Siaran"],
+            "DB_SDM_Arsip": ["DB_SDM_Arsip", "DB_Arsip_SDM", "Arsip_SDM"],
+            "DB_Arsip_SDM": ["DB_SDM_Arsip", "DB_Arsip_SDM", "Arsip_SDM"],
         }
         candidates = tab_lookup.get(target_key, [target_key])
         ws = self._find_ws(candidates)

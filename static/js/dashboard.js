@@ -12,6 +12,7 @@ const ICON_CLASSES = {
   dialog: 'ti-microphone',
   jadwal_siaran: 'ti-radio',
   program_siaran: 'ti-player-play',
+  arsip_program: 'ti-folder-open',
   konten: 'ti-device-mobile',
   jadwal_tmb: 'ti-chart-bar',
   master_barang: 'ti-box',
@@ -65,6 +66,7 @@ const MODULE_NAV_CONFIG = [
   { key: 'produksi_paket', label: 'Produksi Paket', group: 'Perencanaan' },
   { key: 'dialog', label: 'Jadwal Dialog', group: 'Perencanaan' },
   { key: 'program_siaran', label: 'Program Siaran', group: 'Perencanaan' },
+  { key: 'arsip_program', label: 'Arsip Program', group: 'Perencanaan' },
   { key: 'konten', label: 'Content Planner', group: 'KMB' },
   { key: 'bestcut_monitoring', label: 'Bestcut Monitoring', group: 'KMB' },
   { key: 'socmed_analytics', label: 'Social Media Analytics', group: 'KMB' },
@@ -435,6 +437,7 @@ function applyActionButtonVisibility() {
   toggle('btnAddDialog', canFull('dialog'));
   toggle('btnAddSiaran', canFull('jadwal_siaran'));
   toggle('btnAddProgramSiaran', canFull('program_siaran'));
+  toggle('btnAddArsipProgram', canFull('arsip_program'));
   toggle('btnAddKonten', canFull('konten'));
   toggle('btnAddSocmed', canFull('socmed_analytics'));
   toggle('btnAddTmb', canFull('jadwal_tmb'));
@@ -504,6 +507,7 @@ function renderAllModules() {
     renderDialogModule();
   } else if (ACTIVE_MODULE === 'jadwal_siaran') renderJadwalSiaran();
   else if (ACTIVE_MODULE === 'program_siaran') renderProgramSiaran();
+  else if (ACTIVE_MODULE === 'arsip_program') renderArsipProgram();
   else if (ACTIVE_MODULE === 'konten') renderKonten();
   else if (ACTIVE_MODULE === 'bestcut_monitoring') renderBestcutMonitoring();
   else if (ACTIVE_MODULE === 'socmed_analytics') renderSocmedAnalytics();
@@ -943,30 +947,51 @@ function renderJadwalSiaran() {
   const rows = paginateArray('siaran', DATA.siaran || [], 'pagSiaran', 'renderJadwalSiaran');
   document.getElementById('tbodySiaran').innerHTML = rows.map(s => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-bold">${s.Tanggal || '-'}</td>
-      <td class="py-3 px-3 text-xs">${s.Shift || '-'}</td>
-      <td class="py-3 px-3 font-bold text-teal-600">${s.Programa || '-'}</td>
-      <td class="py-3 px-3 font-semibold">${s.Penyiar || '-'}</td>
-      <td class="py-3 px-3">${s.Operator || '-'}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${s.Status || '-'}</span></td>
+      <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(s['ID Jadwal'] || '-')}</td>
+      <td class="py-3 px-3 font-bold">${escapeHtml(s.Tanggal || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(s.Shift || '-')}</td>
+      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(s.Bidang || s.Programa || '-')}</td>
+      <td class="py-3 px-3 font-semibold">${escapeHtml(s['Pegawai Nama'] || s.Penyiar || '-')}</td>
+      <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(s['Pegawai Jabatan'] || s.Operator || '-')}</td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${escapeHtml(s.Status || '-')}</span></td>
     </tr>
-  `).join('');
+  `).join('') || '<tr><td colspan="7" class="py-8 text-center text-xs text-slate-400">Belum ada jadwal siaran.</td></tr>';
 }
 
 function renderProgramSiaran() {
   const rows = paginateArray('program_siaran', DATA.program_siaran || [], 'pagProgramSiaran', 'renderProgramSiaran');
   document.getElementById('tbodyProgramSiaran').innerHTML = rows.map(p => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs text-slate-500">${p['Kode Program'] || '-'}</td>
-      <td class="py-3 px-3 font-bold text-teal-600">${p.Programa || '-'}</td>
-      <td class="py-3 px-3 font-extrabold">${p['Nama Program'] || '-'}</td>
-      <td class="py-3 px-3 text-xs">${p.Hari || '-'}</td>
-      <td class="py-3 px-3 text-xs font-semibold">${p.Jam || '-'}</td>
-      <td class="py-3 px-3 text-xs">${p.Format || '-'}</td>
-      <td class="py-3 px-3 text-xs">${p.Produser || '-'}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${p.Status || 'Aktif'}</span></td>
+      <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(p['Kode Program'] || '-')}</td>
+      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(p.Programa || '-')}</td>
+      <td class="py-3 px-3 font-extrabold">${escapeHtml(p['Nama Program'] || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(p.Hari || '-')}</td>
+      <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(p.Jam || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(p.Kategori || p.Format || '-')}</td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${escapeHtml(p.Status || 'Aktif')}</span></td>
     </tr>
   `).join('');
+}
+
+function renderArsipProgram() {
+  const tbody = document.getElementById('tbodyArsipProgram');
+  if (!tbody) return;
+  const query = (document.getElementById('searchArsipProgram')?.value || '').toLowerCase();
+  const filtered = (DATA.arsip_program || []).filter(a =>
+    Object.values(a).some(value => String(value ?? '').toLowerCase().includes(query))
+  );
+  const rows = paginateArray('arsip_program', filtered, 'pagArsipProgram', 'renderArsipProgram');
+  tbody.innerHTML = rows.map(a => `
+    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+      <td class="py-3 px-3 font-mono text-xs font-bold text-teal-600">${escapeHtml(a['ID Dokumen'] || '-')}</td>
+      <td class="py-3 px-3 text-xs font-bold">${escapeHtml(a.Kategori || '-')}</td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-semibold">${escapeHtml(a.Jenis || '-')}</span></td>
+      <td class="py-3 px-3 text-xs text-slate-500 whitespace-nowrap">${escapeHtml(a['Tanggal Upload'] || '-')}</td>
+      <td class="py-3 px-3 font-bold">${escapeHtml(a['Nama Dokumen'] || '-')}</td>
+      <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(a.Keterangan || '-')}</td>
+      <td class="py-3 px-3">${a.Link ? `<a href="${escapeHtml(a.Link)}" target="_blank" rel="noopener" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="7" class="py-8 text-center text-xs text-slate-400">Belum ada arsip program.</td></tr>';
 }
 
 function renderKonten() {
@@ -987,14 +1012,15 @@ function renderJadwalTmb() {
   const rows = paginateArray('jadwal_tmb', DATA.jadwal_tmb || [], 'pagTmb', 'renderJadwalTmb');
   document.getElementById('tbodyTmb').innerHTML = rows.map(t => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-bold">${t.Tanggal || '-'}</td>
-      <td class="py-3 px-3 text-xs">${t.Shift || '-'}</td>
-      <td class="py-3 px-3 font-bold text-indigo-600">${t['Lokasi Pemancar'] || '-'}</td>
-      <td class="py-3 px-3 font-semibold">${t['Teknisi TMB'] || '-'}</td>
-      <td class="py-3 px-3 text-xs">${t.Tugas || '-'}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${t.Status || '-'}</span></td>
+      <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(t['ID Jadwal'] || '-')}</td>
+      <td class="py-3 px-3 font-bold">${escapeHtml(t.Tanggal || '-')}</td>
+      <td class="py-3 px-3 text-xs">${escapeHtml(t.Shift || '-')}</td>
+      <td class="py-3 px-3 font-bold text-indigo-600">${escapeHtml(t.Bidang || t['Lokasi Pemancar'] || '-')}</td>
+      <td class="py-3 px-3 font-semibold">${escapeHtml(t['Pegawai Nama'] || t['Teknisi TMB'] || '-')}</td>
+      <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(t['Pegawai Jabatan'] || t.Tugas || '-')}</td>
+      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${escapeHtml(t.Status || '-')}</span></td>
     </tr>
-  `).join('');
+  `).join('') || '<tr><td colspan="7" class="py-8 text-center text-xs text-slate-400">Belum ada jadwal TMB.</td></tr>';
 }
 
 function renderMasterBarang() {
@@ -1445,12 +1471,14 @@ async function submitDialogUpdate(e) {
 const SCHEMAS = {
   DB_Info_Board: { title: 'Posting Info Board', fields: ['Tanggal', 'Prioritas', 'Judul', 'Isi', 'Target Divisi', 'Lampiran'] },
   DB_Pegawai: { title: 'Tambah Data Pegawai', fields: ['Nama Pegawai', 'NIP', 'Pangkat Golongan', 'Jabatan', 'Status', 'Posisi'] },
+  DB_Arsip_Program: { title: 'Tambah Arsip Program & Perencanaan', fields: ['Kategori', 'Jenis', 'Tanggal Upload', 'Nama Dokumen', 'Keterangan', 'Link'] },
+  DB_SDM_Arsip: { title: 'Tambah Arsip SDM', fields: ['Nomor Dokumen', 'Nama Dokumen', 'Tanggal', 'Jenis', 'Link'] },
   DB_Arsip_SDM: { title: 'Tambah Arsip SDM', fields: ['Nomor Dokumen', 'Nama Dokumen', 'Tanggal', 'Jenis', 'Link'] },
-  DB_Dialog: { title: 'Tambah Agenda Dialog', fields: ['Tanggal', 'Program', 'Topik', 'Narasumber', 'Jabatan', 'Kehadiran', 'PIC Narasumber', 'Flyer', 'Bestcut', 'Keterlaksanaan', 'Kendala'] },
-  DB_Siaran: { title: 'Tambah Jadwal Siaran', fields: ['Tanggal', 'Shift', 'Programa', 'Penyiar', 'Operator', 'Status'] },
-  DB_Program: { title: 'Tambah Program Siaran', fields: ['Kode Program', 'Programa', 'Nama Program', 'Hari', 'Jam', 'Format', 'Produser', 'Status'] },
-  DB_Konten: { title: 'Tambah Konten (Planner)', fields: ['Tanggal Tayang', 'Platform', 'Akun', 'Judul Konten', 'Jenis', 'Divisi', 'PIC', 'Status', 'Link Asset'] },
-  DB_Jadwal_TMB: { title: 'Tambah Jadwal TMB', fields: ['Tanggal', 'Shift', 'Lokasi Pemancar', 'Teknisi TMB', 'Tugas', 'Status'] },
+  DB_Dialog: { title: 'Tambah Agenda Dialog', fields: ['Tanggal Surat', 'Tanggal Dialog', 'Program', 'Topik', 'Narasumber', 'Instansi', 'Kehadiran', 'PIC Narasumber', 'Operator', 'Penyiar', 'Flyer', 'Bestcut', 'Link Live', 'Status', 'Catatan'] },
+  DB_Flyer: { title: 'Tambah Flyer Dialog', fields: ['ID Dialog', 'Nama File', 'Link Flyer'] },
+  DB_Jadwal_Operasional: { title: 'Tambah Jadwal Penyiar / TMB', fields: ['Tanggal', 'Shift', 'Bidang', 'Pegawai', 'Status'] },
+  DB_Program: { title: 'Tambah Program Siaran', fields: ['Kode Program', 'Programa', 'Nama Program', 'Hari', 'Jam', 'Kategori', 'Status'] },
+  DB_Konten: { title: 'Tambah Konten (Planner)', fields: ['Tanggal Tayang', 'Platform', 'Akun', 'Judul Konten', 'Jenis', 'Keterangan', 'PIC', 'Status', 'Link Asset', 'Catatan'] },
   DB_Aset: { title: 'Tambah Barang', fields: ['Kode Barang', 'Kode Ruang', 'Tipe', 'Nama Barang', 'Merk Model', 'Tahun', 'NUP', 'Kondisi', 'Tindak Lanjut', 'Keterangan'] },
   DB_Ruangan: { title: 'Tambah Daftar Barang Ruangan', fields: ['Nomor Ruangan', 'Nama Ruangan', 'Lokasi', 'NIP Penanggung Jawab', 'Nama', 'Jabatan'] },
   DB_Stok_Master: { title: 'Tambah Master Persediaan', fields: ['Kode Barang', 'Nama Barang', 'Unit', 'Stok Awal', 'Keterangan'] },
@@ -1676,7 +1704,7 @@ function openAddModal(key) {
   const form = document.getElementById('genericAddForm');
   form.dataset.targetKey = key;
   form.innerHTML = s.fields.map(f => {
-    const isRoomNip = (key === 'DB_Ruangan' && f === 'NIP Penanggung Jawab');
+    const isRoomNip = ['NIP Penanggung Jawab', 'Pegawai', 'Record', 'Editing', 'PIC TMB', 'PIC Penyiaran', 'PIC Narasumber', 'Operator', 'Penyiar'].includes(f);
     const extraAttrs = isRoomNip
       ? 'list="pegawaiNipDatalist" oninput="handleRoomNipLookup(this)" onchange="handleRoomNipLookup(this)"'
       : '';
@@ -2013,9 +2041,14 @@ function initBastSelects(selectedNip = '', selectedAssetCode = '', selectedNup =
   }
   if (assetSelect) {
     assetSelect.innerHTML = '<option value="">Pilih Barang</option>' + (DATA.assets || []).map(asset => {
-      const code = asset['Kode Barang'] || '';
-      const selected = String(code).trim() === String(selectedAssetCode).trim() ? ' selected' : '';
-      return `<option value="${escapeHtml(code)}"${selected}>${escapeHtml(code)} - ${escapeHtml(asset['Nama Barang'] || '')}</option>`;
+      const idBarang = String(asset['ID Barang'] || '').trim();
+      const code = String(asset['Kode Barang'] || '').trim();
+      const nup = String(asset.NUP || '').trim();
+      const optVal = idBarang || code;
+      const isMatch = (idBarang && idBarang === String(selectedAssetCode).trim()) ||
+                      (code && code === String(selectedAssetCode).trim() && (!selectedNup || nup === String(selectedNup).trim()));
+      const selected = isMatch ? ' selected' : '';
+      return `<option value="${escapeHtml(optVal)}"${selected}>${escapeHtml(code)} — ${escapeHtml(asset['Nama Barang'] || '')}${nup ? ` (NUP ${escapeHtml(nup)})` : ''}</option>`;
     }).join('');
   }
   if (selectedNup) document.getElementById('bastNup').value = selectedNup;
@@ -2027,15 +2060,21 @@ function initBastSelects(selectedNip = '', selectedAssetCode = '', selectedNup =
 function syncBastEmployee() {
   const nip = document.getElementById('bastNip')?.value || '';
   const clean = String(nip).replace(/\D/g, '');
-  const emp = (DATA.employees || []).find(item => String(item.NIP || item.nip_clean || '').replace(/\D/g, '') === clean);
+  const emp = (DATA.employees || []).find(item => {
+    const empClean = String(item.NIP || item.nip_clean || '').replace(/\D/g, '');
+    return empClean === clean || (clean.length >= 15 && empClean.slice(0, 15) === clean.slice(0, 15));
+  });
   if (document.getElementById('bastNama')) document.getElementById('bastNama').value = emp?.['Nama Pegawai'] || '';
   if (document.getElementById('bastPangkat')) document.getElementById('bastPangkat').value = emp?.['Pangkat Golongan'] || '';
   if (document.getElementById('bastJabatan')) document.getElementById('bastJabatan').value = emp?.Jabatan || emp?.Posisi || '';
 }
 
 function syncBastAsset() {
-  const code = document.getElementById('bastNomorBarang')?.value || '';
-  const asset = (DATA.assets || []).find(item => String(item['Kode Barang'] || '').trim() === String(code).trim());
+  const refVal = String(document.getElementById('bastNomorBarang')?.value || '').trim();
+  const asset = (DATA.assets || []).find(item =>
+    String(item['ID Barang'] || '').trim() === refVal ||
+    String(item['Kode Barang'] || '').trim() === refVal
+  );
   if (!asset) return;
   document.getElementById('bastNup').value = asset.NUP || '';
   document.getElementById('bastBarang').value = asset['Nama Barang'] || '';
@@ -2158,7 +2197,7 @@ function renderPemeliharaanAset() {
   if (th) {
     th.innerHTML = (DATA.pemeliharaan_header || []).map(h => `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-2.5 px-3 font-mono font-bold text-teal-600">${escapeHtml(h['ID Jadwal'] || '-')}</td>
+        <td class="py-2.5 px-3 font-mono font-bold text-teal-600">${escapeHtml(h['Kode Jadwal'] || h['ID Jadwal'] || '-')}</td>
         <td class="py-2.5 px-3 font-bold">${escapeHtml(h.Tanggal || '-')}</td>
         <td class="py-2.5 px-3 font-extrabold">${escapeHtml(h['Judul Pemeliharaan'] || '-')}</td>
         <td class="py-2.5 px-3">${escapeHtml(h.Lokasi || '-')}</td>
@@ -2170,8 +2209,9 @@ function renderPemeliharaanAset() {
   if (td) {
     td.innerHTML = (DATA.pemeliharaan_detail || []).map(d => `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-2.5 px-3 font-mono font-bold text-indigo-600">${escapeHtml(d['ID Jadwal'] || '-')}</td>
-        <td class="py-2.5 px-3 font-mono">${escapeHtml(d['Kode Barang'] || '-')}</td>
+        <td class="py-2.5 px-3 font-mono font-bold text-slate-500">${escapeHtml(d['Kode Detail Pemeliharaan'] || '-')}</td>
+        <td class="py-2.5 px-3 font-mono font-bold text-indigo-600">${escapeHtml(d['Kode Jadwal'] || d['ID Jadwal'] || '-')}</td>
+        <td class="py-2.5 px-3 font-mono">${escapeHtml(d['Nomor Kode Barang'] || d['Kode Barang'] || '-')}</td>
         <td class="py-2.5 px-3 font-bold">${escapeHtml(d['Nama Barang'] || '-')}</td>
         <td class="py-2.5 px-3">${escapeHtml(d.NUP || '-')}</td>
         <td class="py-2.5 px-3">${escapeHtml(d['Kondisi Sebelum'] || '-')}</td>

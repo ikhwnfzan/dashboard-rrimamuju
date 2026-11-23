@@ -92,14 +92,16 @@ STATION_INFO = {
 TARGET_PERMISSION_MAP = {
     "DB_Timeline": ("dialog", "full"),
     "DB_Dialog": ("dialog", "full"),
+    "DB_Flyer": ("dialog", "full"),
     "DB_Produksi_Paket": ("produksi_paket", "full"),
     "DB_Konten": ("konten", "full"),
     "DB_Socmed_Analytics": ("socmed_analytics", "full"),
-    "DB_Siaran": ("jadwal_siaran", "full"),
+    "DB_Jadwal_Operasional": ("jadwal_siaran", "full"),
     "DB_Program": ("program_siaran", "full"),
-    "DB_Jadwal_TMB": ("jadwal_tmb", "full"),
     "DB_TMB_Working_Progress": ("tmb_working_progresss", "full"),
     "DB_Info_Board": ("info_board", "full"),
+    "DB_Arsip_Program": ("arsip_program", "full"),
+    "DB_SDM_Arsip": ("arsip_sdm", "full"),
     "DB_Arsip_SDM": ("arsip_sdm", "full"),
     "DB_Pegawai": ("data_pegawai", "full"),
     "DB_Aset": ("master_barang", "full"),
@@ -125,6 +127,7 @@ MODULE_DATA_DEPENDENCIES = {
     "jadwal_siaran": {"siaran"},
     "produksi_paket": {"produksi_paket"},
     "program_siaran": {"program_siaran"},
+    "arsip_program": {"arsip_program"},
     "konten": {"content_planner"},
     "bestcut_monitoring": {"dialogs"},
     "socmed_analytics": {"socmed_analytics"},
@@ -185,21 +188,23 @@ def _get_module_payload(user, module_key):
     if "info_board" in dependencies:
         payload["info_board"] = db.get_tab_records(["DB_Info_Board", "Info_Board"], include_row_num=True)
     if "produksi_paket" in dependencies:
-        payload["produksi_paket"] = db.get_tab_records(["DB_Produksi_Paket"], include_row_num=True)
+        payload["produksi_paket"] = db.get_tmb_working_progress()
     if "content_planner" in dependencies:
         payload["content_planner"] = db.get_tab_records(["DB_Konten"], include_row_num=True)
     if "socmed_analytics" in dependencies:
         payload["socmed_analytics"] = db.get_tab_records(["DB_Socmed_Analytics"], include_row_num=True)
     if "siaran" in dependencies:
-        payload["siaran"] = db.get_tab_records(["DB_Siaran", "Siaran"], include_row_num=True)
+        payload["siaran"] = db.get_jadwal_operasional("siaran")
     if "program_siaran" in dependencies:
         payload["program_siaran"] = db.get_tab_records(["DB_Program"], include_row_num=True)
+    if "arsip_program" in dependencies:
+        payload["arsip_program"] = db.get_arsip_program()
     if "jadwal_tmb" in dependencies:
-        payload["jadwal_tmb"] = db.get_tab_records(["DB_Jadwal_TMB", "Jadwal_TMB"], include_row_num=True)
+        payload["jadwal_tmb"] = db.get_jadwal_operasional("tmb")
     if "tmb_working_progresss" in dependencies:
-        payload["tmb_working_progresss"] = db.get_tab_records(["DB_TMB_Working_Progress"], include_row_num=True)
+        payload["tmb_working_progresss"] = db.get_tmb_working_progress()
     if "arsip_sdm" in dependencies:
-        payload["arsip_sdm"] = db.get_tab_records(["DB_Arsip_SDM", "Arsip_SDM"], include_row_num=True)
+        payload["arsip_sdm"] = db.get_arsip_sdm()
     if "employees" in dependencies:
         if can_fetch("data_pegawai") or module_key in {"master_barang", "master_ruangan", "bast_otomatis", "user_profile"}:
             payload["employees"] = db.get_employees()
@@ -871,6 +876,8 @@ def api_add_record(target_key):
 
     mod_key, req_lvl = TARGET_PERMISSION_MAP[target_key]
     allowed = _has_perm(user, mod_key, req_lvl) or (
+        target_key == "DB_Jadwal_Operasional" and _has_perm(user, "jadwal_tmb", "full")
+    ) or (
         target_key == "DB_BMN_Dokumen" and any(_has_perm(user, mk, "full") for mk in [
             "aset_tutup_buku", "aset_calbmn", "aset_wasdal", "aset_rkbmn", "aset_manajemen_risiko", "aset_sisporja",
             "persediaan_tutup_buku", "persediaan_pipk"
@@ -905,6 +912,8 @@ def api_delete_record(target_key):
 
     mod_key, req_lvl = TARGET_PERMISSION_MAP[target_key]
     allowed = _has_perm(user, mod_key, req_lvl) or (
+        target_key == "DB_Jadwal_Operasional" and _has_perm(user, "jadwal_tmb", "full")
+    ) or (
         target_key == "DB_BMN_Dokumen" and any(_has_perm(user, mk, "full") for mk in [
             "aset_tutup_buku", "aset_calbmn", "aset_wasdal", "aset_rkbmn", "aset_manajemen_risiko", "aset_sisporja",
             "persediaan_tutup_buku", "persediaan_pipk"
