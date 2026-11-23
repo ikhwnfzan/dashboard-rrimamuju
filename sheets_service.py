@@ -245,8 +245,6 @@ class SheetsDB:
     def __init__(self):
         self.sheet_id = _extract_sheet_id(os.getenv("GOOGLE_SHEET_ID", ""))
         self.creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON", "").strip()
-        self.timeline_tab = os.getenv("TIMELINE_TAB_NAME", "DB_Timeline").strip()
-        self.dialog_tab = os.getenv("DIALOG_TAB_NAME", "DB_Dialog").strip()
 
         self.client = None
         self.spreadsheet = None
@@ -530,7 +528,7 @@ class SheetsDB:
     # TIMELINE & DIALOG (SUPPORTS BOTH REFACTORED & LEGACY HEADERS)
     # ---------------------------------------------------------
     def get_timeline(self):
-        vals = self._get_values_from_snapshot(["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"])
+        vals = self._get_values_from_snapshot(["DB_Timeline"])
         if vals is None:
              return False, "Tidak ada tahapan kegiatan ditemukan"
         rows = _rows_to_dicts(vals, include_row_num=True)
@@ -547,13 +545,13 @@ class SheetsDB:
         except (TypeError, ValueError):
             return False, "Nomor baris timeline tidak valid."
 
-        if not self._find_ws(["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"]):
+        if not self._find_ws(["DB_Timeline"]):
             return False, "Tab DB_Timeline tidak ditemukan."
 
-        ws = self._find_ws(["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"])
+        ws = self._find_ws(["DB_Timeline"])
         try:
             all_values = self._get_values_from_snapshot(
-                ["DB_Timeline", self.timeline_tab, "Sheet1", "Timeline"]
+                ["DB_Timeline"]
             ) or ws.get_all_values()
             headers = [header.strip() for header in all_values[0]] if all_values else []
             col_fallbacks = {
@@ -624,7 +622,7 @@ class SheetsDB:
         return digits if digits else s
 
     def get_agenda_setting(self):
-        all_values = self._get_values_from_snapshot(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"])
+        all_values = self._get_values_from_snapshot(["DB_Dialog"])
         if all_values is None:
             return []
         if not all_values:
@@ -702,11 +700,11 @@ class SheetsDB:
         return parsed_rows
 
     def update_dialog_row(self, row_num, updates_dict):
-        ws = self._find_ws(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"])
+        ws = self._find_ws(["DB_Dialog"])
         if not ws:
             return False, "Tabel Dialog tidak ditemukan."
         try:
-            all_values = self._get_values_from_snapshot(["DB_Dialog", self.dialog_tab, "Agenda Setting", "Dialog"]) or ws.get_all_values()
+            all_values = self._get_values_from_snapshot(["DB_Dialog"]) or ws.get_all_values()
             header_idx = 0
             for idx, row in enumerate(all_values[:10]):
                 lowered = [c.strip().lower() for c in row]
@@ -1374,14 +1372,14 @@ class SheetsDB:
             return False, f"Gagal memperbarui data pegawai: {e}"
 
     def get_users_list(self):
-        rows = self.get_tab_records(["CFG_Users", "Users"])
-        emp_map = {e["nip_clean"]: e for e in self.get_employees() if e.get("nip_clean")}
+        rows = self.get_tab_records(["CFG_Users"])
+        employees = self.get_employees()
         out = []
         for idx, u in enumerate(rows, start=2):
             nip = str(u.get("NIP", "")).strip()
-            nip_clean = _normalize_nip(nip)
+            nip_clean = "".join(ch for ch in nip if ch.isdigit()) or _normalize_nip(nip)
             role_raw = str(u.get("Role", "")).strip()
-            emp = emp_map.get(nip_clean)
+            emp = next((e for e in employees if self._nip_matches(e.get("NIP", ""), nip_clean)), None)
             out.append({
                 "row_num": idx,
                 "NIP": nip,
@@ -1396,24 +1394,41 @@ class SheetsDB:
             })
         return out
 
+    @staticmethod
+    def _nip_matches(sheet_nip_raw, input_nip_raw):
+        s_clean = "".join(ch for ch in str(sheet_nip_raw or "") if ch.isdigit())
+        i_clean = "".join(ch for ch in str(input_nip_raw or "") if ch.isdigit())
+        if not s_clean or not i_clean:
+            return _normalize_nip(sheet_nip_raw) == _normalize_nip(input_nip_raw) and bool(i_clean)
+        if s_clean == i_clean:
+            return True
+        # Handle Excel 15-digit float precision rounding (e.g. 199806212025041001 -> 199806212025041000)
+        if len(s_clean) >= 15 and len(i_clean) >= 15 and s_clean[:15] == i_clean[:15]:
+            return True
+        return False
+
     def authenticate_employee(self, employee_id_input, password_input):
-        clean_id = _normalize_nip(employee_id_input)
+        clean_id = "".join(ch for ch in str(employee_id_input or "") if ch.isdigit()) or _normalize_nip(employee_id_input)
         pwd = str(password_input or "").strip()
         if not clean_id or not pwd:
             return None
 
+        # Force-sync if CFG_Users wasn't found yet (in case of stale cache)
         users = self.get_tab_records(["CFG_Users", "Users"])
+        if not users and self.connected:
+            self._sync_snapshot(force=True)
+            users = self.get_tab_records(["CFG_Users", "Users"])
+
         matched_user = None
         for u in users:
-            u_nip = _normalize_nip(u.get("NIP", ""))
-            if u_nip == clean_id and str(u.get("Password", "")).strip() == pwd:
+            if self._nip_matches(u.get("NIP", ""), clean_id) and str(u.get("Password", "")).strip() == pwd:
                 matched_user = u
                 break
 
         if not matched_user:
             return None
 
-        emp_profile = next((e for e in self.get_employees() if e.get("nip_clean") == clean_id), None)
+        emp_profile = next((e for e in self.get_employees() if self._nip_matches(e.get("NIP", ""), clean_id)), None)
         combined_roles = parse_roles(matched_user.get("Role", "")) or ["Pegawai"]
         permissions = self.compute_effective_permissions(combined_roles)
 
@@ -1439,12 +1454,12 @@ class SheetsDB:
         if not role_str:
             role_str = "Pegawai"
 
-        ws_usr = self._find_ws(["CFG_Users", "Users"])
+        ws_usr = self._find_ws(["CFG_Users"])
         if not ws_usr:
             return False, "Tabel Users tidak ditemukan."
         else:
             try:
-                all_vals = self._get_values_from_snapshot(["CFG_Users", "Users"]) or ws_usr.get_all_values()
+                all_vals = self._get_values_from_snapshot(["CFG_Users"]) or ws_usr.get_all_values()
                 headers = [h.strip() for h in all_vals[0]] if all_vals else ["NIP", "Password", "Role"]
                 nip_idx = headers.index("NIP") if "NIP" in headers else 0
                 pwd_idx = headers.index("Password") if "Password" in headers else 1
@@ -1452,7 +1467,7 @@ class SheetsDB:
 
                 found_row = None
                 for r_i, row in enumerate(all_vals[1:], start=2):
-                    if len(row) > nip_idx and _normalize_nip(row[nip_idx]) == nip_clean:
+                    if len(row) > nip_idx and self._nip_matches(row[nip_idx], nip_clean):
                         found_row = r_i
                         break
 

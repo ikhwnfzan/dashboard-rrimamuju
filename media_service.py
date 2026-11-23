@@ -8,7 +8,6 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_YT_HANDLE = "@LPPRRIMamuju"
 
 _MEDIA_CACHE = {"youtube": (0, None), "flyers": (0, None), "channel_id": None}
 MEDIA_TTL = 300
@@ -45,7 +44,7 @@ def _load_sa_credentials():
 
 class MediaFeedService:
     def __init__(self):
-        self.yt_handle = os.getenv("YOUTUBE_HANDLE", "").strip() or DEFAULT_YT_HANDLE
+        self.yt_handle = os.getenv("YOUTUBE_HANDLE", "").strip()
         self.yt_channel_id = os.getenv("YOUTUBE_CHANNEL_ID", "").strip()
         self.drive_folder_id = _extract_folder_id(os.getenv("FLYER_DRIVE_FOLDER_ID", ""))
 

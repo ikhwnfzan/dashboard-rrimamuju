@@ -425,6 +425,12 @@ def api_login():
     employee_id = str(data.get("employee_id", "")).strip()
     password = str(data.get("password", "")).strip()
 
+    if not db.connected:
+        return jsonify({
+            "ok": False,
+            "message": f"Database belum terhubung ({db.last_error})."
+        }), 503
+
     user_info = db.authenticate_employee(employee_id, password)
     if user_info:
         session["user"] = user_info
@@ -838,6 +844,7 @@ def api_submit_persediaan_pengajuan():
 
     bridge_url = os.getenv("DRIVE_BRIDGE_URL", "").strip()
     root_folder_id = os.getenv("DRIVE_ROOT_FOLDER_ID", "").strip()
+    bridge_secret = os.getenv("DRIVE_BRIDGE_SECRET", "").strip()
     if not bridge_url or not root_folder_id:
         return jsonify({
             "ok": False,
