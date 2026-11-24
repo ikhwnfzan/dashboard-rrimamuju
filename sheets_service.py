@@ -8,6 +8,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
+from werkzeug.security import generate_password_hash, check_password_hash
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -178,7 +179,7 @@ APP_CONFIG_DESCRIPTIONS = {
 # Unified Database (`DB_*`) & Configuration (`CFG_*`) Schemas with standardized Title Case Headers
 DB_SCHEMAS = {
     "CFG_App": ["key", "value", "description"],
-    "CFG_Users": ["NIP", "Password", "Role"],
+    "CFG_Users": ["NIP", "Password_Hash", "Role"],
     "CFG_Role_Modules": ["Role"] + [m["key"] for m in ALL_MODULES],
     "DB_Pegawai": ["No", "Nama Pegawai", "NIP", "Pangkat Golongan", "Jabatan", "Status", "Posisi"],
     "DB_SDM_Arsip": ["Nomor Dokumen", "Nama Dokumen", "Tanggal", "Jenis", "Link"],
@@ -1380,6 +1381,9 @@ class SheetsDB:
             nip_clean = "".join(ch for ch in nip if ch.isdigit()) or _normalize_nip(nip)
             role_raw = str(u.get("Role", "")).strip()
             emp = next((e for e in employees if self._nip_matches(e.get("NIP", ""), nip_clean)), None)
+            # Determine if the user has a hashed password already
+            stored_pwd = str(u.get("Password_Hash", "") or u.get("Password", "")).strip()
+            is_hashed = stored_pwd.startswith("pbkdf2:") or stored_pwd.startswith("scrypt:")
             out.append({
                 "row_num": idx,
                 "NIP": nip,
@@ -1391,6 +1395,7 @@ class SheetsDB:
                 "Status": emp.get("Status") if emp else "Aktif",
                 "Role": role_raw,
                 "roles_list": parse_roles(role_raw),
+                "password_secured": is_hashed,  # True = hashed, False = still plain-text (needs migration)
             })
         return out
 
@@ -1420,13 +1425,35 @@ class SheetsDB:
             users = self.get_tab_records(["CFG_Users", "Users"])
 
         matched_user = None
+        needs_rehash = False
         for u in users:
-            if self._nip_matches(u.get("NIP", ""), clean_id) and str(u.get("Password", "")).strip() == pwd:
-                matched_user = u
-                break
+            if not self._nip_matches(u.get("NIP", ""), clean_id):
+                continue
+            # Try new hashed field first, then legacy field names for migration
+            stored_hash = str(u.get("Password_Hash", "") or u.get("Password", "")).strip()
+            if not stored_hash:
+                continue
+            # werkzeug pbkdf2 hashes start with "pbkdf2:" or "scrypt:"
+            if stored_hash.startswith("pbkdf2:") or stored_hash.startswith("scrypt:"):
+                if check_password_hash(stored_hash, pwd):
+                    matched_user = u
+                    break
+            else:
+                # Legacy plain-text comparison — still accepted but flagged for rehash
+                if stored_hash == pwd:
+                    matched_user = u
+                    needs_rehash = True
+                    break
 
         if not matched_user:
             return None
+
+        # Upgrade plain-text password to hash transparently
+        if needs_rehash:
+            try:
+                self._upgrade_password_hash(clean_id, pwd)
+            except Exception:
+                pass  # Non-critical; login still succeeds
 
         emp_profile = next((e for e in self.get_employees() if self._nip_matches(e.get("NIP", ""), clean_id)), None)
         combined_roles = parse_roles(matched_user.get("Role", "")) or ["Pegawai"]
@@ -1446,6 +1473,28 @@ class SheetsDB:
             "permissions": permissions,
         }
 
+    def _upgrade_password_hash(self, nip_clean, plain_password):
+        """Replace a legacy plain-text password with a secure bcrypt/pbkdf2 hash in the sheet."""
+        ws_usr = self._find_ws(["CFG_Users"])
+        if not ws_usr:
+            return
+        all_vals = self._get_values_from_snapshot(["CFG_Users"]) or ws_usr.get_all_values()
+        if not all_vals:
+            return
+        headers = [h.strip() for h in all_vals[0]]
+        # Support both old "Password" and new "Password_Hash" column names
+        pwd_col_name = "Password_Hash" if "Password_Hash" in headers else ("Password" if "Password" in headers else None)
+        if not pwd_col_name:
+            return
+        nip_idx = headers.index("NIP") if "NIP" in headers else 0
+        pwd_idx = headers.index(pwd_col_name)
+        for r_i, row in enumerate(all_vals[1:], start=2):
+            if len(row) > nip_idx and self._nip_matches(row[nip_idx], nip_clean):
+                new_hash = generate_password_hash(plain_password)
+                ws_usr.update_cell(r_i, pwd_idx + 1, new_hash)
+                self._sync_snapshot(force=True)
+                break
+
     def save_user_account(self, nip_input, password_input, roles_list):
         nip_clean = _normalize_nip(nip_input)
         if not nip_clean:
@@ -1460,9 +1509,13 @@ class SheetsDB:
         else:
             try:
                 all_vals = self._get_values_from_snapshot(["CFG_Users"]) or ws_usr.get_all_values()
-                headers = [h.strip() for h in all_vals[0]] if all_vals else ["NIP", "Password", "Role"]
+                headers = [h.strip() for h in all_vals[0]] if all_vals else ["NIP", "Password_Hash", "Role"]
                 nip_idx = headers.index("NIP") if "NIP" in headers else 0
-                pwd_idx = headers.index("Password") if "Password" in headers else 1
+                # Support both old "Password" and new "Password_Hash" column names
+                pwd_col_name = "Password_Hash" if "Password_Hash" in headers else ("Password" if "Password" in headers else None)
+                if pwd_col_name is None:
+                    return False, "Kolom Password tidak ditemukan di CFG_Users."
+                pwd_idx = headers.index(pwd_col_name)
                 role_idx = headers.index("Role") if "Role" in headers else 2
 
                 found_row = None
@@ -1473,10 +1526,14 @@ class SheetsDB:
 
                 if found_row:
                     if password_input:
-                        ws_usr.update_cell(found_row, pwd_idx + 1, password_input)
+                        hashed = generate_password_hash(password_input)
+                        ws_usr.update_cell(found_row, pwd_idx + 1, hashed)
                     ws_usr.update_cell(found_row, role_idx + 1, role_str)
                 else:
-                    ws_usr.append_row([nip_clean, password_input or "rri2026", role_str], value_input_option="USER_ENTERED")
+                    # New user: always hash the password before saving
+                    plain_pwd = password_input or "rri2026"
+                    hashed = generate_password_hash(plain_pwd)
+                    ws_usr.append_row([nip_clean, hashed, role_str], value_input_option="USER_ENTERED")
             except Exception as e:
                 return False, f"Gagal menyimpan User: {e}"
 

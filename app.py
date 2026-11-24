@@ -23,6 +23,48 @@ if not app.secret_key:
     raise RuntimeError("FLASK_SECRET_KEY belum diatur di environment.")
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 
+# ---------------------------------------------------------------------------
+# SESSION SECURITY CONFIGURATION
+# ---------------------------------------------------------------------------
+# Session timeout: idle timeout (minutes). Override with SESSION_TIMEOUT_MINUTES env var.
+SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "60"))
+# Absolute session max age: 8 hours regardless of activity.
+SESSION_MAX_AGE_HOURS = int(os.getenv("SESSION_MAX_AGE_HOURS", "8"))
+
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Set Secure flag only when not running locally (detected via env flag)
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true"
+
+
+def _check_session_valid():
+    """
+    Returns True if the session is still valid (not timed out).
+    Enforces both idle timeout and absolute max-age.
+    Call this before trusting session['user'].
+    """
+    now_ts = datetime.now(timezone.utc).timestamp()
+
+    # Absolute max-age check
+    created_at = session.get("_created_at")
+    if created_at and (now_ts - created_at) > (SESSION_MAX_AGE_HOURS * 3600):
+        session.clear()
+        return False
+
+    # Idle timeout check
+    last_active = session.get("_last_active")
+    if last_active and (now_ts - last_active) > (SESSION_TIMEOUT_MINUTES * 60):
+        session.clear()
+        return False
+
+    return True
+
+
+def _touch_session():
+    """Update the last-active timestamp to keep idle timeout rolling."""
+    session["_last_active"] = datetime.now(timezone.utc).timestamp()
+    session.modified = True
+
 db = SheetsDB()
 media_feed = MediaFeedService()
 
@@ -315,16 +357,21 @@ def inject_now():
 
 @app.route("/")
 def index():
-    user = session.get("user")
+    user = session.get("user") if _check_session_valid() else None
+    if user:
+        _touch_session()
     return render_template("index.html", station=_get_station_info(), user=user)
 
 
 @app.route("/dashboard")
 @app.route("/dashboard/<module_key>")
 def dashboard(module_key="overview"):
+    if not _check_session_valid():
+        return redirect(url_for("index"))
     user = session.get("user")
     if not user:
         return redirect(url_for("index"))
+    _touch_session()
     user["permissions"] = db.compute_effective_permissions(user.get("roles", []))
     session["user"] = user
 
@@ -363,9 +410,12 @@ def favicon():
 
 @app.route("/api/module/<module_key>")
 def api_module(module_key):
+    if not _check_session_valid():
+        return jsonify({"ok": False, "message": "Sesi telah berakhir. Silakan login kembali.", "session_expired": True}), 401
     user = session.get("user")
     if not user:
         return jsonify({"ok": False, "message": "Restricted access!"}), 401
+    _touch_session()
     if user:
         user["permissions"] = db.compute_effective_permissions(user.get("roles", []))
         session["user"] = user
@@ -378,10 +428,14 @@ def api_module(module_key):
 
 @app.route("/api/user")
 def api_user():
-    user = session.get("user")
-    if user:
-        user["permissions"] = db.compute_effective_permissions(user.get("roles", []))
-        session["user"] = user
+    if not _check_session_valid():
+        user = None
+    else:
+        user = session.get("user")
+        if user:
+            _touch_session()
+            user["permissions"] = db.compute_effective_permissions(user.get("roles", []))
+            session["user"] = user
 
     app_config = _get_app_config()
     is_admin = _is_admin(user)
@@ -394,6 +448,8 @@ def api_user():
         "server_time": datetime.now(timezone.utc).astimezone(APP_TIMEZONES[app_config["timezone"]]).strftime("%d %b %Y • %H:%M %Z"),
         "app_config": app_config,
         "authenticated": bool(user),
+        "session_expired": not bool(user) and bool(session.get("_created_at")),
+        "session_timeout_minutes": SESSION_TIMEOUT_MINUTES if user else None,
         "user": user,
         "all_roles": ALL_ROLES,
         "all_modules": ALL_MODULES,
@@ -433,8 +489,19 @@ def api_login():
 
     user_info = db.authenticate_employee(employee_id, password)
     if user_info:
+        session.clear()  # Invalidate any old session before creating a new one
+        now_ts = datetime.now(timezone.utc).timestamp()
         session["user"] = user_info
-        return jsonify({"ok": True, "user": user_info, "redirect": "/dashboard"})
+        session["_created_at"] = now_ts
+        session["_last_active"] = now_ts
+        session.permanent = False  # Session ends when browser closes
+        return jsonify({
+            "ok": True,
+            "user": user_info,
+            "redirect": "/dashboard",
+            "session_timeout_minutes": SESSION_TIMEOUT_MINUTES,
+            "session_max_age_hours": SESSION_MAX_AGE_HOURS,
+        })
 
     return jsonify({
         "ok": False,
@@ -444,7 +511,7 @@ def api_login():
 
 @app.route("/api/logout", methods=["POST"])
 def api_logout():
-    session.pop("user", None)
+    session.clear()
     return jsonify({"ok": True})
 
 
