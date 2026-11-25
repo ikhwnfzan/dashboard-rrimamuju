@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('favicon') }}" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
+  <link rel="icon" type="image/svg+xml" href="{{ static_asset('favicon.svg') }}" />
   <title>RRI Mamuju - Portal Publik &amp; Digital Board</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ static_asset('css/app.css') }}" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -27,11 +28,11 @@
     .filter-pill.active { background-color: #0F2942; color: #FFFFFF; border-color: #0F2942; }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col" data-authenticated="{{ 'true' if user else 'false' }}">
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
       <a href="#" class="flex items-center gap-2.5 shrink-0">
-        <img src="{{ url_for('favicon') }}" alt="RRI" class="w-10 h-10 rounded-xl border border-slate-200 object-cover" />
+        <img src="{{ static_asset('favicon.svg') }}" alt="RRI" class="w-10 h-10 rounded-xl border border-slate-200 object-cover" />
         <div class="leading-tight">
           <span class="font-extrabold text-base text-slate-900 tracking-tight hidden sm:block">{{ station.name | upper }}</span>
           <span class="text-[11px] text-slate-500 hidden sm:block">{{ station.subtitle }}</span>
@@ -104,19 +105,48 @@
       <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div id="categoryChips" class="flex flex-wrap items-center gap-1.5"></div>
-          <div class="flex items-center gap-2 w-full sm:w-auto">
+          <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-bold">
+              <button type="button" id="btnPublicTimelineMode" onclick="setPublicTimelineView('timeline')"
+                class="px-3 py-1.5 rounded-md bg-white text-[#0F2942] shadow-xs transition">Timeline</button>
+              <button type="button" id="btnPublicCalendarMode" onclick="setPublicTimelineView('calendar')"
+                class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">Kalender</button>
+            </div>
             <input type="search" id="timelineSearch" name="timeline_filter_q" autocomplete="off" data-lpignore="true"
               oninput="renderHorizontalTimeline()" placeholder="Cari Kegiatan"
-              class="w-full sm:w-64 text-xs px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F2942]" />
+              class="w-full sm:w-56 text-xs px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0F2942]" />
           </div>
         </div>
-        <div class="bg-[#F8FAFC] rounded-xl border border-slate-200/80 px-2 py-3">
-          <div id="horizontalTimelineScroll" class="htl-scroll pb-2">
-            <div id="horizontalTimelineTrack" class="inline-flex items-center min-w-full px-6 py-3"></div>
+        <div id="publicTimelineView">
+          <div class="bg-[#F8FAFC] rounded-xl border border-slate-200/80 px-2 py-3">
+            <div id="horizontalTimelineScroll" class="htl-scroll pb-2">
+              <div id="horizontalTimelineTrack" class="inline-flex items-center min-w-full px-6 py-3">
+                <div class="w-full flex items-center justify-center gap-6 py-6 animate-pulse">
+                  <div class="w-48 h-20 rounded-xl bg-slate-200/80"></div>
+                  <div class="w-48 h-20 rounded-xl bg-slate-200/80"></div>
+                  <div class="w-48 h-20 rounded-xl bg-slate-200/80 hidden sm:block"></div>
+                  <div class="w-48 h-20 rounded-xl bg-slate-200/80 hidden lg:block"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center justify-center text-[11px] text-slate-400 mt-3">
+            <span>← Geser ke samping untuk melihat seluruh jadwal →</span>
           </div>
         </div>
-        <div class="flex items-center justify-center text-[11px] text-slate-400">
-          <span>← Geser ke samping untuk melihat seluruh jadwal →</span>
+        <div id="publicCalendarView" class="hidden space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 id="publicCalendarMonth" class="text-sm font-extrabold text-slate-800"></h3>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="changePublicCalendarMonth(-1)" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-200 text-xs font-bold transition">← Prev</button>
+              <button type="button" onclick="changePublicCalendarMonth(0)" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-200 text-xs font-bold transition">Bulan Ini</button>
+              <button type="button" onclick="changePublicCalendarMonth(1)" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-200 text-xs font-bold transition">Next →</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-500 bg-slate-50 rounded-t-xl border border-slate-200 py-2">
+            <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+          </div>
+          <div id="publicCalendarGrid" class="grid grid-cols-7 border-l border-b border-slate-200 rounded-b-xl overflow-hidden bg-white"></div>
         </div>
       </div>
     </div>
@@ -144,7 +174,7 @@
       <div><h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Jadwal Dialog Siaran</h2></div>
       <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs sm:text-sm">
+          <table class="w-full text-left text-xs">
             <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
               <tr>
                 <th class="px-4 py-3.5">Tanggal</th>
@@ -157,7 +187,11 @@
                 <th class="px-4 py-3.5">Bestcut</th>
               </tr>
             </thead>
-            <tbody id="dialogTableBody" class="divide-y divide-slate-100"></tbody>
+            <tbody id="dialogTableBody" class="divide-y divide-slate-100">
+              <tr class="animate-pulse"><td colspan="8" class="px-4 py-4"><div class="h-4 bg-slate-200/80 rounded w-3/4"></div></td></tr>
+              <tr class="animate-pulse"><td colspan="8" class="px-4 py-4"><div class="h-4 bg-slate-200/80 rounded w-2/3"></div></td></tr>
+              <tr class="animate-pulse"><td colspan="8" class="px-4 py-4"><div class="h-4 bg-slate-200/80 rounded w-5/6"></div></td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -165,7 +199,11 @@
 
     <section id="program-siaran" class="space-y-4">
       <div><h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Program Siaran LPP RRI Mamuju</h2></div>
-      <div id="programGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      <div id="programGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="h-28 rounded-2xl bg-white border border-slate-200 p-4 animate-pulse space-y-2.5"><div class="h-3 bg-slate-200 rounded w-1/3"></div><div class="h-4 bg-slate-200 rounded w-2/3"></div><div class="h-3 bg-slate-100 rounded w-1/2"></div></div>
+        <div class="h-28 rounded-2xl bg-white border border-slate-200 p-4 animate-pulse space-y-2.5 hidden sm:block"><div class="h-3 bg-slate-200 rounded w-1/3"></div><div class="h-4 bg-slate-200 rounded w-2/3"></div><div class="h-3 bg-slate-100 rounded w-1/2"></div></div>
+        <div class="h-28 rounded-2xl bg-white border border-slate-200 p-4 animate-pulse space-y-2.5 hidden lg:block"><div class="h-3 bg-slate-200 rounded w-1/3"></div><div class="h-4 bg-slate-200 rounded w-2/3"></div><div class="h-3 bg-slate-100 rounded w-1/2"></div></div>
+      </div>
     </section>
 
     <section id="media-showcase" class="space-y-4">
@@ -177,8 +215,9 @@
         </div>
         <div class="lg:col-span-4 h-full bg-white rounded-2xl border border-slate-200 shadow-xs">
           <div class="relative h-full min-h-[340px] rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center group">
+            <div id="flyerSkeleton" class="absolute inset-0 bg-slate-200/70 animate-pulse flex items-center justify-center text-xs font-semibold text-slate-400">Memuat flyer...</div>
             <div class="w-full h-full flex items-center justify-center">
-              <img id="flyerActiveImg" src="" alt="Flyer RRI Mamuju" class="w-full h-full object-contain transition-opacity duration-300" />
+              <img id="flyerActiveImg" src="" alt="Flyer RRI Mamuju" onload="document.getElementById('flyerSkeleton')?.classList.add('hidden')" class="w-full h-full object-contain transition-opacity duration-300" />
             </div>
             <div class="absolute inset-x-0 bottom-3 z-10 flex items-center justify-center gap-1.5" id="flyerDots"></div>
           </div>
@@ -250,7 +289,7 @@
             <p>Email: {{ station.email }}</p>
           </div>
           <div class="flex items-center justify-center md:justify-start">
-            <img src="{{ url_for('static', filename='logo/rri-mamuju-blue.png') }}" alt="Logo RRI Mamuju" class="h-12 w-auto object-contain">          
+            <img src="{{ static_asset('logo/rri-mamuju-blue.png') }}" alt="Logo RRI Mamuju" class="h-12 w-auto object-contain">
           </div>
         </div>
 
@@ -306,200 +345,6 @@
 
   <div id="toastContainer" class="fixed top-5 right-5 z-[60] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
-  <script>
-    let BOARD_DATA = { authenticated: false, user: null, youtube_feed: { videos: [] }, drive_flyers: { items: [] }, timeline: [], dialogs: [], program_siaran: [] };
-    let CATEGORY_FILTER = 'ALL';
-    let FLYER_IDX = 0;
-
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toastContainer');
-      if (!container) return;
-      const toast = document.createElement('div');
-      toast.className = `pointer-events-auto flex items-start gap-3 p-3.5 rounded-2xl shadow-xl border text-xs font-semibold transition-all duration-300 ${
-        type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-white border-slate-200 text-slate-800'
-      }`;
-      toast.innerHTML = `<div class="flex-1 leading-snug">${message}</div><button onclick="this.parentElement.remove()" class="text-slate-400">✕</button>`;
-      container.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
-    }
-
-    async function loadBoard() {
-      try {
-        const res = await fetch('/api/public/landing');
-        BOARD_DATA = await res.json();
-        document.getElementById('liveDot').className = `w-2 h-2 rounded-full ${BOARD_DATA.connected ? 'bg-emerald-400' : 'bg-amber-400'}`;
-        document.getElementById('syncStatusText').textContent = `${BOARD_DATA.status_msg} • ${BOARD_DATA.server_time}`;
-        buildCategoryChips();
-        renderAllSections();
-      } catch (e) {
-        document.getElementById('syncStatusText').textContent = 'Gagal memuat data server.';
-      }
-    }
-
-    function buildCategoryChips() {
-      const cats = ['ALL', ...new Set((BOARD_DATA.timeline || []).map(i => (i.Kegiatan || '').trim()).filter(Boolean))];
-      document.getElementById('categoryChips').innerHTML = cats.map(c => `
-        <button onclick="setCategoryFilter('${c.replace(/'/g, "\\'")}')"
-          class="filter-pill ${CATEGORY_FILTER === c ? 'active' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'} border text-xs font-bold px-3 py-1.5 rounded-lg transition">
-          ${c === 'ALL' ? 'Semua Kegiatan' : c}
-        </button>
-      `).join('');
-    }
-    function setCategoryFilter(cat) { CATEGORY_FILTER = cat; buildCategoryChips(); renderHorizontalTimeline(); }
-    function matchesQuery(obj, q) { return !q || Object.values(obj).some(v => String(v).toLowerCase().includes(q)); }
-
-    function statusPill(status) {
-      const s = String(status || '').toLowerCase();
-      if (!s || s === '-') return '<span class="text-xs text-slate-400">-</span>';
-      if (s.includes('terlaksana') || s.includes('hadir') || s.includes('selesai') || s.includes('aktif')) {
-        return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">${status}</span>`;
-      }
-      return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">${status}</span>`;
-    }
-
-    function renderAllSections() {
-      const activeYear = String(BOARD_DATA.app_config?.active_year || new Date().getFullYear());
-      const hasActiveYear = row => {
-        const values = [row['Tanggal Mulai'], row['Start Date'], row.Tanggal, row['Tanggal Selesai'], row['End Date']];
-        const year = values.map(value => String(value || '').match(/(?:19|20)\d{2}/)?.[0]).find(Boolean);
-        return year === activeYear;
-      };
-      const timeline = BOARD_DATA.timeline;
-      const dialogs = BOARD_DATA.dialogs;
-      try {
-        BOARD_DATA.timeline = (timeline || []).filter(hasActiveYear);
-        BOARD_DATA.dialogs = (dialogs || []).filter(hasActiveYear);
-        const title = document.querySelector('#hero-timeline h1');
-        if (title) title.textContent = `Timeline RRI Mamuju ${activeYear}`;
-        buildCategoryChips();
-        renderHorizontalTimeline();
-        renderDialogTable();
-        renderProgramSiaranPublic();
-        renderMediaShowcase();
-      } finally {
-        BOARD_DATA.timeline = timeline;
-        BOARD_DATA.dialogs = dialogs;
-      }
-    }
-
-    function renderMediaShowcase() {
-      const videos = (BOARD_DATA.youtube_feed || {}).videos || [];
-      const iframe = document.getElementById('ytShowcaseIframe');
-      if (iframe && videos.length && iframe.src !== videos[0].embed_url) iframe.src = videos[0].embed_url;
-      const items = ((BOARD_DATA.drive_flyers || {}).items || []).slice(0, 10);
-      if (!items.length) return;
-      if (FLYER_IDX >= items.length) FLYER_IDX = 0;
-      const cur = items[FLYER_IDX];
-      document.getElementById('flyerActiveImg').src = cur.image_url;
-      document.getElementById('flyerDots').innerHTML = items.map((_, i) => `
-        <button onclick="FLYER_IDX=${i}; renderMediaShowcase()" class="w-2 h-2 rounded-full ${i === FLYER_IDX ? 'bg-slate-800 scale-110' : 'bg-slate-300'}"></button>
-      `).join('');
-    }
-
-    function renderHorizontalTimeline() {
-      const q = (document.getElementById('timelineSearch')?.value || '').trim().toLowerCase();
-      const items = (BOARD_DATA.timeline || []).filter(ev => (CATEGORY_FILTER === 'ALL' || (ev.Kegiatan || '').trim() === CATEGORY_FILTER) && matchesQuery(ev, q));
-      const track = document.getElementById('horizontalTimelineTrack');
-      const scroller = document.getElementById('horizontalTimelineScroll');
-      if (!items.length) {
-        track.innerHTML = `<div class="w-full text-center py-12 text-xs text-slate-400">Tidak ada tahapan kegiatan ditemukan.</div>`;
-        if (scroller) scroller.scrollLeft = scroller.scrollWidth;
-        return;
-      }
-      track.innerHTML = items.map((ev, idx) => {
-        const isBottom = idx % 2 === 0;
-        const cardHtml = `<div class="htl-card"><div class="text-xs font-extrabold text-teal-700">${ev.Kegiatan || ''}</div><div class="text-[11px] text-slate-600 mt-1">${ev.Tahapan || ''}</div></div>`;
-        return `
-          <div class="relative flex flex-col items-center w-[235px] shrink-0 select-none">
-            <div class="h-[105px] flex flex-col items-center justify-end w-full">${!isBottom ? `${cardHtml}<div class="w-[2px] h-5 bg-sky-300"></div>` : ''}</div>
-            <div class="relative w-full flex items-center justify-center h-6"><div class="w-full h-[3px] bg-slate-300"></div><div class="absolute w-5 h-5 rounded-full bg-white border-[3px] border-slate-500 z-10"></div></div>
-            <div class="mt-1.5 text-xs font-extrabold text-slate-700">${ev.Tanggal || ev['Tanggal Mulai'] || ''}</div>
-            <div class="h-[105px] flex flex-col items-center justify-start w-full">${isBottom ? `<div class="w-[2px] h-5 bg-sky-300 mt-1"></div>${cardHtml}` : ''}</div>
-          </div>
-        `;
-      }).join('');
-
-      if (scroller) requestAnimationFrame(() => {
-        scroller.scrollLeft = scroller.scrollWidth;
-      });
-    }
-
-    function renderDialogTable() {
-      document.getElementById('dialogTableBody').innerHTML = (BOARD_DATA.dialogs || []).map(d => `
-        <tr class="hover:bg-slate-200/50 align-top transition">
-          <td class="px-4 py-3.5 whitespace-nowrap"><div class="font-bold text-slate-900">${d.Tanggal || '-'}</div></td>
-          <td class="px-4 py-3.5 whitespace-nowrap"><span class="px-2.5 py-1 rounded-md bg-sky-50 text-sky-800 font-bold text-xs">${d.Program || '-'}</span></td>
-          <td class="px-4 py-3.5 max-w-xs font-semibold text-slate-800">${d.Topik || '-'}</td>
-          <td class="px-4 py-3.5"><div class="font-bold text-slate-900">${d.Narasumber || '-'}</div><div class="text-xs text-slate-500">${d.Jabatan || ''}</div></td>
-          <td class="px-4 py-3.5 whitespace-nowrap">${statusPill(d.Kehadiran)}</td>
-          <td class="px-4 py-3.5 whitespace-nowrap">${statusPill(d.Keterlaksanaan)}</td>
-          <td class="px-4 py-3.5 whitespace-nowrap">${(d.Flyer || '').startsWith('http') ? `<a href="${d.Flyer}" target="_blank" class="text-xs font-bold text-sky-700 hover:underline">Flyer ↗</a>` : '-'}</td>
-          <td class="px-4 py-3.5 whitespace-nowrap">${(d.Bestcut || '').startsWith('http') ? `<a href="${d.Bestcut}" target="_blank" class="text-xs font-bold text-teal-700 hover:underline">Bestcut ↗</a>` : '-'}</td>
-        </tr>
-      `).join('') || `<tr><td colspan="8" class="p-8 text-center text-xs text-slate-400">Belum ada data Dialog.</td></tr>`;
-    }
-
-    function renderProgramSiaranPublic() {
-      document.getElementById('programGrid').innerHTML = (BOARD_DATA.program_siaran || []).map(p => `
-        <div class="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between space-y-3 shadow-xs">
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-xs">
-              <span class="px-2.5 py-0.5 rounded-md bg-teal-50 text-teal-800 font-bold">${p.Programa || 'RRI Mamuju'}</span>
-              <span class="text-slate-500 font-semibold">${p.Hari || ''} • ${p.Jam || ''}</span>
-            </div>
-            <h3 class="font-extrabold text-sm text-slate-900">${p['Nama Program'] || '-'}</h3>
-            <p class="text-xs text-slate-500">${p.Format || ''}</p>
-          </div>
-          <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Produser: ${p.Produser || '-'}</span>
-            ${statusPill(p.Status || 'Aktif')}
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function changeStation() {
-      const audio = document.getElementById('pro1Audio');
-      const station = document.getElementById('stationSelect').value;
-      const wasPlaying = !audio.paused;
-      audio.pause(); audio.src = audio.dataset[station]; audio.load();
-      if (wasPlaying) audio.play();
-    }
-    function handleAudioButton() {
-      '{% if user %}'
-        toggleAudio();
-      '{% else %}'
-        openLoginModal();
-      '{% endif %}'
-    }
-    async function toggleAudio() {
-      const audio = document.getElementById('pro1Audio');
-      const icon = document.getElementById('audioIcon');
-      if (audio.paused) {
-        const station = document.getElementById('stationSelect').value;
-        audio.src = audio.dataset[station];
-        await audio.play();
-        icon.innerHTML = '<i aria-hidden="true" class="ti ti-player-pause w-3.5 h-3.5 text-red-700 text-sm leading-none"></i>';
-      } else { 
-        audio.pause();
-        icon.innerHTML = '<i aria-hidden="true" class="ti ti-player-play w-3.5 h-3.5 text-teal-700 text-sm leading-none"></i>'; 
-      }
-    }
-    function openLoginModal() { const m = document.getElementById('loginModal'); m.classList.remove('hidden'); m.classList.add('flex'); }
-    function closeLoginModal() { const m = document.getElementById('loginModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
-    async function submitLogin() {
-      const employee_id = document.getElementById('loginEmpId').value;
-      const password = document.getElementById('loginPassword').value;
-      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employee_id, password }) });
-      const data = await res.json();
-      if (data.ok) window.location.href = data.redirect || '/dashboard';
-      else { const errEl = document.getElementById('loginError'); errEl.textContent = data.message; errEl.classList.remove('hidden'); }
-    }
-    async function logoutUser() { await fetch('/api/logout', { method: 'POST' }); window.location.reload(); }
-    async function refreshBoard() { await fetch('/api/refresh', { method: 'POST' }); await loadBoard(); showToast('Data berhasil disinkronkan.'); }
-
-    if (document.getElementById('timelineSearch')) document.getElementById('timelineSearch').value = '';
-    loadBoard();
-  </script>
+  <script src="{{ static_asset('js/landing.min.js') }}"></script>
 </body>
 </html>

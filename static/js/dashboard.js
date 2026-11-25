@@ -44,7 +44,8 @@ const ICON_CLASSES = {
   edit: 'ti-pencil',
   delete: 'ti-trash',
   link: 'ti-eye',
-  search: 'ti-search'
+  search: 'ti-search',
+  external_link: 'ti-external-link'
 };
 
 function icon(name, size = 'w-4 h-4 text-base leading-none') {
@@ -169,36 +170,594 @@ function escapeHtml(value) {
   })[char]);
 }
 
+const TABLE_SORT_STATE = {};
+
+// Maps tbody ID -> { tableKey, rerender, cols: { colIndex: fieldNameOrArray } }
+const SORTABLE_TABLE_MAP = {
+  tbodyPegawai: { tableKey: 'pegawai', rerender: () => renderDataPegawai(), cols: { 0: 'No', 1: 'Nama Pegawai', 2: 'NIP', 3: 'Pangkat Golongan', 4: 'Jabatan', 5: 'Posisi', 6: 'Status' } },
+  tbodyArsipSdm: { tableKey: 'arsip_sdm', rerender: () => renderArsipSdm(), cols: { 0: 'Nomor Dokumen', 1: 'Nama Dokumen', 2: 'Tanggal', 3: 'Jenis' } },
+  tbodyDialog: { tableKey: 'dialog', rerender: () => renderDialogModule(), cols: { 0: ['Tanggal Dialog', 'Tanggal'], 1: 'Program', 2: 'Topik', 3: 'Narasumber', 4: 'Kehadiran', 5: 'Status' } },
+  tbodySiaran: { tableKey: 'siaran', rerender: () => renderJadwalSiaran(), cols: { 0: 'Tanggal', 1: 'Shift', 2: 'Pegawai', 3: 'Status' } },
+  tbodyProgramSiaran: { tableKey: 'program_siaran', rerender: () => renderProgramSiaran(), cols: { 0: 'Kode Program', 1: 'Programa', 2: 'Nama Program', 3: 'Hari', 4: 'Jam', 5: 'Kategori', 6: 'Status' } },
+  tbodyArsipProgram: { tableKey: 'arsip_program', rerender: () => renderArsipProgram(), cols: { 0: 'ID Dokumen', 1: 'Kategori', 2: 'Jenis', 3: 'Tanggal Upload', 4: 'Nama Dokumen' } },
+  tbodyTmb: { tableKey: 'jadwal_tmb', rerender: () => renderJadwalTmb(), cols: { 0: 'Tanggal', 1: 'Shift', 2: 'Pegawai', 3: 'Status' } },
+  tbodyBarang: { tableKey: 'barang', rerender: () => renderMasterBarang(), cols: { 0: 'Kode Barang', 1: 'Kode Ruang', 2: 'Nama Barang', 3: 'Merk Model', 4: 'Tipe', 5: 'Tahun', 6: 'NUP', 7: 'Kondisi' } },
+  tbodyPersediaan: { tableKey: 'persediaan', rerender: () => renderMasterPersediaan(), cols: { 0: 'Kode Barang', 1: 'Nama Barang', 2: 'Unit', 3: 'Stok Awal', 4: 'Masuk', 5: 'Keluar', 6: 'Stok Akhir' } },
+  tbodyRuangan: { tableKey: 'ruangan', rerender: () => renderMasterRuangan(), cols: { 0: 'Nomor Ruangan', 1: 'Nama Ruangan', 2: 'Lokasi', 3: 'NIP Penanggung Jawab' } },
+  tbodyUsers: { tableKey: 'users', rerender: () => renderManageUsers(), cols: { 0: 'Nama', 1: 'NIP', 2: 'Pangkat', 3: 'Jabatan', 4: 'Role' } },
+  tbodyProduksiPaket: { tableKey: 'produksi_paket', rerender: () => renderProduksiPaket(), cols: { 0: 'ID Produksi', 1: 'Judul', 2: 'Jenis', 3: 'Tanggal Record', 4: 'PIC TMB', 5: 'Progress', 6: 'Status' } },
+  tbodyBestcut: { tableKey: 'bestcut', rerender: () => renderBestcutMonitoring(), cols: { 0: ['Tanggal Dialog', 'Tanggal'], 1: 'Program', 2: 'Topik', 3: 'Narasumber', 4: 'Bestcut' } },
+  tbodySocmed: { tableKey: 'socmed', rerender: () => renderSocmedAnalytics(), cols: { 0: 'Periode', 1: 'Platform', 2: 'Akun', 3: 'Followers', 4: 'Reach', 5: 'Engagement' } },
+  tbodyMonitoringProd: { tableKey: 'mon_prod', rerender: () => renderMonitoringProduksi(), cols: { 0: 'ID Produksi', 1: 'Judul', 2: 'Jenis', 3: 'Deadline', 4: 'Progress', 5: 'Status' } },
+  tbodyBast: { tableKey: 'bast', rerender: () => renderBastTable(), cols: { 0: 'Nomor BAST', 1: 'Tanggal Dokumen', 2: 'NIP', 3: 'Nama', 4: 'Pangkat', 5: 'Jabatan', 6: 'Nomor Barang', 7: 'NUP', 8: 'Barang', 9: 'Letak', 10: 'Status' } },
+  tbodyPemeliharaanHeader: { tableKey: 'pemeliharaan_header', rerender: () => renderPemeliharaanAset(), cols: { 0: 'Kode Jadwal', 1: 'Tanggal', 2: 'Judul Pemeliharaan', 3: 'Lokasi', 4: 'Teknisi Vendor', 5: 'Status' } },
+  tbodyPemeliharaanDetail: { tableKey: 'pemeliharaan_detail', rerender: () => renderPemeliharaanAset(), cols: { 0: 'Kode Detail Pemeliharaan', 1: 'Kode Jadwal', 2: 'Nomor Kode Barang', 3: 'Nama Barang', 4: 'NUP', 5: 'Kondisi Sebelum', 6: 'Tindakan', 7: 'Kondisi Sesudah', 8: 'Biaya' } },
+};
+
+function setModuleLoading(modKey, isLoading, label = '') {
+  const banner = document.getElementById('moduleLoadingBanner');
+  const textEl = document.getElementById('moduleLoadingText');
+  const section = document.getElementById(`mod-${modKey}`);
+  if (banner) {
+    banner.classList.toggle('hidden', !isLoading);
+    banner.classList.toggle('flex', isLoading);
+    if (textEl && isLoading) {
+      textEl.textContent = label || `Memuat data modul ${modKey.replace(/_/g, ' ')}...`;
+    }
+  }
+  if (section) {
+    section.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+    section.classList.toggle('opacity-60', isLoading);
+    section.classList.toggle('pointer-events-none', isLoading);
+  }
+}
+
+function showConfirmDialog({ title = 'Konfirmasi Hapus', message = 'Apakah Anda yakin?', confirmText = 'Ya, Hapus' } = {}) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('confirmActionModal');
+    const titleEl = document.getElementById('confirmActionTitle');
+    const msgEl = document.getElementById('confirmActionMessage');
+    const btnOk = document.getElementById('confirmActionOk');
+    const btnCancel = document.getElementById('confirmActionCancel');
+    if (!modal || !btnOk || !btnCancel) {
+      resolve(window.confirm(message));
+      return;
+    }
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    btnOk.textContent = confirmText;
+
+    const cleanup = result => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      btnOk.removeEventListener('click', onOk);
+      btnCancel.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+      resolve(result);
+    };
+    const onOk = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    const onBackdrop = e => { if (e.target === modal) cleanup(false); };
+
+    btnOk.addEventListener('click', onOk);
+    btnCancel.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  });
+}
+
+async function submitChangePassword(event) {
+  event.preventDefault();
+  const current_password = document.getElementById('curPwdInput')?.value || '';
+  const new_password = document.getElementById('newPwdInput')?.value || '';
+  const confirm_password = document.getElementById('confirmPwdInput')?.value || '';
+  if (new_password.length < 8) {
+    showToast('Password baru minimal 8 karakter.', 'error');
+    return;
+  }
+  if (new_password !== confirm_password) {
+    showToast('Konfirmasi password baru tidak cocok.', 'error');
+    return;
+  }
+  const btn = document.getElementById('btnChangeOwnPassword');
+  if (btn) btn.disabled = true;
+  try {
+    const out = await processWithLoading(async () => {
+      const res = await fetch('/api/user/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current_password, new_password, confirm_password })
+      });
+      return await res.json();
+    }, 'Gagal mengubah password');
+    if (out) {
+      showToast(out.message || (out.ok ? 'Password berhasil diubah.' : 'Gagal mengubah password.'), out.ok ? 'success' : 'error');
+      if (out.ok) document.getElementById('changeOwnPasswordForm')?.reset();
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function getSortableFieldValue(row, fieldSpec) {
+  if (Array.isArray(fieldSpec)) {
+    for (const k of fieldSpec) {
+      if (row && row[k] !== undefined && String(row[k]).trim() !== '') return String(row[k]).trim();
+    }
+    return '';
+  }
+  return String(row?.[fieldSpec] ?? '').trim();
+}
+
+function toggleTableSort(tableKey, colIdx, fieldSpec, rerenderFn) {
+  const cur = TABLE_SORT_STATE[tableKey];
+  if (cur && cur.colIdx === colIdx) {
+    cur.dir = cur.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    TABLE_SORT_STATE[tableKey] = { colIdx, fieldSpec, dir: 'asc' };
+  }
+  if (PAGE_STATE[tableKey]) PAGE_STATE[tableKey].page = 1;
+  if (typeof rerenderFn === 'function') rerenderFn();
+  updateSortIndicators();
+}
+
+function updateSortIndicators() {
+  Object.entries(SORTABLE_TABLE_MAP).forEach(([tbodyId, cfg]) => {
+    const tbody = document.getElementById(tbodyId);
+    const table = tbody?.closest('table');
+    if (!table) return;
+    const ths = table.querySelectorAll('thead th');
+    const st = TABLE_SORT_STATE[cfg.tableKey];
+    ths.forEach((th, idx) => {
+      const ind = th.querySelector('.sort-ind');
+      if (!ind) return;
+      if (st && st.colIdx === idx) {
+        ind.textContent = st.dir === 'asc' ? '↑' : '↓';
+        ind.classList.remove('opacity-40');
+        ind.classList.add('text-teal-600', 'dark:text-teal-400');
+      } else {
+        ind.textContent = '⇅';
+        ind.classList.add('opacity-40');
+        ind.classList.remove('text-teal-600', 'dark:text-teal-400');
+      }
+    });
+  });
+}
+
+function initSortableTables() {
+  Object.entries(SORTABLE_TABLE_MAP).forEach(([tbodyId, cfg]) => {
+    const tbody = document.getElementById(tbodyId);
+    const table = tbody?.closest('table');
+    if (!table) return;
+    const ths = table.querySelectorAll('thead th');
+    ths.forEach((th, idx) => {
+      const fieldSpec = cfg.cols[idx];
+      if (!fieldSpec || th.dataset.sortWired === '1') return;
+      th.dataset.sortWired = '1';
+      th.classList.add('cursor-pointer', 'select-none', 'hover:text-slate-700', 'dark:hover:text-slate-200', 'transition');
+      const ind = document.createElement('span');
+      ind.className = 'sort-ind ml-1 text-[10px] opacity-40';
+      ind.textContent = '⇅';
+      th.appendChild(ind);
+      th.addEventListener('click', () => toggleTableSort(cfg.tableKey, idx, fieldSpec, cfg.rerender));
+    });
+  });
+  updateSortIndicators();
+}
+
+// =========================================================
+// CUSTOM BUTTON DROPDOWNS & RANGED DATEPICKER
+// =========================================================
+document.addEventListener('click', e => {
+  if (!e.target.closest('.custom-dd')) {
+    document.querySelectorAll('.custom-dd-menu').forEach(m => m.classList.add('hidden'));
+  }
+  if (!e.target.closest('.ranged-dp') && !e.target.closest('.ranged-dp-popover')) {
+    document.querySelectorAll('.ranged-dp-popover').forEach(p => p.classList.add('hidden'));
+  }
+});
+
+function syncCustomDropdown(select) {
+  const wrap = select?._customWrap;
+  if (!wrap) return;
+  const labelEl = wrap.querySelector('.custom-dd-label');
+  const listEl = wrap.querySelector('.custom-dd-list');
+  const searchEl = wrap.querySelector('.custom-dd-search');
+  const selectedOpt = select.options[select.selectedIndex];
+  if (labelEl) {
+    labelEl.textContent = selectedOpt ? selectedOpt.textContent : 'Pilih...';
+  }
+  if (searchEl) {
+    searchEl.classList.toggle('hidden', select.options.length <= 8);
+  }
+  if (!listEl) return;
+  const q = (searchEl?.value || '').trim().toLowerCase();
+  listEl.innerHTML = Array.from(select.options)
+    .filter(opt => !q || opt.textContent.toLowerCase().includes(q))
+    .map(opt => {
+      const isSelected = opt.value === select.value;
+      return `
+        <button type="button" data-val="${escapeHtml(opt.value)}"
+          class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs text-left transition ${
+            isSelected
+              ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-bold'
+              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }">
+          <span class="truncate">${escapeHtml(opt.textContent)}</span>
+          ${isSelected ? '<i aria-hidden="true" class="ti ti-check text-teal-600 dark:text-teal-400 shrink-0"></i>' : ''}
+        </button>`;
+    }).join('') || '<div class="px-3 py-2 text-[11px] text-slate-400">Tidak ada pilihan</div>';
+
+  listEl.querySelectorAll('button[data-val]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      select.value = btn.dataset.val;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      wrap.querySelector('.custom-dd-menu')?.classList.add('hidden');
+      syncCustomDropdown(select);
+    });
+  });
+}
+
+function enhanceCustomDropdowns(root = document) {
+  root.querySelectorAll('select').forEach(select => {
+    if (select.dataset.native === '1' || select.id === 'stationSelect') return;
+    if (select.dataset.customDropdown === '1') {
+      syncCustomDropdown(select);
+      return;
+    }
+    select.dataset.customDropdown = '1';
+    select.classList.add('hidden');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'custom-dd relative inline-block w-full min-w-[110px]';
+    if (select.classList.contains('w-auto')) wrap.classList.replace('w-full', 'w-auto');
+
+    wrap.innerHTML = `
+      <button type="button" class="custom-dd-btn w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-left text-slate-700 dark:text-slate-200 hover:border-teal-500 transition">
+        <span class="custom-dd-label truncate">Pilih...</span>
+        <i aria-hidden="true" class="ti ti-chevron-down text-slate-400 text-xs shrink-0"></i>
+      </button>
+      <div class="custom-dd-menu hidden absolute left-0 right-0 min-w-[180px] mt-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl z-[90] p-1.5 space-y-1">
+        <input type="text" placeholder="Cari..." class="custom-dd-search hidden w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs" />
+        <div class="custom-dd-list max-h-56 overflow-y-auto space-y-0.5"></div>
+      </div>`;
+
+    select.insertAdjacentElement('afterend', wrap);
+    select._customWrap = wrap;
+
+    const btn = wrap.querySelector('.custom-dd-btn');
+    const menu = wrap.querySelector('.custom-dd-menu');
+    const searchEl = wrap.querySelector('.custom-dd-search');
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const willOpen = menu.classList.contains('hidden');
+      document.querySelectorAll('.custom-dd-menu').forEach(m => m.classList.add('hidden'));
+      if (willOpen) {
+        syncCustomDropdown(select);
+        menu.classList.remove('hidden');
+        if (!searchEl.classList.contains('hidden')) searchEl.focus();
+      }
+    });
+    searchEl.addEventListener('input', () => syncCustomDropdown(select));
+    menu.addEventListener('click', e => e.stopPropagation());
+    select.addEventListener('change', () => syncCustomDropdown(select));
+
+    const observer = new MutationObserver(() => syncCustomDropdown(select));
+    observer.observe(select, { childList: true, subtree: true, attributes: true });
+    syncCustomDropdown(select);
+  });
+}
+
+let _ddObserverQueued = false;
+const _ddBodyObserver = new MutationObserver(() => {
+  if (_ddObserverQueued) return;
+  _ddObserverQueued = true;
+  requestAnimationFrame(() => {
+    _ddObserverQueued = false;
+    enhanceCustomDropdowns(document);
+  });
+});
+if (document.body) _ddBodyObserver.observe(document.body, { childList: true, subtree: true });
+
+function initRangedDatepicker({ containerId, startInputId, endInputId, onApply, placeholder = 'Pilih Rentang Tanggal' }) {
+  const container = document.getElementById(containerId);
+  const startEl = document.getElementById(startInputId);
+  const endEl = document.getElementById(endInputId);
+  if (!container || !startEl || !endEl || container.dataset.rangedWired === '1') return;
+  container.dataset.rangedWired = '1';
+
+  let viewMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  let draftStart = startEl.value || '';
+  let draftEnd = endEl.value || '';
+
+  const formatShort = iso => {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  };
+
+  container.className = 'ranged-dp relative inline-block';
+  container.innerHTML = `
+    <div class="inline-flex items-center gap-1">
+      <button type="button" class="ranged-dp-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:border-teal-500 transition">
+        <i aria-hidden="true" class="ti ti-calendar text-teal-600 dark:text-teal-400"></i>
+        <span class="ranged-dp-label">${escapeHtml(placeholder)}</span>
+        <i aria-hidden="true" class="ti ti-chevron-down text-slate-400 text-xs"></i>
+      </button>
+      <button type="button" class="ranged-dp-clear hidden px-2 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-400 hover:text-rose-600 transition" title="Reset tanggal">✕</button>
+    </div>
+    <div class="ranged-dp-popover hidden fixed w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl z-[999] p-3.5 space-y-3">
+      <div class="flex flex-wrap gap-1">
+        <button type="button" data-preset="today" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-[10px] font-bold">Hari Ini</button>
+        <button type="button" data-preset="7d" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-[10px] font-bold">7 Hari</button>
+        <button type="button" data-preset="month" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-[10px] font-bold">Bulan Ini</button>
+        <button type="button" data-preset="year" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-[10px] font-bold">Tahun Ini</button>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="space-y-1">
+          <span class="block text-[10px] font-bold text-slate-400">Dari</span>
+          <input type="date" class="ranged-dp-manual-from w-full px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px]" />
+        </label>
+        <label class="space-y-1">
+          <span class="block text-[10px] font-bold text-slate-400">Sampai</span>
+          <input type="date" class="ranged-dp-manual-to w-full px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px]" />
+        </label>
+      </div>
+      <div class="flex items-center justify-between">
+        <button type="button" class="ranged-dp-prev px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold">←</button>
+        <span class="ranged-dp-month text-xs font-extrabold"></span>
+        <button type="button" class="ranged-dp-next px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold">→</button>
+      </div>
+      <div class="grid grid-cols-7 text-center text-[10px] font-bold text-slate-400">
+        <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+      </div>
+      <div class="ranged-dp-grid grid grid-cols-7 gap-0.5 text-center text-xs"></div>
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+        <span class="ranged-dp-hint text-[10px] text-slate-400">Klik tanggal mulai &amp; akhir</span>
+        <button type="button" class="ranged-dp-apply px-3 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-bold transition">Terapkan</button>
+      </div>
+    </div>`;
+
+  const btn = container.querySelector('.ranged-dp-btn');
+  const clearBtn = container.querySelector('.ranged-dp-clear');
+  const label = container.querySelector('.ranged-dp-label');
+  const popover = container.querySelector('.ranged-dp-popover');
+  const monthLabel = container.querySelector('.ranged-dp-month');
+  const grid = container.querySelector('.ranged-dp-grid');
+  const manualFrom = container.querySelector('.ranged-dp-manual-from');
+  const manualTo = container.querySelector('.ranged-dp-manual-to');
+
+  document.body.appendChild(popover);
+  popover.addEventListener('click', e => e.stopPropagation());
+
+  const positionPopover = () => {
+    const rect = btn.getBoundingClientRect();
+    const popW = 288;
+    const rightPx = Math.max(8, window.innerWidth - rect.right);
+    const maxRight = Math.max(8, window.innerWidth - popW - 8);
+    popover.style.right = `${Math.min(rightPx, maxRight)}px`;
+    popover.style.left = 'auto';
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < 360 && rect.top > 360) {
+      popover.style.top = 'auto';
+      popover.style.bottom = `${window.innerHeight - rect.top + 6}px`;
+    } else {
+      popover.style.bottom = 'auto';
+      popover.style.top = `${rect.bottom + 6}px`;
+    }
+  };
+
+  const syncManualInputs = () => {
+    if (manualFrom) manualFrom.value = draftStart || '';
+    if (manualTo) manualTo.value = draftEnd || '';
+  };
+
+  manualFrom?.addEventListener('change', () => {
+    draftStart = manualFrom.value || '';
+    if (draftStart && draftEnd && draftEnd < draftStart) draftEnd = draftStart;
+    if (draftStart) {
+      const d = new Date(draftStart + 'T00:00:00');
+      if (!Number.isNaN(d.getTime())) viewMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+    }
+    syncManualInputs();
+    renderCal();
+  });
+
+  manualTo?.addEventListener('change', () => {
+    draftEnd = manualTo.value || '';
+    if (draftStart && draftEnd && draftEnd < draftStart) {
+      const tmp = draftStart;
+      draftStart = draftEnd;
+      draftEnd = tmp;
+    }
+    syncManualInputs();
+    renderCal();
+  });
+
+  const updateLabel = () => {
+    const s = startEl.value;
+    const e = endEl.value;
+    if (s && e) {
+      label.textContent = s === e ? formatShort(s) : `${formatShort(s)} – ${formatShort(e)}`;
+      clearBtn.classList.remove('hidden');
+    } else if (s) {
+      label.textContent = `Dari ${formatShort(s)}`;
+      clearBtn.classList.remove('hidden');
+    } else {
+      label.textContent = placeholder;
+      clearBtn.classList.add('hidden');
+    }
+  };
+
+  const renderCal = () => {
+    syncManualInputs();
+    const y = viewMonth.getFullYear();
+    const m = viewMonth.getMonth();
+    monthLabel.textContent = viewMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    const firstDay = new Date(y, m, 1).getDay();
+    const days = new Date(y, m + 1, 0).getDate();
+    let html = '';
+    for (let i = 0; i < firstDay; i++) html += '<div></div>';
+    for (let d = 1; d <= days; d++) {
+      const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const isEdge = iso === draftStart || iso === draftEnd;
+      const inRange = draftStart && draftEnd && iso > draftStart && iso < draftEnd;
+      html += `<button type="button" data-iso="${iso}" class="py-1.5 rounded-lg text-[11px] font-bold transition ${
+        isEdge ? 'bg-teal-600 text-white' : inRange ? 'bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-200' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+      }">${d}</button>`;
+    }
+    grid.innerHTML = html;
+    grid.querySelectorAll('button[data-iso]').forEach(dayBtn => {
+      dayBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const clicked = dayBtn.dataset.iso;
+        if (!draftStart || (draftStart && draftEnd)) {
+          draftStart = clicked;
+          draftEnd = '';
+        } else if (clicked < draftStart) {
+          draftEnd = draftStart;
+          draftStart = clicked;
+        } else {
+          draftEnd = clicked;
+        }
+        renderCal();
+      });
+    });
+  };
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const willOpen = popover.classList.contains('hidden');
+    document.querySelectorAll('.ranged-dp-popover').forEach(p => p.classList.add('hidden'));
+    if (willOpen) {
+      draftStart = startEl.value || '';
+      draftEnd = endEl.value || '';
+      renderCal();
+      positionPopover();
+      popover.classList.remove('hidden');
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    startEl.value = '';
+    endEl.value = '';
+    draftStart = '';
+    draftEnd = '';
+    updateLabel();
+    if (typeof onApply === 'function') onApply();
+  });
+
+  popover.querySelector('.ranged-dp-prev').addEventListener('click', () => {
+    viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1);
+    renderCal();
+  });
+  popover.querySelector('.ranged-dp-next').addEventListener('click', () => {
+    viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1);
+    renderCal();
+  });
+
+  popover.querySelectorAll('[data-preset]').forEach(pBtn => {
+    pBtn.addEventListener('click', () => {
+      const now = new Date();
+      const isoToday = now.toISOString().slice(0, 10);
+      const p = pBtn.dataset.preset;
+      if (p === 'today') { draftStart = isoToday; draftEnd = isoToday; }
+      else if (p === '7d') {
+        const d = new Date(now); d.setDate(d.getDate() - 6);
+        draftStart = d.toISOString().slice(0, 10); draftEnd = isoToday;
+      } else if (p === 'month') {
+        draftStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        draftEnd = isoToday;
+      } else if (p === 'year') {
+        draftStart = `${now.getFullYear()}-01-01`;
+        draftEnd = `${now.getFullYear()}-12-31`;
+      }
+      renderCal();
+    });
+  });
+
+  popover.querySelector('.ranged-dp-apply').addEventListener('click', () => {
+    startEl.value = draftStart;
+    endEl.value = draftEnd || draftStart;
+    updateLabel();
+    popover.classList.add('hidden');
+    if (typeof onApply === 'function') onApply();
+  });
+
+  updateLabel();
+}
+
+const SHORT_MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function formatDisplayDate(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw || raw === '-') return raw;
+  return raw.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (match, y, m, d) => {
+    const monthIdx = Number(m) - 1;
+    const dayNum = Number(d);
+    if (monthIdx < 0 || monthIdx > 11 || dayNum < 1 || dayNum > 31) return match;
+    return `${String(dayNum).padStart(2, '0')} ${SHORT_MONTHS_ID[monthIdx]} ${y}`;
+  });
+}
+
 function paginateArray(tableKey, rows, pagContainerId, rerenderFnName) {
   if (!PAGE_STATE[tableKey]) PAGE_STATE[tableKey] = { page: 1, size: DEFAULT_PAGE_SIZE };
   const st = PAGE_STATE[tableKey];
-  const total = rows.length;
+  const sortCfg = TABLE_SORT_STATE[tableKey];
+  let workingRows = rows;
+  if (sortCfg && sortCfg.fieldSpec) {
+    workingRows = [...rows].sort((a, b) => {
+      const av = getSortableFieldValue(a, sortCfg.fieldSpec);
+      const bv = getSortableFieldValue(b, sortCfg.fieldSpec);
+      const cmp = av.localeCompare(bv, 'id', { numeric: true, sensitivity: 'base' });
+      return sortCfg.dir === 'asc' ? cmp : -cmp;
+    });
+  }
+  const total = workingRows.length;
   const totalPages = Math.max(1, Math.ceil(total / st.size));
   if (st.page > totalPages) st.page = totalPages;
   if (st.page < 1) st.page = 1;
 
   const startIdx = (st.page - 1) * st.size;
-  const pageSlice = rows.slice(startIdx, startIdx + st.size);
+  const pageSlice = workingRows.slice(startIdx, startIdx + st.size);
 
   const box = document.getElementById(pagContainerId);
   if (box) {
     const fromNum = total === 0 ? 0 : startIdx + 1;
     const toNum = Math.min(startIdx + st.size, total);
     box.innerHTML = `
-      <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
-        <div class="flex items-center gap-2">
-          <span>Menampilkan <strong>${fromNum}–${toNum}</strong> dari <strong>${total}</strong> data</span>
-          <select onchange="changePageSize('${tableKey}', this.value, ${rerenderFnName})"
-            class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
-            ${[10, 25, 50, 100].map(sz => `<option value="${sz}" ${st.size === sz ? 'selected' : ''}>${sz} / hal</option>`).join('')}
-          </select>
+      <div class="flex items-center justify-between justify-center gap-3 text-xs">
+        <div class="flex items-center gap-2.5">
+          <div class="inline-flex items-center gap-0.5 rounded-full bg-slate-100 dark:bg-slate-800/90 p-1 border border-slate-200/70 dark:border-slate-700/70">
+            ${[10, 50, 100].map(sz => `
+              <button type="button" onclick="changePageSize('${tableKey}', ${sz}, ${rerenderFnName})"
+                class="rounded-full text-[11px] transition ${
+                  st.size === sz
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold px-3 py-1 shadow-xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold px-2.5 py-1'
+                }">${st.size === sz ? `${sz}` : sz}</button>
+            `).join('')}
+          </div>
+          <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium hidden sm:inline">${fromNum}–${toNum} / ${total}</span>
         </div>
-        <div class="flex items-center gap-1.5">
-          <button onclick="setTablePage('${tableKey}', ${st.page - 1}, ${rerenderFnName})" ${st.page <= 1 ? 'disabled' : ''}
-            class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 font-bold disabled:opacity-40 hover:bg-slate-200 dark:hover:bg-slate-800 transition">← Prev</button>
-          <span class="px-2 font-bold text-slate-700 dark:text-slate-200">Hal ${st.page} / ${totalPages}</span>
-          <button onclick="setTablePage('${tableKey}', ${st.page + 1}, ${rerenderFnName})" ${st.page >= totalPages ? 'disabled' : ''}
-            class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 font-bold disabled:opacity-40 hover:bg-slate-200 dark:hover:bg-slate-800 transition">Next →</button>
+        <div class="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800/90 p-1 border border-slate-200/70 dark:border-slate-700/70">
+          <button type="button" onclick="setTablePage('${tableKey}', ${st.page - 1}, ${rerenderFnName})" ${st.page <= 1 ? 'disabled' : ''}
+            aria-label="Halaman sebelumnya"
+            class="w-7 h-7 inline-flex items-center justify-center rounded-full text-xs font-bold transition ${
+              st.page <= 1
+                ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700'
+            }"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
+          <span class="px-2.5 text-[11px] font-bold text-slate-700 dark:text-slate-200">${st.page} of ${totalPages}</span>
+          <button type="button" onclick="setTablePage('${tableKey}', ${st.page + 1}, ${rerenderFnName})" ${st.page >= totalPages ? 'disabled' : ''}
+            aria-label="Halaman berikutnya"
+            class="w-7 h-7 inline-flex items-center justify-center rounded-full text-xs font-bold transition ${
+              st.page >= totalPages
+                ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                : 'bg-slate-800 dark:bg-teal-600 text-white shadow-xs hover:bg-slate-900 dark:hover:bg-teal-500'
+            }"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
         </div>
       </div>
     `;
@@ -476,14 +1035,20 @@ async function switchModule(modKey, updateHistory = true) {
   if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full');
   updateBreadcrumb();
   if (modKey !== 'app_settings') {
-    await processWithLoading(async () => {
+    setModuleLoading(modKey, true);
+    try {
       const res = await fetch(`/api/module/${encodeURIComponent(modKey)}`);
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.message || 'Gagal memuat modul.');
       DATA = { ...DATA, ...payload };
       clearModuleFilters(modKey);
       renderAllModules();
-    }, 'Gagal memuat data modul');
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      showToast(`Gagal memuat data modul: ${detail}`, 'error');
+    } finally {
+      setModuleLoading(modKey, false);
+    }
   } else {
     clearModuleFilters(modKey);
     renderAllModules();
@@ -532,6 +1097,16 @@ function renderAllModules() {
   else if (ACTIVE_MODULE === 'manage_users') renderManageUsers();
   else if (ACTIVE_MODULE === 'manage_modules') renderManageModules();
   else if (ACTIVE_MODULE === 'app_settings' && isAdmin()) renderAppSettings();
+
+  initSortableTables();
+  initRangedDatepicker({
+    containerId: 'timelineDateRangePicker',
+    startInputId: 'timelineFilterStart',
+    endInputId: 'timelineFilterEnd',
+    onApply: () => filterTimelineTable(),
+    placeholder: 'Pilih Rentang Tanggal'
+  });
+  enhanceCustomDropdowns();
 }
 
 function renderAppSettings() {
@@ -629,7 +1204,12 @@ async function deleteRecord(targetKey, rowNum, label = 'data ini') {
   const confirmation = isLinkedBast
     ? `Hapus ${label} dan baris BAST terkait dari kedua modul?`
     : `Hapus ${label}?`;
-  if (!confirm(confirmation)) return;
+  const confirmed = await showConfirmDialog({
+    title: 'Konfirmasi Hapus',
+    message: confirmation,
+    confirmText: 'Ya, Hapus'
+  });
+  if (!confirmed) return;
   const out = await processWithLoading(async () => {
     const res = await fetch(`/api/delete/${targetKey}`, {
       method: 'POST',
@@ -724,10 +1304,10 @@ function renderTimelineModule() {
     ].filter(Boolean).join(' ');
     return `
       <tr class="hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition border-b border-slate-100 dark:border-slate-800">
-        <td class="py-3 px-3 font-extrabold">${escapeHtml(item.Kegiatan || '-')}</td>
-        <td class="py-3 px-3">${escapeHtml(item.Tahapan || '-')}</td>
+        <td class="py-3 px-3 font-extrabold whitespace-nowrap">${escapeHtml(item.Kegiatan || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap">${escapeHtml(item.Tahapan || '-')}</td>
         <td class="py-3 px-3 whitespace-nowrap">${escapeHtml(dateLabel)}</td>
-        <td class="py-3 px-3 text-slate-500">${escapeHtml(item.Keterangan || '-')}</td>
+        <td class="py-3 px-3 text-slate-500 whitespace-nowrap">${escapeHtml(item.Keterangan || '-')}</td>
         <td class="py-3 px-3 text-right whitespace-nowrap space-x-1">${actions || '-'}</td>
       </tr>
     `;
@@ -890,13 +1470,13 @@ function renderDataPegawai() {
 
   document.getElementById('tbodyPegawai').innerHTML = rows.map((e, index) => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 text-slate-400">${itemOffset + index + 1}</td>
-      <td class="py-3 px-3 font-extrabold">${e['Nama Pegawai'] || '-'}</td>
-      <td class="py-3 px-3 font-mono text-xs text-slate-500">${e.NIP || '-'}</td>
-      <td class="py-3 px-3 text-xs">${e['Pangkat Golongan'] || '-'}</td>
-      <td class="py-3 px-3 text-xs">${e.Jabatan || '-'}</td>
-      <td class="py-3 px-3 text-xs font-semibold">${e.Posisi || '-'}</td>
-      <td class="py-3 px-3">
+      <td class="py-3 px-3 text-slate-400 whitespace-nowrap">${itemOffset + index + 1}</td>
+      <td class="py-3 px-3 font-mono font-semibold whitespace-nowrap">${e.NIP || '-'}</td>
+      <td class="py-3 px-3 text-teal-600 font-bold whitespace-nowrap">${e['Nama Pegawai'] || '-'}</td>
+      <td class="py-3 px-3 text-slate-400 whitespace-nowrap">${e['Pangkat Golongan'] || '-'}</td>
+      <td class="py-3 px-3 text-slate-400 whitespace-nowrap">${e.Jabatan || '-'}</td>
+      <td class="py-3 px-3 whitespace-nowrap font-semibold">${e.Posisi || '-'}</td>
+      <td class="py-3 px-3 whitespace-nowrap">
         <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${String(e.Status || 'Aktif').toLowerCase() === 'aktif' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300'}">${e.Status || 'Aktif'}</span>
       </td>
       <td class="py-3 px-3 text-right whitespace-nowrap space-x-1">
@@ -947,71 +1527,122 @@ async function submitEmpUpdate(e) {
 function renderArsipSdm() {
   const q = (document.getElementById('searchArsipSdm')?.value || '').toLowerCase();
   const filtered = (DATA.arsip_sdm || []).filter(a => Object.values(a).some(v => String(v).toLowerCase().includes(q)));
+  const deletable = canFull('arsip_sdm');
   const rows = paginateArray('arsip_sdm', filtered, 'pagArsipSdm', 'renderArsipSdm');
   document.getElementById('tbodyArsipSdm').innerHTML = rows.map(a => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs font-bold">${a['Nomor Dokumen'] || '-'}</td>
-      <td class="py-3 px-3 font-bold">${a['Nama Dokumen'] || '-'}</td>
-      <td class="py-3 px-3 text-xs text-slate-500">${a.Tanggal || '-'}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">${a.Jenis || '-'}</span></td>
-      <td class="py-3 px-3">${a.Link ? `<a href="${a.Link}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
+      <td class="py-3 px-3 font-mono font-bold whitespace-nowrap">${a['Nomor Dokumen'] || '-'}</td>
+      <td class="py-3 px-3 font-bold text-teal-600 truncate whitespace-nowrap">${a['Nama Dokumen'] || '-'}</td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${formatDisplayDate(a.Tanggal) || '-'}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-bold whitespace-nowrap">${a.Jenis || '-'}</span></td>
+      <td class="py-3 px-3 whitespace-nowrap">
+        ${a.Link ? `<a href="${a.Link}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : '-'}
+        ${deletable ? `<button type="button" title="Hapus Dokumen" onclick="deleteRecord('DB_SDM_Arsip', ${a._row_num || 0}, '${escapeHtml(a['Nama Dokumen'] || '').replace(/'/g, '')}') " class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
+      </td>
     </tr>
   `).join('');
+}
+
+function ensureInlineDateRange(containerId, tableKey, rerenderFn) {
+  const host = document.getElementById(containerId);
+  if (!host) return { from: '', to: '' };
+  if (host.dataset.rangedInit !== '1') {
+    host.dataset.rangedInit = '1';
+    host.innerHTML = `
+      <input type="hidden" id="${containerId}From" />
+      <input type="hidden" id="${containerId}To" />
+      <div id="${containerId}Picker"></div>`;
+    initRangedDatepicker({
+      containerId: `${containerId}Picker`,
+      startInputId: `${containerId}From`,
+      endInputId: `${containerId}To`,
+      onApply: () => {
+        PAGE_STATE[tableKey] = PAGE_STATE[tableKey] || { page: 1, size: DEFAULT_PAGE_SIZE };
+        PAGE_STATE[tableKey].page = 1;
+        rerenderFn();
+      },
+      placeholder: 'Rentang Tanggal'
+    });
+  }
+  return {
+    from: document.getElementById(`${containerId}From`)?.value || '',
+    to: document.getElementById(`${containerId}To`)?.value || ''
+  };
 }
 
 function renderDialogModule() {
-  const q = (document.getElementById('searchDialog')?.value || '').toLowerCase();
+  const q = (document.getElementById('searchDialog')?.value || '').trim().toLowerCase();
+  const { from, to } = ensureInlineDateRange('dialogDateRange', 'dialog', renderDialogModule);
   const editable = canUpdate('dialog');
-  const filtered = (DATA.dialogs || []).filter(d => Object.values(d).some(v => String(v).toLowerCase().includes(q)));
+  const filtered = (DATA.dialogs || []).filter(d => {
+    const rawDate = dateValueForInput(d['Tanggal Dialog'] || d.Tanggal || '');
+    if (from && (!rawDate || rawDate < from)) return false;
+    if (to && (!rawDate || rawDate > to)) return false;
+    return !q || Object.values(d).some(v => String(v ?? '').toLowerCase().includes(q));
+  });
   const rows = paginateArray('dialog', filtered, 'pagDialog', 'renderDialogModule');
   document.getElementById('tbodyDialog').innerHTML = rows.map(d => {
-    const bestcut = d.Bestcut || '';
-    const bestcutCell = bestcut.startsWith('http')
-      ? `<a href="${bestcut}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Bestcut ↗</a>`
-      : `<span class="text-xs text-slate-400">${bestcut || '-'}</span>`;
+    const bestcut = String(d.Bestcut || '').trim();
+    const hasBestcut = bestcut.startsWith('http');
+    const safeDialog = encodeURIComponent(JSON.stringify(d));
     return `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-3 px-3 text-xs font-bold whitespace-nowrap">${d.Tanggal || '-'}</td>
-        <td class="py-3 px-3 text-xs font-bold text-sky-600">${d.Program || '-'}</td>
-        <td class="py-3 px-3 text-xs font-semibold max-w-xs">${d.Topik || '-'}</td>
-        <td class="py-3 px-3 text-xs">${d.Narasumber || '-'}</td>
-        <td class="py-3 px-3 text-xs">${d.Kehadiran || '-'}</td>
-        <td class="py-3 px-3 text-xs font-bold">${d.Keterlaksanaan || '-'}</td>
-        <td class="py-3 px-3 whitespace-nowrap">${bestcutCell}</td>
-        <td class="py-3 px-3">${editable && d._row_num ? `<button type="button" title="Update dialog" aria-label="Update dialog" onclick='openDialogEdit(${JSON.stringify(d)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : '-'}</td>
+        <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(d['Tanggal Dialog'] || d.Tanggal || '-'))}</td>
+        <td class="py-3 px-3 font-bold text-teal-600 whitespace-nowrap">${escapeHtml(d.Program || '-')}</td>
+        <td class="py-3 px-3 font-semibold max-w-xs truncate whitespace-nowrap" title="${escapeHtml(d.Topik || '')}">${escapeHtml(d.Topik || '-')}</td>
+        <td class="py-3 px-3 text-slate-500 dark:text-slate-300 whitespace-nowrap">${escapeHtml(d.Narasumber || '-')}</td>
+        <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(d.Kehadiran || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap">
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(d.Keterlaksanaan || d.Status || '-')}</span>
+        </td>
+        <td class="py-3 px-3 whitespace-nowrap space-x-1">
+          ${hasBestcut ? `<a href="${escapeHtml(bestcut)}" target="_blank" rel="noopener" title="Buka Bestcut" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : ''}
+          ${editable && d._row_num ? `<button type="button" title="Update dialog" aria-label="Update dialog" onclick="openDialogEdit(JSON.parse(decodeURIComponent('${safeDialog}')))" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
+        </td>
       </tr>
     `;
-  }).join('');
+  }).join('') || '<tr><td colspan="7" class="py-8 text-center text-xs text-slate-400">Belum ada jadwal dialog.</td></tr>';
 }
 
 function renderJadwalSiaran() {
-  const rows = paginateArray('siaran', DATA.siaran || [], 'pagSiaran', 'renderJadwalSiaran');
+  const q = (document.getElementById('searchSiaran')?.value || '').trim().toLowerCase();
+  const { from, to } = ensureInlineDateRange('siaranDateRange', 'siaran', renderJadwalSiaran);
+  const filtered = (DATA.siaran || []).filter(s => {
+    const rawDate = dateValueForInput(s.Tanggal || '');
+    if (from && (!rawDate || rawDate < from)) return false;
+    if (to && (!rawDate || rawDate > to)) return false;
+    return !q || Object.values(s).some(v => String(v ?? '').toLowerCase().includes(q));
+  });
+  const rows = paginateArray('siaran', filtered, 'pagSiaran', 'renderJadwalSiaran');
   document.getElementById('tbodySiaran').innerHTML = rows.map(s => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(s['ID Jadwal'] || '-')}</td>
-      <td class="py-3 px-3 font-bold">${escapeHtml(s.Tanggal || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(s.Shift || '-')}</td>
-      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(s.Bidang || s.Programa || '-')}</td>
-      <td class="py-3 px-3 font-semibold">${escapeHtml(s['Pegawai Nama'] || s.Penyiar || '-')}</td>
-      <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(s['Pegawai Jabatan'] || s.Operator || '-')}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${escapeHtml(s.Status || '-')}</span></td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(s.Tanggal || '-'))}</td>
+      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(s.Shift || '-')}</td>
+      <td class="py-3 px-3 font-bold text-teal-600 whitespace-nowrap">${escapeHtml(s.Bidang || s.Programa || '-')}</td>
+      <td class="py-3 px-3 font-bold whitespace-nowrap">${escapeHtml(s['Pegawai Nama'] || s.Penyiar || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(s['Pegawai Jabatan'] || s.Operator || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 text-xs font-bold whitespace-nowrap">${escapeHtml(s.Status || '-')}</span></td>
     </tr>
-  `).join('') || '<tr><td colspan="7" class="py-8 text-center text-xs text-slate-400">Belum ada jadwal siaran.</td></tr>';
+  `).join('') || '<tr><td colspan="6" class="py-8 text-center text-xs text-slate-400">Belum ada jadwal siaran.</td></tr>';
 }
 
 function renderProgramSiaran() {
-  const rows = paginateArray('program_siaran', DATA.program_siaran || [], 'pagProgramSiaran', 'renderProgramSiaran');
+  const q = (document.getElementById('searchProgramSiaran')?.value || '').trim().toLowerCase();
+  const filtered = (DATA.program_siaran || []).filter(p =>
+    !q || Object.values(p).some(v => String(v ?? '').toLowerCase().includes(q))
+  );
+  const rows = paginateArray('program_siaran', filtered, 'pagProgramSiaran', 'renderProgramSiaran');
   document.getElementById('tbodyProgramSiaran').innerHTML = rows.map(p => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(p['Kode Program'] || '-')}</td>
-      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(p.Programa || '-')}</td>
-      <td class="py-3 px-3 font-extrabold">${escapeHtml(p['Nama Program'] || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(p.Hari || '-')}</td>
-      <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(p.Jam || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(p.Kategori || p.Format || '-')}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${escapeHtml(p.Status || 'Aktif')}</span></td>
+      <td class="py-3 px-3 font-mono font-bold whitespace-nowrap">${escapeHtml(p['Kode Program'] || '-')}</td>
+      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(p.Programa || '-')}</td>
+      <td class="py-3 px-3 font-bold text-teal-600 truncate whitespace-nowrap">${escapeHtml(p['Nama Program'] || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p.Hari || '-')}</td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(p.Jam || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(p.Kategori || p.Format || '-')}</span></td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 text-xs font-bold whitespace-nowrap">${escapeHtml(p.Status || 'Aktif')}</span></td>
     </tr>
-  `).join('');
+  `).join('') || '<tr><td colspan="7" class="py-8 text-center text-xs text-slate-400">Belum ada program siaran.</td></tr>';
 }
 
 function renderArsipProgram() {
@@ -1021,45 +1652,178 @@ function renderArsipProgram() {
   const filtered = (DATA.arsip_program || []).filter(a =>
     Object.values(a).some(value => String(value ?? '').toLowerCase().includes(query))
   );
+  const deletable = canFull('arsip_program');
   const rows = paginateArray('arsip_program', filtered, 'pagArsipProgram', 'renderArsipProgram');
   tbody.innerHTML = rows.map(a => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs font-bold text-teal-600">${escapeHtml(a['ID Dokumen'] || '-')}</td>
-      <td class="py-3 px-3 text-xs font-bold">${escapeHtml(a.Kategori || '-')}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-semibold">${escapeHtml(a.Jenis || '-')}</span></td>
-      <td class="py-3 px-3 text-xs text-slate-500 whitespace-nowrap">${escapeHtml(a['Tanggal Upload'] || '-')}</td>
-      <td class="py-3 px-3 font-bold">${escapeHtml(a['Nama Dokumen'] || '-')}</td>
-      <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(a.Keterangan || '-')}</td>
-      <td class="py-3 px-3">${a.Link ? `<a href="${escapeHtml(a.Link)}" target="_blank" rel="noopener" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
+    <td class="py-3 px-3 font-mono font-semibold whitespace-nowrap">${escapeHtml(a.Keterangan || '-')}</td>
+      <td class="py-3 px-3 font-bold text-teal-600 truncate whitespace-nowrap">${escapeHtml(a['Nama Dokumen'] || '-')}</td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${formatDisplayDate(a['Tanggal Upload'] || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(a.Jenis || '-')}</span></td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(a.Kategori || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap space-x-1">
+        ${a.Link ? `<a href="${escapeHtml(a.Link)}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : '-'}
+        ${deletable ? `<button type="button" title="Hapus Dokumen" onclick="deleteRecord('DB_Arsip_Program', ${a._row_num || 0}, '${escapeHtml(a['Nama Dokumen'] || '').replace(/'/g, '')}') " class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
+      </td>
     </tr>
   `).join('') || '<tr><td colspan="7" class="py-8 text-center text-xs text-slate-400">Belum ada arsip program.</td></tr>';
 }
 
+let KONTEN_VIEW = 'grid';
+let KONTEN_CAL_MONTH = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+const KONTEN_STAGES = [
+  { key: 'Draft', label: 'Draft', badge: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+  { key: 'Review', label: 'Menunggu Approval', badge: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+  { key: 'Approved', label: 'Approved', badge: 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300' },
+  { key: 'Published', label: 'Published', badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+];
+
+function normalizeKontenStage(status) {
+  const s = String(status || '').trim().toLowerCase();
+  if (s.includes('publish') || s.includes('tayang') || s === 'done' || s === 'selesai') return 'Published';
+  if (s.includes('approv') || s.includes('setuju')) return 'Approved';
+  if (s.includes('review') || s.includes('approval') || s.includes('ajukan')) return 'Review';
+  return 'Draft';
+}
+
+function setKontenView(mode) {
+  KONTEN_VIEW = mode;
+  document.getElementById('kontenGridView')?.classList.toggle('hidden', mode !== 'grid');
+  document.getElementById('kontenKanbanView')?.classList.toggle('hidden', mode !== 'kanban');
+  document.getElementById('kontenCalendarView')?.classList.toggle('hidden', mode !== 'calendar');
+  const btns = { grid: 'btnKontenGridMode', kanban: 'btnKontenKanbanMode', calendar: 'btnKontenCalMode' };
+  Object.entries(btns).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.className = `px-3 py-1.5 rounded-lg transition ${mode === k ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'}`;
+  });
+  renderKonten();
+}
+
+function changeKontenMonth(delta) {
+  KONTEN_CAL_MONTH = delta === 0
+    ? new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    : new Date(KONTEN_CAL_MONTH.getFullYear(), KONTEN_CAL_MONTH.getMonth() + delta, 1);
+  renderKonten();
+}
+
+async function updateKontenStatus(rowNum, newStatus) {
+  if (!rowNum) return;
+  const out = await processWithLoading(async () => {
+    const res = await fetch('/api/konten/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ row_num: Number(rowNum), updates: { Status: newStatus } })
+    });
+    return res.json();
+  }, 'Gagal memperbarui status konten');
+  if (out) {
+    showToast(out.message, out.ok ? 'success' : 'error');
+    if (out.ok) await loadDashboard();
+  }
+}
+
 function renderKonten() {
-  document.getElementById('gridKonten').innerHTML = (DATA.content_planner || []).map(p => `
-    <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-2 hover:bg-slate-200/40 transition">
+  const q = (document.getElementById('searchKonten')?.value || '').trim().toLowerCase();
+  const list = (DATA.content_planner || []).filter(p => !q || Object.values(p).some(v => String(v).toLowerCase().includes(q)));
+  const editable = canUpdate('konten');
+
+  if (KONTEN_VIEW === 'kanban') {
+    const board = document.getElementById('kontenKanbanBoard');
+    if (!board) return;
+    board.innerHTML = KONTEN_STAGES.map(stage => {
+      const cards = list.filter(p => normalizeKontenStage(p.Status) === stage.key);
+      return `
+        <div class="rounded-3xl bg-slate-100/80 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 p-3.5 space-y-3 min-h-[260px] transition"
+             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-teal-500')"
+             ondragleave="this.classList.remove('ring-2','ring-teal-500')"
+             ondrop="event.preventDefault(); this.classList.remove('ring-2','ring-teal-500'); const rn=event.dataTransfer.getData('text/konten-row') || event.dataTransfer.getData('text/plain'); if(rn) updateKontenStatus(rn, '${stage.key}')">
+          <div class="flex items-center justify-between px-1">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">${stage.label}</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${stage.badge}">${cards.length}</span>
+          </div>
+          <div class="space-y-2.5">
+            ${cards.map(p => `
+              <div draggable="${editable ? 'true' : 'false'}"
+                   ondragstart="event.dataTransfer.setData('text/konten-row', '${Number(p._row_num || 0)}'); event.dataTransfer.setData('text/plain', '${Number(p._row_num || 0)}')"
+                   class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3.5 space-y-2 shadow-xs ${editable ? 'cursor-grab active:cursor-grabbing' : ''}">
+                <div class="flex items-center justify-between gap-2 text-[11px]">
+                  <span class="font-bold text-teal-600">${escapeHtml(p.Akun || p.Platform || '-')}</span>
+                  <span class="text-slate-400 font-mono">${escapeHtml(p['Tanggal Tayang'] || '-')}</span>
+                </div>
+                <h4 class="font-extrabold text-xs leading-snug">${escapeHtml(p['Judul Konten'] || '-')}</h4>
+                <p class="text-[11px] text-slate-400">PIC: ${escapeHtml(p.PIC || '-')} • ${escapeHtml(p.Jenis || '-')}</p>
+                ${editable && p._row_num ? `
+                  <div class="flex flex-wrap gap-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                    ${stage.key === 'Draft' ? `<button type="button" onclick="updateKontenStatus(${p._row_num}, 'Review')" class="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[10px] font-bold hover:opacity-80">Ajukan Review →</button>` : ''}
+                    ${stage.key === 'Review' ? `<button type="button" onclick="updateKontenStatus(${p._row_num}, 'Approved')" class="px-2 py-1 rounded-lg bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-[10px] font-bold hover:opacity-80">✓ Approve</button><button type="button" onclick="updateKontenStatus(${p._row_num}, 'Draft')" class="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 text-[10px] font-bold hover:opacity-80">↩ Revisi</button>` : ''}
+                    ${stage.key === 'Approved' ? `<button type="button" onclick="updateKontenStatus(${p._row_num}, 'Published')" class="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold hover:opacity-80">Publish →</button>` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            `).join('') || '<p class="text-[11px] text-slate-400 text-center py-6">Kosong</p>'}
+          </div>
+        </div>
+      `;
+    }).join('');
+    return;
+  }
+
+  if (KONTEN_VIEW === 'calendar') {
+    const year = KONTEN_CAL_MONTH.getFullYear();
+    const month = KONTEN_CAL_MONTH.getMonth();
+    const titleEl = document.getElementById('kontenCalendarMonth');
+    if (titleEl) titleEl.textContent = KONTEN_CAL_MONTH.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    let cells = '';
+    for (let i = 0; i < firstDay; i++) {
+      cells += '<div class="min-h-[88px] p-1.5 border-r border-b border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/30"></div>';
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayItems = list.filter(p => String(p['Tanggal Tayang'] || '').startsWith(iso));
+      cells += `
+        <div class="min-h-[88px] p-1.5 border-r border-b border-slate-200 dark:border-slate-700 space-y-1">
+          <div class="text-[11px] font-extrabold text-slate-400">${d}</div>
+          ${dayItems.map(p => `<div class="px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-200 text-[10px] font-bold truncate" title="${escapeHtml(p['Judul Konten'])} (${escapeHtml(p.Status || 'Draft')})">${escapeHtml(p['Judul Konten'] || '-')}</div>`).join('')}
+        </div>`;
+    }
+    const grid = document.getElementById('kontenCalendarGrid');
+    if (grid) grid.innerHTML = cells;
+    return;
+  }
+
+  const rows = paginateArray('konten', list, 'pagKonten', 'renderKonten');
+  document.getElementById('gridKonten').innerHTML = rows.map(p => `
+    <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
       <div class="flex justify-between text-xs font-bold">
-        <span class="text-teal-600">${p.Akun || p.Platform}</span>
-        <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800">${p.Status || '-'}</span>
+        <span class="text-teal-600 dark:text-teal-400">${escapeHtml(p.Akun || p.Platform)}</span>
+        <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800">${escapeHtml(p.Status || 'Draft')}</span>
       </div>
-      <h4 class="font-extrabold text-sm">${p['Judul Konten'] || '-'}</h4>
-      <p class="text-xs text-slate-400">${p['Tanggal Tayang'] || ''} • ${p.Jenis || ''} • PIC: ${p.PIC || '-'}</p>
-      ${p['Link Asset'] ? `<a href="${p['Link Asset']}" target="_blank" class="inline-block text-xs font-bold text-sky-600 hover:underline pt-1">Lihat Asset ↗</a>` : ''}
+      <h4 class="font-extrabold text-sm">${escapeHtml(p['Judul Konten'] || '-')}</h4>
+      <p class="text-xs text-slate-400">${escapeHtml(p['Tanggal Tayang'] || '')} • ${escapeHtml(p.Jenis || '')} • PIC: ${escapeHtml(p.PIC || '-')}</p>
+      ${p['Link Asset'] ? `<a href="${escapeHtml(p['Link Asset'])}" target="_blank" rel="noopener" class="inline-block text-xs font-bold text-sky-600 hover:underline pt-1">Lihat Asset ↗</a>` : ''}
     </div>
-  `).join('');
+  `).join('') || '<div class="col-span-full py-8 text-center text-xs text-slate-400">Belum ada rencana konten.</div>';
 }
 
 function renderJadwalTmb() {
-  const rows = paginateArray('jadwal_tmb', DATA.jadwal_tmb || [], 'pagTmb', 'renderJadwalTmb');
+  const q = (document.getElementById('searchJadwalTmb')?.value || '').trim().toLowerCase();
+  const { from, to } = ensureInlineDateRange('tmbDateRange', 'jadwal_tmb', renderJadwalTmb);
+  const filtered = (DATA.jadwal_tmb || []).filter(t => {
+    const rawDate = dateValueForInput(t.Tanggal || '');
+    if (from && (!rawDate || rawDate < from)) return false;
+    if (to && (!rawDate || rawDate > to)) return false;
+    return !q || Object.values(t).some(v => String(v ?? '').toLowerCase().includes(q));
+  });
+  const rows = paginateArray('jadwal_tmb', filtered, 'pagTmb', 'renderJadwalTmb');
   document.getElementById('tbodyTmb').innerHTML = rows.map(t => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(t['ID Jadwal'] || '-')}</td>
-      <td class="py-3 px-3 font-bold">${escapeHtml(t.Tanggal || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(t.Shift || '-')}</td>
-      <td class="py-3 px-3 font-bold text-indigo-600">${escapeHtml(t.Bidang || t['Lokasi Pemancar'] || '-')}</td>
-      <td class="py-3 px-3 font-semibold">${escapeHtml(t['Pegawai Nama'] || t['Teknisi TMB'] || '-')}</td>
-      <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(t['Pegawai Jabatan'] || t.Tugas || '-')}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">${escapeHtml(t.Status || '-')}</span></td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(t.Tanggal || '-'))}</td>
+      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(t.Shift || '-')}</td>
+      <td class="py-3 px-3 font-bold whitespace-nowrap">${escapeHtml(t['Pegawai Nama'] || t['Teknisi TMB'] || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(t['Pegawai Jabatan'] || t.Tugas || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 text-xs font-bold whitespace-nowrap">${escapeHtml(t.Status || '-')}</span></td>
     </tr>
   `).join('') || '<tr><td colspan="7" class="py-8 text-center text-xs text-slate-400">Belum ada jadwal TMB.</td></tr>';
 }
@@ -1080,15 +1844,15 @@ function renderMasterBarang() {
     const rowNum = a._row_num ?? a.row_num;
     return `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-3 px-3 text-[10px] font-semibold">${escapeHtml(a['Kode Ruang'] || '-')} <span class="block text-slate-400">${escapeHtml(a['Nama Ruangan'] || '')}</span></td>
-        <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-extrabold">${escapeHtml(a['Kode Barang'] || '-')}</span></td>
-        <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400">${escapeHtml(a['Nama Barang'] || '-')}</td>
-        <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(a['Merk Model'] || '-')}</td>
-        <td class="py-3 px-3 text-xs text-slate-500">${escapeHtml(a.Tipe || '-')}</td>
-        <td class="py-3 px-3">${escapeHtml(a.Tahun || '-')}</td>
-        <td class="py-3 px-3 font-bold">${escapeHtml(a.NUP || '-')}</td>
-        <td class="py-3 px-3 font-bold ${String(a.Kondisi).toLowerCase() === 'baik' ? 'text-emerald-600' : 'text-rose-500'}">${escapeHtml(a.Kondisi || '-')}</td>
-        <td class="py-3 px-3 text-amber-600">${escapeHtml(a['Tindak Lanjut'] || '-')}</td>
+        <td class="py-3 px-3 text-[10px] font-semibold whitespace-nowrap">${escapeHtml(a['Kode Ruang'] || '-')} <span class="block text-slate-400">${escapeHtml(a['Nama Ruangan'] || '')}</span></td>
+        <td class="py-3 px-3 whitespace-nowrap"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-extrabold">${escapeHtml(a['Kode Barang'] || '-')}</span></td>
+        <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(a['Nama Barang'] || '-')}</td>
+        <td class="py-3 px-3 text-xs text-slate-500 whitespace-nowrap">${escapeHtml(a['Merk Model'] || '-')}</td>
+        <td class="py-3 px-3 text-xs text-slate-500 whitespace-nowrap">${escapeHtml(a.Tipe || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap">${escapeHtml(a.Tahun || '-')}</td>
+        <td class="py-3 px-3 font-bold whitespace-nowrap">${escapeHtml(a.NUP || '-')}</td>
+        <td class="py-3 px-3 font-bold ${String(a.Kondisi).toLowerCase() === 'baik' ? 'text-emerald-600' : 'text-rose-500'} whitespace-nowrap">${escapeHtml(a.Kondisi || '-')}</td>
+        <td class="py-3 px-3 text-amber-600 whitespace-nowrap">${escapeHtml(a['Tindak Lanjut'] || '-')}</td>
         <td class="py-3 px-3 text-right whitespace-nowrap">
           ${editable && rowNum ? `<button type="button" title="Edit barang" aria-label="Edit barang" onclick="openAssetModal(JSON.parse(decodeURIComponent('${safeAsset}')))" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
           ${deletable && rowNum ? `<button type="button" title="Hapus barang" aria-label="Hapus barang" onclick="deleteRecord('DB_Aset', ${rowNum}, '${escapeHtml(a['Nama Barang'] || 'barang ini').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
@@ -1112,14 +1876,14 @@ function renderMasterPersediaan() {
     return `
       <tr onclick="openStokItemDetailModal(JSON.parse(decodeURIComponent('${safeItem}')))"
         class="cursor-pointer hover:bg-teal-50/60 dark:hover:bg-slate-800/70 transition">
-        <td class="py-3 px-3 font-mono text-xs text-slate-400">${escapeHtml(s['Kode Barang'] || '-')}</td>
-        <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300 hover:text-teal-800 dark:hover:text-teal-200 underline decoration-dotted hover:decoration-solid underline-offset-4 cursor-pointer">${escapeHtml(s['Nama Barang'])}</td>
-        <td class="py-3 px-3 text-slate-400">${escapeHtml(s.Unit || '-')}</td>
-        <td class="py-3 px-3 text-right">${escapeHtml(String(s['Stok Awal']))}</td>
-        <td class="py-3 px-3 text-right text-emerald-600 font-bold">+${escapeHtml(String(s['Barang Masuk']))}</td>
-        <td class="py-3 px-3 text-right text-amber-600 font-bold">-${escapeHtml(String(s['Barang Keluar']))}</td>
-        <td class="py-3 px-3 text-right font-extrabold">${escapeHtml(String(s['Stok Akhir']))}</td>
-        <td class="py-3 px-3 text-right">
+        <td class="py-3 px-3 font-mono text-xs text-slate-400 whitespace-nowrap">${escapeHtml(s['Kode Barang'] || '-')}</td>
+        <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300 hover:text-teal-800 dark:hover:text-teal-200 underline decoration-dotted hover:decoration-solid underline-offset-4 cursor-pointer whitespace-nowrap">${escapeHtml(s['Nama Barang'])}</td>
+        <td class="py-3 px-3 text-slate-400 whitespace-nowrap">${escapeHtml(s.Unit || '-')}</td>
+        <td class="py-3 px-3 text-right whitespace-nowrap">${escapeHtml(String(s['Stok Awal']))}</td>
+        <td class="py-3 px-3 text-right text-emerald-600 font-bold whitespace-nowrap">+${escapeHtml(String(s['Barang Masuk']))}</td>
+        <td class="py-3 px-3 text-right text-amber-600 font-bold whitespace-nowrap">-${escapeHtml(String(s['Barang Keluar']))}</td>
+        <td class="py-3 px-3 text-right font-extrabold whitespace-nowrap">${escapeHtml(String(s['Stok Akhir']))}</td>
+        <td class="py-3 px-3 text-right whitespace-nowrap">
           <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300">Detail Mutasi</span>
         </td>
       </tr>
@@ -1163,20 +1927,20 @@ function renderStokItemDetailRows() {
     const safeTx = encodeURIComponent(JSON.stringify(tx));
     return `
       <tr class="hover:bg-slate-100/70 dark:hover:bg-slate-800/50 transition">
-        <td class="py-2.5 px-3 font-mono text-slate-400">${escapeHtml(tx['ID Transaksi'] || '-')}</td>
+        <td class="py-2.5 px-3 font-mono text-slate-400 whitespace-nowrap">${escapeHtml(tx['ID Transaksi'] || '-')}</td>
         <td class="py-2.5 px-3 whitespace-nowrap font-semibold">${escapeHtml(tx.Tanggal || '-')}</td>
-        <td class="py-2.5 px-3">
+        <td class="py-2.5 px-3 whitespace-nowrap">
           <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isMasuk ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">
             ${isMasuk ? 'Masuk' : 'Keluar'}
           </span>
         </td>
-        <td class="py-2.5 px-3 text-right font-extrabold ${isMasuk ? 'text-emerald-600' : 'text-amber-600'}">
+        <td class="py-2.5 px-3 text-right font-extrabold ${isMasuk ? 'text-emerald-600' : 'text-amber-600'} whitespace-nowrap">
           ${isMasuk ? '+' : '-'}${escapeHtml(String(tx.Jumlah || tx.Pcs || 0))}
         </td>
-        <td class="py-2.5 px-3 text-slate-400">${escapeHtml(tx.Unit || '-')}</td>
-        <td class="py-2.5 px-3">${escapeHtml(tx.Bidang || '-')}</td>
-        <td class="py-2.5 px-3 font-semibold">${escapeHtml(tx['Penanggung Jawab'] || '-')}</td>
-        <td class="py-2.5 px-3 text-slate-400">${escapeHtml(tx.Keterangan || '-')}</td>
+        <td class="py-2.5 px-3 text-slate-400 whitespace-nowrap">${escapeHtml(tx.Unit || '-')}</td>
+        <td class="py-2.5 px-3 whitespace-nowrap">${escapeHtml(tx.Bidang || '-')}</td>
+        <td class="py-2.5 px-3 font-semibold whitespace-nowrap">${escapeHtml(tx['Penanggung Jawab'] || '-')}</td>
+        <td class="py-2.5 px-3 text-slate-400 whitespace-nowrap">${escapeHtml(tx.Keterangan || '-')}</td>
         <td class="py-2.5 px-3 text-right whitespace-nowrap space-x-1">
           ${editable && tx._row_num ? `<button onclick="openStokTransaksiModal(JSON.parse(decodeURIComponent('${safeTx}')))" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 font-bold">Edit</button>` : ''}
           ${deletable && tx._row_num ? `<button onclick="deleteStokDetailRow(${tx._row_num}, '${escapeHtml(tx['ID Transaksi'] || 'transaksi ini')}')" class="px-2 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold">Hapus</button>` : ''}
@@ -1275,7 +2039,12 @@ async function submitStokTransaksi(e) {
 }
 
 async function deleteStokDetailRow(rowNum, label) {
-  if (!confirm(`Hapus transaksi ${label}?`)) return;
+  const confirmed = await showConfirmDialog({
+    title: 'Hapus Transaksi Persediaan',
+    message: `Hapus transaksi ${label}? Tindakan ini tidak dapat dibatalkan.`,
+    confirmText: 'Ya, Hapus'
+  });
+  if (!confirmed) return;
   const res = await fetch('/api/delete/DB_Stok_Detail', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1311,15 +2080,15 @@ function renderMasterRuangan() {
     const roomCode = String(r['Nomor Ruangan'] || '').trim();
     return `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-semibold">${roomCode}</span></td>
-        <td class="py-3 px-3">${roomCode
+        <td class="py-3 px-3 whitespace-nowrap"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-semibold">${roomCode}</span></td>
+        <td class="py-3 px-3 whitespace-nowrap">${roomCode
           ? `<span onclick="openRoomAssetsModal(this)" data-room-code="${escapeHtml(roomCode)}" data-room-name="${escapeHtml(r['Nama Ruangan'] || '')}" class="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 underline decoration-dotted hover:decoration-solid underline-offset-4 cursor-pointer transition">${escapeHtml(r['Nama Ruangan'] || '')}</span>`
           : `<span class="ont-bold text-indigo-600 dark:text-indigo-400">${escapeHtml(r['Nama Ruangan'] || '-')}</span>`}</td>
-        <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(r.Lokasi || '-')}</td>
-        <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(rawPjNip || '-')}</td>
-        <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300">${escapeHtml(emp?.['Nama Pegawai'] || r.pj_nama || '-')}</td>
-        <td class="py-3 px-3 text-xs font-semibold">${escapeHtml(emp?.Jabatan || emp?.Posisi || r.pj_jabatan || '-')}</td>
-        <td class="py-3 px-3 text-right">
+        <td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(r.Lokasi || '-')}</td>
+        <td class="py-3 px-3 font-mono text-xs text-slate-500 whitespace-nowrap">${escapeHtml(rawPjNip || '-')}</td>
+        <td class="py-3 px-3 font-bold text-teal-700 dark:text-teal-300 whitespace-nowrap">${escapeHtml(emp?.['Nama Pegawai'] || r.pj_nama || '-')}</td>
+        <td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(emp?.Jabatan || emp?.Posisi || r.pj_jabatan || '-')}</td>
+        <td class="py-3 px-3 text-right whitespace-nowrap">
           ${editable && rowNum > 1 ? `<button type="button" title="Edit ruangan" aria-label="Edit ruangan" onclick="openRoomModal(JSON.parse(decodeURIComponent('${safeRoom}')))" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
           ${deletable && rowNum > 1 ? `<button type="button" title="Hapus ruangan" aria-label="Hapus ruangan" onclick="deleteRecord('DB_Ruangan', ${rowNum}, '${(r['Nama Ruangan'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
         </td>
@@ -1341,14 +2110,14 @@ function renderRoomAssetsModal() {
 
   document.getElementById('tbodyRoomAssets').innerHTML = rows.map(asset => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-semibold">${escapeHtml(asset['Kode Barang'] || '-')}</span></td>
-      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400">${escapeHtml(asset['Nama Barang'] || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(asset['Merk Model'] || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(asset.Tipe || '-')}</td>
-      <td class="py-3 px-3">${escapeHtml(asset.Tahun || '-')}</td>
-      <td class="py-3 px-3 font-bold">${escapeHtml(asset.NUP || '-')}</td>
-      <td class="py-3 px-3 font-bold ${String(asset.Kondisi).toLowerCase() === 'baik' ? 'text-emerald-600' : 'text-rose-500'}">${escapeHtml(asset.Kondisi || '-')}</td>
-      <td class="py-3 px-3 text-amber-600">${escapeHtml(asset['Tindak Lanjut'] || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-semibold">${escapeHtml(asset['Kode Barang'] || '-')}</span></td>
+      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(asset['Nama Barang'] || '-')}</td>
+      <td class="py-3 px-3 text-xs whitespace-nowrap">${escapeHtml(asset['Merk Model'] || '-')}</td>
+      <td class="py-3 px-3 text-xs whitespace-nowrap">${escapeHtml(asset.Tipe || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap">${escapeHtml(asset.Tahun || '-')}</td>
+      <td class="py-3 px-3 font-bold whitespace-nowrap">${escapeHtml(asset.NUP || '-')}</td>
+      <td class="py-3 px-3 font-bold ${String(asset.Kondisi).toLowerCase() === 'baik' ? 'text-emerald-600' : 'text-rose-500'} whitespace-nowrap">${escapeHtml(asset.Kondisi || '-')}</td>
+      <td class="py-3 px-3 text-amber-600 whitespace-nowrap">${escapeHtml(asset['Tindak Lanjut'] || '-')}</td>
     </tr>
   `).join('') || '<tr><td colspan="8" class="py-8 text-center text-xs text-slate-400">Belum ada aset untuk ruangan ini.</td></tr>';
 }
@@ -1395,22 +2164,29 @@ function closeRoomAssetsModal() {
 }
 
 function renderManageUsers() {
-  const rows = paginateArray('users', DATA.users_list || [], 'pagUsers', 'renderManageUsers');
-  document.getElementById('tbodyUsers').innerHTML = rows.map(u => `
-    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs font-bold">${u.NIP}</td>
-      <td class="py-3 px-3 font-extrabold">${u.Nama}</td>
-      <td class="py-3 px-3 text-xs text-slate-500">${u.Posisi}</td>
-      <td class="py-3 px-3">
-        <div class="flex flex-wrap gap-1">
-          ${(u.roles_list || []).map(r => `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300">${r}</span>`).join('')}
-        </div>
-      </td>
-      <td class="py-3 px-3 text-right">
-        <button type="button" title="Edit role dan password" aria-label="Edit role dan password" onclick='openUserModal(${JSON.stringify(u)})' class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>
-      </td>
-    </tr>
-  `).join('');
+  const q = (document.getElementById('searchUsers')?.value || '').trim().toLowerCase();
+  const filtered = (DATA.users_list || []).filter(u =>
+    !q || Object.values(u).some(v => String(v ?? '').toLowerCase().includes(q))
+  );
+  const rows = paginateArray('users', filtered, 'pagUsers', 'renderManageUsers');
+  document.getElementById('tbodyUsers').innerHTML = rows.map(u => {
+    const safeUser = encodeURIComponent(JSON.stringify(u));
+    return `
+      <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+        <td class="py-3 px-3 font-mono font-semibold whitespace-nowrap">${escapeHtml(u.NIP || '-')}</td>
+        <td class="py-3 px-3 font-bold text-teal-600 whitespace-nowrap">${escapeHtml(u.Nama || '-')}</td>
+        <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(u.Posisi || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap">
+          <div class="flex flex-wrap gap-1">
+            ${(u.roles_list || []).map(r => `<span class="px-2 py-0.5 rounded-md text-xs font-bold bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 whitespace-nowrap">${escapeHtml(r)}</span>`).join('')}
+          </div>
+        </td>
+        <td class="py-3 px-3 text-right whitespace-nowrap">
+          <button type="button" title="Edit role dan password" aria-label="Edit role dan password" onclick="openUserModal(JSON.parse(decodeURIComponent('${safeUser}')))" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>
+        </td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="5" class="py-8 text-center text-xs text-slate-400">Belum ada data pengguna.</td></tr>';
 }
 
 function openUserModal(existingUser = null) {
@@ -1455,7 +2231,7 @@ function renderManageModules() {
       ${modules.map(m => {
         const cur = (matrix[role] || {})[m.key] || 'none';
         return `
-          <td class="py-2 px-2">
+          <td class="py-2 px-2 whitespace-nowrap">
             <select onchange="updateRoleModule('${role}', '${m.key}', this.value)"
               class="text-[11px] font-bold px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition">
               <option value="none" ${cur === 'none' ? 'selected' : ''}>None</option>
@@ -1887,6 +2663,12 @@ function setPaketView(mode) {
   PAKET_VIEW = mode;
   document.getElementById('paketTableView')?.classList.toggle('hidden', mode !== 'table');
   document.getElementById('paketCalendarView')?.classList.toggle('hidden', mode !== 'calendar');
+  const btnT = document.getElementById('btnPaketTableView');
+  const btnC = document.getElementById('btnPaketCalendarView');
+  if (btnT && btnC) {
+    btnT.className = `px-3 py-1.5 rounded-lg transition ${mode === 'table' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'}`;
+    btnC.className = `px-3 py-1.5 rounded-lg transition ${mode === 'calendar' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'}`;
+  }
   renderProduksiPaket();
 }
 
@@ -1929,20 +2711,20 @@ function renderProduksiPaket() {
   if (!tbody) return;
   tbody.innerHTML = rows.map(p => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono text-xs text-slate-500">${escapeHtml(p.ID || '-')}</td>
-      <td class="py-3 px-3 font-bold whitespace-nowrap">${escapeHtml(p.Tanggal || '-')}</td>
-      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(p.Program || '-')}</td>
-      <td class="py-3 px-3 font-extrabold">${escapeHtml(p['Judul Paket'] || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(p['Jenis Paket'] || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(p.Produser || '-')}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-sky-50 dark:bg-sky-950 text-sky-700">${escapeHtml(p.Status || '-')}</span></td>
-      <td class="py-3 px-3">${p['Link File'] ? `<a href="${escapeHtml(p['Link File'])}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka ↗</a>` : '-'}</td>
+      <td class="py-3 px-3 font-bold text-teal-600 truncate max-w-xs whitespace-nowrap">${escapeHtml(p['Judul Paket'] || p.Judul || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(p['Jenis Paket'] || p.Jenis || '-')}</span></td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(p.Tanggal || '-'))}</td>
+      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(p.Program || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p.Produser || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-xs font-bold whitespace-nowrap">${escapeHtml(p.Status || '-')}</span></td>
+      <td class="py-3 px-3 whitespace-nowrap">${p['Link File'] ? `<a href="${escapeHtml(p['Link File'])}" target="_blank" rel="noopener" title="Buka File" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : '-'}</td>
     </tr>
-  `).join('');
+  `).join('') || '<tr><td colspan="8" class="py-8 text-center text-xs text-slate-400">Belum ada data produksi paket.</td></tr>';
 }
 
 function renderBestcutMonitoring() {
   const filter = document.getElementById('filterBestcutStatus')?.value || 'all';
+  const q = (document.getElementById('searchBestcut')?.value || '').trim().toLowerCase();
   const allDialogs = DATA.dialogs || [];
   const withBestcut = allDialogs.filter(d => String(d.Bestcut || '').trim().startsWith('http'));
   if (document.getElementById('statBestcutTotal')) document.getElementById('statBestcutTotal').textContent = allDialogs.length;
@@ -1951,30 +2733,36 @@ function renderBestcutMonitoring() {
 
   const filtered = allDialogs.filter(d => {
     const hasLink = String(d.Bestcut || '').trim().startsWith('http');
-    if (filter === 'ready') return hasLink;
-    if (filter === 'missing') return !hasLink;
-    return true;
+    if (filter === 'ready' && !hasLink) return false;
+    if (filter === 'missing' && hasLink) return false;
+    return !q || Object.values(d).some(v => String(v ?? '').toLowerCase().includes(q));
   });
   const rows = paginateArray('bestcut', filtered, 'pagBestcut', 'renderBestcutMonitoring');
   const tbody = document.getElementById('tbodyBestcut');
   if (!tbody) return;
   tbody.innerHTML = rows.map(d => {
     const hasLink = String(d.Bestcut || '').trim().startsWith('http');
+    const safeDialog = encodeURIComponent(JSON.stringify(d));
     return `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-3 px-3 text-xs font-bold whitespace-nowrap">${escapeHtml(d.Tanggal || '-')}</td>
-        <td class="py-3 px-3 text-xs font-bold text-sky-600">${escapeHtml(d.Program || '-')}</td>
-        <td class="py-3 px-3 text-xs font-semibold max-w-xs">${escapeHtml(d.Topik || '-')}</td>
-        <td class="py-3 px-3 text-xs">${escapeHtml(d.Narasumber || '-')}</td>
-        <td class="py-3 px-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${hasLink ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${hasLink ? 'Tersedia' : 'Belum Upload'}</span></td>
-        <td class="py-3 px-3">${hasLink ? `<a href="${escapeHtml(d.Bestcut)}" target="_blank" class="text-xs font-bold text-teal-600 hover:underline">Buka Bestcut ↗</a>` : '-'}</td>
-        <td class="py-3 px-3 text-right">${d._row_num ? `<button onclick='openDialogEdit(${JSON.stringify(d)})' class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition">Set Link</button>` : '-'}</td>
+        <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(d['Tanggal Dialog'] || d.Tanggal || '-'))}</td>
+        <td class="py-3 px-3 font-bold text-teal-600 whitespace-nowrap">${escapeHtml(d.Program || '-')}</td>
+        <td class="py-3 px-3 font-semibold max-w-xs truncate whitespace-nowrap" title="${escapeHtml(d.Topik || '')}">${escapeHtml(d.Topik || '-')}</td>
+        <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(d.Narasumber || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md text-xs font-bold whitespace-nowrap ${hasLink ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300'}">${hasLink ? 'Tersedia' : 'Belum Upload'}</span></td>
+        <td class="py-3 px-3 whitespace-nowrap space-x-1">
+          ${hasLink ? `<a href="${escapeHtml(d.Bestcut)}" target="_blank" rel="noopener" title="Buka Bestcut" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : ''}
+          ${d._row_num ? `<button type="button" title="Set Link Bestcut" onclick="openDialogEdit(JSON.parse(decodeURIComponent('${safeDialog}')))" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
+        </td>
       </tr>`;
-  }).join('');
+  }).join('') || '<tr><td colspan="6" class="py-8 text-center text-xs text-slate-400">Belum ada data Bestcut.</td></tr>';
 }
 
 function renderSocmedAnalytics() {
-  const list = DATA.socmed_analytics || [];
+  const q = (document.getElementById('searchSocmed')?.value || '').trim().toLowerCase();
+  const list = (DATA.socmed_analytics || []).filter(s =>
+    !q || Object.values(s).some(v => String(v ?? '').toLowerCase().includes(q))
+  );
   const cardsEl = document.getElementById('socmedCardsGrid');
   if (cardsEl) {
     cardsEl.innerHTML = list.slice(0, 4).map(s => `
@@ -1991,51 +2779,174 @@ function renderSocmedAnalytics() {
   if (!tbody) return;
   tbody.innerHTML = rows.map(s => `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-bold">${escapeHtml(s.Periode || '-')}</td>
-      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(s.Platform || '-')}</td>
-      <td class="py-3 px-3 font-mono text-xs">${escapeHtml(s.Akun || '-')}</td>
-      <td class="py-3 px-3 text-right font-bold">${escapeHtml(s.Followers || '0')}</td>
-      <td class="py-3 px-3 text-right">${escapeHtml(s.Reach || '0')}</td>
-      <td class="py-3 px-3 text-right font-bold text-emerald-600">${escapeHtml(s.Engagement || '-')}</td>
-      <td class="py-3 px-3 text-xs">${escapeHtml(s['Top Konten'] || '-')}</td>
-      <td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(s.Catatan || '-')}</td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(s.Periode || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(s.Platform || '-')}</span></td>
+      <td class="py-3 px-3 font-mono font-bold text-teal-600 whitespace-nowrap">${escapeHtml(s.Akun || '-')}</td>
+      <td class="py-3 px-3 text-right font-bold whitespace-nowrap">${escapeHtml(s.Followers || '0')}</td>
+      <td class="py-3 px-3 text-right font-semibold whitespace-nowrap">${escapeHtml(s.Reach || '0')}</td>
+      <td class="py-3 px-3 text-right font-bold text-emerald-600 whitespace-nowrap">${escapeHtml(s.Engagement || '-')}</td>
+      <td class="py-3 px-3 font-semibold truncate max-w-xs whitespace-nowrap">${escapeHtml(s['Top Konten'] || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(s.Catatan || '-')}</td>
     </tr>
-  `).join('');
+  `).join('') || '<tr><td colspan="8" class="py-8 text-center text-xs text-slate-400">Belum ada data analitik media sosial.</td></tr>';
+}
+
+let TMB_PROGRESS_VIEW = 'table';
+let TMB_PROGRESS_CAL_MONTH = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+const TMB_PROGRESS_STAGES = [
+  { key: 'In Progress', label: 'In Progress / Editing', badge: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+  { key: 'Review', label: 'Menunggu Approval', badge: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+  { key: 'Approved', label: 'Approved', badge: 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300' },
+  { key: 'Done', label: 'Selesai / Done', badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+];
+
+function normalizeTmbProgressStage(status) {
+  const s = String(status || '').trim().toLowerCase();
+  if (s === 'done' || s.includes('selesai') || s.includes('tayang')) return 'Done';
+  if (s.includes('approv') || s.includes('setuju')) return 'Approved';
+  if (s.includes('review') || s.includes('approval') || s.includes('ajukan')) return 'Review';
+  return 'In Progress';
+}
+
+function setTmbProgressView(mode) {
+  TMB_PROGRESS_VIEW = mode;
+  document.getElementById('tmbProgressTableView')?.classList.toggle('hidden', mode !== 'table');
+  document.getElementById('tmbProgressKanbanView')?.classList.toggle('hidden', mode !== 'kanban');
+  document.getElementById('tmbProgressCalendarView')?.classList.toggle('hidden', mode !== 'calendar');
+  const btns = { table: 'btnTmbProgTableMode', kanban: 'btnTmbProgKanbanMode', calendar: 'btnTmbProgCalMode' };
+  Object.entries(btns).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.className = `px-3 py-1.5 rounded-lg transition ${mode === k ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'}`;
+  });
+  renderMonitoringProduksi();
+}
+
+function changeTmbProgressMonth(delta) {
+  TMB_PROGRESS_CAL_MONTH = delta === 0
+    ? new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    : new Date(TMB_PROGRESS_CAL_MONTH.getFullYear(), TMB_PROGRESS_CAL_MONTH.getMonth() + delta, 1);
+  renderMonitoringProduksi();
+}
+
+async function updateTmbProgressStatus(rowNum, newStatus) {
+  if (!rowNum) return;
+  const out = await processWithLoading(async () => {
+    const res = await fetch('/api/tmb-progress/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ row_num: Number(rowNum), updates: { Status: newStatus } })
+    });
+    return res.json();
+  }, 'Gagal memperbarui status TMB');
+  if (out) {
+    showToast(out.message, out.ok ? 'success' : 'error');
+    if (out.ok) await loadDashboard();
+  }
 }
 
 function renderMonitoringProduksi() {
-  const rows = paginateArray('mon_prod', DATA.tmb_working_progresss || [], 'pagMonitoringProd', 'renderMonitoringProduksi');
+  const q = (document.getElementById('searchTmbProgress')?.value || '').trim().toLowerCase();
+  const list = (DATA.tmb_working_progresss || []).filter(m => !q || Object.values(m).some(v => String(v).toLowerCase().includes(q)));
+  const editable = canUpdate('tmb_working_progresss');
+
+  if (TMB_PROGRESS_VIEW === 'kanban') {
+    const board = document.getElementById('tmbProgressKanbanBoard');
+    if (!board) return;
+    board.innerHTML = TMB_PROGRESS_STAGES.map(stage => {
+      const cards = list.filter(m => normalizeTmbProgressStage(m.Status) === stage.key);
+      return `
+        <div class="rounded-3xl bg-slate-100/80 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 p-3.5 space-y-3 min-h-[260px] transition"
+             ondragover="event.preventDefault(); this.classList.add('ring-2','ring-teal-500')"
+             ondragleave="this.classList.remove('ring-2','ring-teal-500')"
+             ondrop="event.preventDefault(); this.classList.remove('ring-2','ring-teal-500'); const rn=event.dataTransfer.getData('text/tmb-row') || event.dataTransfer.getData('text/plain'); if(rn) updateTmbProgressStatus(rn, '${stage.key}')">
+          <div class="flex items-center justify-between px-1">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">${stage.label}</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${stage.badge}">${cards.length}</span>
+          </div>
+          <div class="space-y-2.5">
+            ${cards.map(m => `
+              <div draggable="${editable ? 'true' : 'false'}"
+                   ondragstart="event.dataTransfer.setData('text/tmb-row', '${Number(m._row_num || 0)}'); event.dataTransfer.setData('text/plain', '${Number(m._row_num || 0)}')"
+                   class="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3.5 space-y-2 shadow-xs ${editable ? 'cursor-grab active:cursor-grabbing' : ''}">
+                <div class="flex items-center justify-between gap-2 text-[11px]">
+                  <span class="font-bold text-teal-600">${escapeHtml(m.Jenis || '-')}</span>
+                  <span class="text-slate-400 font-mono">DL: ${escapeHtml(m.Deadline || '-')}</span>
+                </div>
+                <h4 class="font-extrabold text-xs leading-snug">${escapeHtml(m.Judul || '-')}</h4>
+                <p class="text-[11px] text-slate-400">PIC TMB: ${escapeHtml(m['PIC TMB'] || '-')} • Progress: ${escapeHtml(m.Progress || '0')}%</p>
+                ${editable && m._row_num ? `
+                  <div class="flex flex-wrap gap-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                    ${stage.key === 'In Progress' ? `<button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Review')" class="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[10px] font-bold hover:opacity-80">Ajukan Review →</button>` : ''}
+                    ${stage.key === 'Review' ? `<button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Approved')" class="px-2 py-1 rounded-lg bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-[10px] font-bold hover:opacity-80">✓ Approve</button><button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'In Progress')" class="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 text-[10px] font-bold hover:opacity-80">↩ Revisi</button>` : ''}
+                    ${stage.key === 'Approved' ? `<button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Done')" class="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold hover:opacity-80">Selesai →</button>` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            `).join('') || '<p class="text-[11px] text-slate-400 text-center py-6">Kosong</p>'}
+          </div>
+        </div>
+      `;
+    }).join('');
+    return;
+  }
+
+  if (TMB_PROGRESS_VIEW === 'calendar') {
+    const year = TMB_PROGRESS_CAL_MONTH.getFullYear();
+    const month = TMB_PROGRESS_CAL_MONTH.getMonth();
+    const titleEl = document.getElementById('tmbProgressCalendarMonth');
+    if (titleEl) titleEl.textContent = TMB_PROGRESS_CAL_MONTH.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    let cells = '';
+    for (let i = 0; i < firstDay; i++) {
+      cells += '<div class="min-h-[96px] p-2 border-r border-b border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/30"></div>';
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayItems = list.filter(m => String(m.Deadline || m['Tanggal Record'] || m['Tanggal Tayang'] || '').startsWith(iso));
+      cells += `
+        <div class="min-h-[96px] p-2 border-r border-b border-slate-200 dark:border-slate-700 space-y-1">
+          <div class="text-[11px] font-extrabold text-slate-400">${d}</div>
+          ${dayItems.map(m => `<div class="px-2 py-1 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-800 dark:text-teal-200 text-[10px] font-bold truncate" title="${escapeHtml(m.Judul)} (${escapeHtml(m.Status || '-')})">${escapeHtml(m.Judul || '-')}</div>`).join('')}
+        </div>`;
+    }
+    const grid = document.getElementById('tmbProgressCalendarGrid');
+    if (grid) grid.innerHTML = cells;
+    return;
+  }
+
+  const rows = paginateArray('mon_prod', list, 'pagMonitoringProd', 'renderMonitoringProduksi');
   const tbody = document.getElementById('tbodyMonitoringProd');
   if (!tbody) return;
-  tbody.innerHTML = rows.map(m =>{
+  tbody.innerHTML = rows.map(m => {
     const hasLink = String(m.Link || '').trim().startsWith('http');
+    const progVal = Number(m.Progress || 0);
+    const progClass = progVal >= 100
+      ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+      : progVal >= 50
+        ? 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
+        : 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300';
+    const statusLower = String(m.Status || '').trim().toLowerCase();
+    const statusClass = statusLower === 'done' || statusLower.includes('selesai')
+      ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+      : statusLower === 'editing' || statusLower.includes('review')
+        ? 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
+        : 'bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300';
     return `<tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3">${escapeHtml(m.Judul || '-')}</td>
-      <td class="py-3 px-3">
-        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${String(m.Jenis || 'Video').toLowerCase() === 'video' ? 'bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-300' : 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300'}">${m.Jenis || '-'}</span>
-      </td>
-      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(m['Tanggal Record'] || '-')}</td>
-      <td class="py-3 px-3 text-[11px]">${escapeHtml(m.Record || '-')}</td>
-      <td class="py-3 px-3 text-[11px]">${escapeHtml(m.Editing || '-')}</td>
-      <td class="py-3 px-3 text-[11px]">${escapeHtml(m['PIC TMB'] || '-')}</td>
-      <td class="py-3 px-3 text-[11px]">${escapeHtml(m['PIC Penyiaran'] || '-')}</td>
-      <td class="py-3 px-3 text-mono">
-        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${(m.Progress || 0) == 100 ?
-           'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 
-           m.Progress || 50  >= 50 ? 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300' :'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300'}">${m.Progress || 0}</span>
-      </td>
-      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(m.Deadline || '-')}</td>
-      <td class="py-3 px-3 whitespace-nowrap">${escapeHtml(m.Kendala || '-')}</td>
-      <td class="py-3 px-3">
-        ${hasLink ? `<a href="${escapeHtml(m.Link)}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : ''}
-      </td>
-      <td class="py-3 px-3">
-        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${String(m.Status || 'Done').toLowerCase() === 'done' ?
-           'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 
-           String(m.Status || 'Editing').toLowerCase() === 'editing' ? 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300' :'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300'}">${m.Status || '-'}</span>
-      </td>
-    </tr>`
-  }).join('');
+      <td class="py-3 px-3 font-bold text-teal-600 truncate max-w-xs whitespace-nowrap">${escapeHtml(m.Judul || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(m.Jenis || '-')}</span></td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(m['Tanggal Record'] || '-'))}</td>
+      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(m.Record || '-')}</td>
+      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(m.Editing || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(m['PIC TMB'] || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(m['PIC Penyiaran'] || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md text-xs font-bold whitespace-nowrap ${progClass}">${escapeHtml(String(m.Progress ?? 0))}</span></td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(m.Deadline || '-'))}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(m.Kendala || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap">${hasLink ? `<a href="${escapeHtml(m.Link)}" target="_blank" rel="noopener" title="Buka File" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : '-'}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md text-xs font-bold whitespace-nowrap ${statusClass}">${escapeHtml(m.Status || '-')}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="12" class="py-8 text-center text-xs text-slate-400">Belum ada data produksi TMB.</td></tr>';
 }
 
 let BAST_RECORDS = [];
@@ -2126,6 +3037,122 @@ function syncBastAsset() {
   document.getElementById('bastLetak').value = room?.['Nama Ruangan'] || roomCode || '';
 }
 
+let BAST_MULTI_SELECTED = [];
+
+function openBastMultiItemModal() {
+  BAST_MULTI_SELECTED = [];
+  const search = document.getElementById('bastMultiSearch');
+  if (search) search.value = '';
+  renderBastMultiItemList();
+  const modal = document.getElementById('bastMultiItemModal');
+  modal?.classList.remove('hidden');
+  modal?.classList.add('flex');
+}
+
+function closeBastMultiItemModal() {
+  const modal = document.getElementById('bastMultiItemModal');
+  modal?.classList.add('hidden');
+  modal?.classList.remove('flex');
+}
+
+function clearBastMultiSelection() {
+  BAST_MULTI_SELECTED = [];
+  renderBastMultiItemList();
+}
+
+function renderBastMultiItemList() {
+  const q = (document.getElementById('bastMultiSearch')?.value || '').trim().toLowerCase();
+  const assets = DATA.assets || [];
+  const lockedCode = BAST_MULTI_SELECTED.length ? String(BAST_MULTI_SELECTED[0]['Kode Barang'] || '').trim() : '';
+  const lockBadge = document.getElementById('bastMultiLockBadge');
+  if (lockBadge) {
+    lockBadge.textContent = lockedCode
+      ? `Kode Barang terkunci: ${lockedCode} (${BAST_MULTI_SELECTED.length} item)`
+      : 'Belum ada item dipilih';
+  }
+  const nupPreview = document.getElementById('bastMultiNupPreview');
+  if (nupPreview) {
+    const nups = BAST_MULTI_SELECTED.map(a => String(a.NUP || '').trim()).filter(Boolean);
+    nupPreview.textContent = nups.length ? nups.join(', ') : '-';
+  }
+
+  const tbody = document.getElementById('tbodyBastMultiItems');
+  if (!tbody) return;
+  const filtered = assets
+    .map((a, idx) => ({ asset: a, idx }))
+    .filter(({ asset }) => !q || Object.values(asset).some(v => String(v).toLowerCase().includes(q)));
+
+  tbody.innerHTML = filtered.map(({ asset, idx }) => {
+    const code = String(asset['Kode Barang'] || '').trim();
+    const isSelected = BAST_MULTI_SELECTED.some(sel => sel === asset);
+    const isLockedOut = Boolean(lockedCode && code !== lockedCode);
+    const roomCode = String(asset['Kode Ruang'] || '').trim();
+    const room = (DATA.rooms || []).find(r => String(r['Nomor Ruangan'] || '').trim() === roomCode);
+    return `
+      <tr class="${isLockedOut ? 'opacity-40' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'} transition">
+        <td class="py-2 px-3 whitespace-nowrap">
+          <input type="checkbox" ${isSelected ? 'checked' : ''} ${isLockedOut ? 'disabled' : ''}
+            onchange="toggleBastMultiItem(${idx}, this.checked)"
+            class="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
+        </td>
+        <td class="py-2 px-3 font-mono font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">${escapeHtml(code || '-')}</td>
+        <td class="py-2 px-3 font-bold whitespace-nowrap">${escapeHtml(asset['Nama Barang'] || '-')}</td>
+        <td class="py-2 px-3 font-mono font-extrabold text-teal-600 dark:text-teal-400 whitespace-nowrap">${escapeHtml(asset.NUP || '-')}</td>
+        <td class="py-2 px-3 text-slate-500 whitespace-nowrap">${escapeHtml(asset['Merk Model'] || '')} ${escapeHtml(asset.Tipe || '')}</td>
+        <td class="py-2 px-3 text-slate-500 whitespace-nowrap">${escapeHtml(room?.['Nama Ruangan'] || roomCode || '-')}</td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="6" class="py-8 text-center text-slate-400">Tidak ada aset ditemukan.</td></tr>';
+}
+
+function toggleBastMultiItem(assetIdx, checked) {
+  const asset = (DATA.assets || [])[assetIdx];
+  if (!asset) return;
+  const code = String(asset['Kode Barang'] || '').trim();
+  if (checked) {
+    if (BAST_MULTI_SELECTED.length > 0) {
+      const lockedCode = String(BAST_MULTI_SELECTED[0]['Kode Barang'] || '').trim();
+      if (code !== lockedCode) {
+        showToast(`Hanya item dengan Kode Barang yang sama (${lockedCode}) yang dapat dipilih!`, 'error');
+        renderBastMultiItemList();
+        return;
+      }
+    }
+    if (!BAST_MULTI_SELECTED.includes(asset)) BAST_MULTI_SELECTED.push(asset);
+  } else {
+    BAST_MULTI_SELECTED = BAST_MULTI_SELECTED.filter(a => a !== asset);
+  }
+  renderBastMultiItemList();
+}
+
+function applyBastMultiItems() {
+  if (!BAST_MULTI_SELECTED.length) {
+    showToast('Pilih minimal 1 item aset terlebih dahulu.', 'error');
+    return;
+  }
+  const first = BAST_MULTI_SELECTED[0];
+  const sharedCode = String(first['Kode Barang'] || '').trim();
+  const allSame = BAST_MULTI_SELECTED.every(a => String(a['Kode Barang'] || '').trim() === sharedCode);
+  if (!allSame) {
+    showToast('Semua item terpilih harus memiliki Kode Barang yang sama.', 'error');
+    return;
+  }
+  const nups = BAST_MULTI_SELECTED.map(a => String(a.NUP || '').trim()).filter(Boolean);
+  const selectEl = document.getElementById('bastNomorBarang');
+  if (selectEl) {
+    const refVal = String(first['ID Barang'] || sharedCode).trim();
+    selectEl.value = refVal;
+    if (selectEl.value !== refVal) selectEl.value = sharedCode;
+  }
+  syncBastAsset();
+  const nupEl = document.getElementById('bastNup');
+  if (nupEl) nupEl.value = nups.join(', ');
+  const jumlahEl = document.getElementById('bastJumlah');
+  if (jumlahEl) jumlahEl.value = String(BAST_MULTI_SELECTED.length);
+  closeBastMultiItemModal();
+  showToast(`${BAST_MULTI_SELECTED.length} item (${sharedCode}) diterapkan ke form BAST.`, 'success');
+}
+
 async function loadBastRecords(force = false) {
   const out = await processWithLoading(async () => {
     const res = await fetch(`/api/bast/records${force ? '?force=true' : ''}`);
@@ -2136,37 +3163,51 @@ async function loadBastRecords(force = false) {
     return;
   }
   BAST_RECORDS = out.records || [];
+  renderBastTable();
+}
+
+function renderBastTable() {
   const tbody = document.getElementById('tbodyBast');
   if (!tbody) return;
-  const rows = paginateArray('bast', BAST_RECORDS, 'pagBast', 'loadBastRecords');
+  const q = (document.getElementById('searchBast')?.value || '').trim().toLowerCase();
+  const { from, to } = ensureInlineDateRange('bastDateRange', 'bast', renderBastTable);
+  const filtered = (BAST_RECORDS || []).filter(row => {
+    const rawDate = dateValueForInput(row['Tanggal Dokumen'] || '');
+    if (from && (!rawDate || rawDate < from)) return false;
+    if (to && (!rawDate || rawDate > to)) return false;
+    return !q || Object.values(row).some(v => String(v ?? '').toLowerCase().includes(q));
+  });
+  const rows = paginateArray('bast', filtered, 'pagBast', 'renderBastTable');
   const editable = canUpdate('bast_otomatis');
   const deletable = canFull('bast_otomatis') && canFull('aset_tutup_buku');
-  tbody.innerHTML = rows.map((row, index) => {
+  tbody.innerHTML = rows.map(row => {
     const safeRow = encodeURIComponent(JSON.stringify(row));
     const status = String(row.Status || '').trim();
+    const isDone = status.toLowerCase() === 'done';
     const link = row['Link PDF'] || '';
     return `
-      <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-        <td class="py-2.5 px-2 font-mono font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(row['Nomor BAST'] || '-')}</td>
-        <td class="py-2.5 px-2 font-bold font-mono text-xs text-slate-500">${escapeHtml(row.NIP || '-')}</td>
-        <td class="py-2.5 px-2 font-bold">${escapeHtml(row.Nama || '-')}</td>
-        <td class="py-2.5 px-2 text-xs text-slate-500">${escapeHtml(row.Pangkat || '-')}</td>
-        <td class="py-2.5 px-2 text-xs text-slate-500">${escapeHtml(row.Jabatan || '-')}</td>
-        <td class="py-2.5 px-2 font-mono text-xs text-slate-500">${escapeHtml(row['Nomor Barang'] || '-')}</td>
-        <td class="py-2.5 px-2 font-bold">${escapeHtml(row.NUP || '-')}</td>
-        <td class="py-2.5 px-2 font-semibold text-teal-600 dark:text-teal-400">${escapeHtml(row.Barang || '-')}</td>
-        <td class="py-2.5 px-2 text-xs font-semibold">${escapeHtml(row.Letak || '-')}</td>
-        <td class="py-2.5 px-2">
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${status === 'DONE' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300'}">${escapeHtml(status || 'PENDING')}</span>
+      <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+        <td class="py-3 px-3 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(row['Nomor BAST'] || '-')}</td>
+        <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(row['Tanggal Dokumen'] || '-'))}</td>
+        <td class="py-3 px-3 font-mono font-semibold whitespace-nowrap">${escapeHtml(row['NIP Display'] || row.NIP || '-')}</td>
+        <td class="py-3 px-3 font-bold text-teal-600 whitespace-nowrap">${escapeHtml(row.Nama || '-')}</td>
+        <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(row.Pangkat || '-')}</td>
+        <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(row.Jabatan || '-')}</td>
+        <td class="py-3 px-3 font-mono font-semibold whitespace-nowrap">${escapeHtml(row['Kode Barang Display'] || row['Nomor Barang'] || '-')}</td>
+        <td class="py-3 px-3 font-bold whitespace-nowrap">${escapeHtml(row.NUP || '-')}</td>
+        <td class="py-3 px-3 font-bold truncate max-w-[200px] whitespace-nowrap">${escapeHtml(row.Barang || '-')}</td>
+        <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(row.Letak || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap">
+          <span class="px-2 py-0.5 rounded-md text-xs font-bold whitespace-nowrap ${isDone ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300'}">${escapeHtml(status || 'PENDING')}</span>
         </td>
-        <td class="py-2.5 px-2 text-right whitespace-nowrap">
-          ${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : ''}
+        <td class="py-3 px-3 whitespace-nowrap space-x-1">
+          ${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" title="Buka PDF" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : ''}
           ${editable ? `<button type="button" title="Edit BAST" onclick="fillBastForm(JSON.parse(decodeURIComponent('${safeRow}')), ${row._row_num || 0}, true)" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
-          ${deletable ? `<button type="button" title="Hapus BAST" onclick="deleteRecord('DB_BAST', ${row._row_num || 0}, 'BAST ${escapeHtml(row['Nomor BAST'] || '').replace(/'/g, '')}') " class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
+          ${deletable ? `<button type="button" title="Hapus BAST" onclick="deleteRecord('DB_BAST', ${row._row_num || 0}, 'BAST ${escapeHtml(row['Nomor BAST'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
         </td>
       </tr>
     `;
-  }).join('') || '<tr><td colspan="11" class="py-8 text-center text-slate-400">Belum ada data BAST.</td></tr>';
+  }).join('') || '<tr><td colspan="12" class="py-8 text-center text-xs text-slate-400">Belum ada data BAST.</td></tr>';
 }
 
 function fillBastForm(row, sheetRowIndex, editMode = false) {
@@ -2233,34 +3274,50 @@ async function generateBastDocument(event) {
 }
 
 function renderPemeliharaanAset() {
+  const q = (document.getElementById('searchPemeliharaan')?.value || '').trim().toLowerCase();
+  const { from, to } = ensureInlineDateRange('pemeliharaanDateRange', 'pemeliharaan_header', renderPemeliharaanAset);
   const th = document.getElementById('tbodyPemeliharaanHeader');
   const td = document.getElementById('tbodyPemeliharaanDetail');
+  const filteredHeaders = (DATA.pemeliharaan_header || []).filter(h => {
+    const rawDate = dateValueForInput(h.Tanggal || '');
+    if (from && (!rawDate || rawDate < from)) return false;
+    if (to && (!rawDate || rawDate > to)) return false;
+    return !q || Object.values(h).some(v => String(v ?? '').toLowerCase().includes(q));
+  });
+  const matchingJadwalIds = new Set(filteredHeaders.map(h => String(h['Kode Jadwal'] || h['ID Jadwal'] || '').trim()));
+  const filteredDetails = (DATA.pemeliharaan_detail || []).filter(d => {
+    const jid = String(d['Kode Jadwal'] || d['ID Jadwal'] || '').trim();
+    if ((from || to) && !matchingJadwalIds.has(jid)) return false;
+    return !q || Object.values(d).some(v => String(v ?? '').toLowerCase().includes(q)) || matchingJadwalIds.has(jid);
+  });
   if (th) {
-    th.innerHTML = (DATA.pemeliharaan_header || []).map(h => `
+    const headerRows = paginateArray('pemeliharaan_header', filteredHeaders, 'pagPemeliharaanHeader', 'renderPemeliharaanAset');
+    th.innerHTML = headerRows.map(h => `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-2.5 px-3 font-mono font-bold text-teal-600">${escapeHtml(h['Kode Jadwal'] || h['ID Jadwal'] || '-')}</td>
-        <td class="py-2.5 px-3 font-bold">${escapeHtml(h.Tanggal || '-')}</td>
-        <td class="py-2.5 px-3 font-extrabold">${escapeHtml(h['Judul Pemeliharaan'] || '-')}</td>
-        <td class="py-2.5 px-3">${escapeHtml(h.Lokasi || '-')}</td>
-        <td class="py-2.5 px-3">${escapeHtml(h['Teknisi Vendor'] || '-')}</td>
-        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700">${escapeHtml(h.Status || '-')}</span></td>
+        <td class="py-3 px-3 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(h['Kode Jadwal'] || h['ID Jadwal'] || '-')}</td>
+        <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(h.Tanggal || '-'))}</td>
+        <td class="py-3 px-3 font-bold text-teal-600 whitespace-nowrap">${escapeHtml(h['Judul Pemeliharaan'] || '-')}</td>
+        <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(h.Lokasi || '-')}</td>
+        <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(h['Teknisi Vendor'] || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold whitespace-nowrap">${escapeHtml(h.Status || '-')}</span></td>
       </tr>
-    `).join('');
+    `).join('') || '<tr><td colspan="6" class="py-8 text-center text-xs text-slate-400">Belum ada jadwal pemeliharaan.</td></tr>';
   }
   if (td) {
-    td.innerHTML = (DATA.pemeliharaan_detail || []).map(d => `
+    const detailRows = paginateArray('pemeliharaan_detail', filteredDetails, 'pagPemeliharaanDetail', 'renderPemeliharaanAset');
+    td.innerHTML = detailRows.map(d => `
       <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-        <td class="py-2.5 px-3 font-mono font-bold text-slate-500">${escapeHtml(d['Kode Detail Pemeliharaan'] || '-')}</td>
-        <td class="py-2.5 px-3 font-mono font-bold text-indigo-600">${escapeHtml(d['Kode Jadwal'] || d['ID Jadwal'] || '-')}</td>
-        <td class="py-2.5 px-3 font-mono">${escapeHtml(d['Nomor Kode Barang'] || d['Kode Barang'] || '-')}</td>
-        <td class="py-2.5 px-3 font-bold">${escapeHtml(d['Nama Barang'] || '-')}</td>
-        <td class="py-2.5 px-3">${escapeHtml(d.NUP || '-')}</td>
-        <td class="py-2.5 px-3">${escapeHtml(d['Kondisi Sebelum'] || '-')}</td>
-        <td class="py-2.5 px-3">${escapeHtml(d.Tindakan || '-')}</td>
-        <td class="py-2.5 px-3 font-bold text-emerald-600">${escapeHtml(d['Kondisi Sesudah'] || '-')}</td>
-        <td class="py-2.5 px-3 text-right">${escapeHtml(d.Biaya || '0')}</td>
+        <td class="py-3 px-3 font-mono font-semibold text-slate-400 whitespace-nowrap">${escapeHtml(d['Kode Detail Pemeliharaan'] || '-')}</td>
+        <td class="py-3 px-3 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(d['Kode Jadwal'] || d['ID Jadwal'] || '-')}</td>
+        <td class="py-3 px-3 font-mono font-semibold whitespace-nowrap">${escapeHtml(d['Nomor Kode Barang'] || d['Kode Barang'] || '-')}</td>
+        <td class="py-3 px-3 font-bold text-teal-600 whitespace-nowrap">${escapeHtml(d['Nama Barang'] || '-')}</td>
+        <td class="py-3 px-3 font-bold whitespace-nowrap">${escapeHtml(d.NUP || '-')}</td>
+        <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(d['Kondisi Sebelum'] || '-')}</td>
+        <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(d.Tindakan || '-')}</td>
+        <td class="py-3 px-3 font-bold text-emerald-600 whitespace-nowrap">${escapeHtml(d['Kondisi Sesudah'] || '-')}</td>
+        <td class="py-3 px-3 text-right font-semibold whitespace-nowrap">${escapeHtml(d.Biaya || '0')}</td>
       </tr>
-    `).join('');
+    `).join('') || '<tr><td colspan="9" class="py-8 text-center text-xs text-slate-400">Belum ada detail aset dipelihara.</td></tr>';
   }
 }
 
@@ -2414,29 +3471,36 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
   });
   let dateFromInput = null;
   let dateToInput = null;
-  if (periodSelect) {
-    periodSelect.classList.add('hidden');
-    const rangeId = `${periodSelectId}DateRange`;
+  const hasDateRangeFilter = Boolean(periodSelectId);
+  const rangeId = hasDateRangeFilter ? `${periodSelectId}DateRange` : '';
+  if (hasDateRangeFilter) {
+    if (periodSelect) {
+      periodSelect.classList.add('hidden');
+      periodSelect.dataset.native = '1';
+    }
     let range = document.getElementById(rangeId);
-    if (!range) {
+    if (!range && periodSelect) {
       range = document.createElement('div');
       range.id = rangeId;
-      range.className = 'flex items-end gap-3';
-      range.innerHTML = `
-        <label class="flex items-center gap-2 text-xs font-bold">Tanggal
-          <input type="date" id="${rangeId}From" class="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 dark:border-slate-700 dark:bg-slate-800" />
-        </label>
-        <label class="flex items-center gap-2 text-xs font-bold">s/d
-          <input type="date" id="${rangeId}To" class="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 dark:border-slate-700 dark:bg-slate-800" />
-        </label>
-        <button type="button" aria-label="Cari" title="Cari" class="inline-flex items-center justify-center rounded-xl bg-blue-600 p-2 text-white hover:bg-blue-700">
-          ${icon('search', 'w-5 h-5 text-base leading-none')}
-        </button>`;
       periodSelect.insertAdjacentElement('afterend', range);
-      range.querySelector('button').addEventListener('click', () => {
-        PAGE_STATE[pagKey] = PAGE_STATE[pagKey] || { page: 1, size: DEFAULT_PAGE_SIZE };
-        PAGE_STATE[pagKey].page = 1;
-        renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pagId, periodSelectId);
+    }
+    if (range && range.dataset.rangedInit !== '1') {
+      range.dataset.rangedInit = '1';
+      range.className = 'flex justify-end';
+      range.innerHTML = `
+        <input type="hidden" id="${rangeId}From" />
+        <input type="hidden" id="${rangeId}To" />
+        <div id="${rangeId}Picker"></div>`;
+      initRangedDatepicker({
+        containerId: `${rangeId}Picker`,
+        startInputId: `${rangeId}From`,
+        endInputId: `${rangeId}To`,
+        onApply: () => {
+          PAGE_STATE[pagKey] = PAGE_STATE[pagKey] || { page: 1, size: DEFAULT_PAGE_SIZE };
+          PAGE_STATE[pagKey].page = 1;
+          renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pagId, periodSelectId);
+        },
+        placeholder: 'Rentang Tanggal'
       });
     }
     dateFromInput = document.getElementById(`${rangeId}From`);
@@ -2447,7 +3511,7 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
   const list = moduleDocuments.filter(d => {
     const matchesKeterangan = subMenuName.toLowerCase() === 'arsip'
       && String(d.Keterangan || '').toLocaleLowerCase().includes(searchTerm);
-    if (periodSelect) {
+    if (hasDateRangeFilter) {
       const documentDate = dateValueForInput(d['Tanggal Buat'] || '');
       if (dateFrom && (!documentDate || documentDate < dateFrom)) return false;
       if (dateTo && (!documentDate || documentDate > dateTo)) return false;
@@ -2485,12 +3549,12 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
     return `
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
       ${groupName === 'Persediaan' ? `<td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(d.Periode || '-')}</td>` : ''}
-      ${subMenuName === 'Arsip' ? ` <td class="py-3 px-3 font-mono font-bold">${escapeHtml(d['Keterangan'] || '-')}</td>` : ''}
-      <td class="py-3 px-3 font-bold text-teal-600">${escapeHtml(d['Judul Dokumen'] || '-')}</td>
-      <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold">${escapeHtml(d['Kategori Item'] || '-')}</span></td>
-      <td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${escapeHtml(d['Tanggal Buat'] || '-')}</td>
-      ${subMenuName != 'Arsip' ? `<td class="py-3 px-3 text-xs text-slate-400">${escapeHtml(d.Keterangan || '-')}</td>` : ''}
-      <td class="py-3 px-3">
+      ${subMenuName === 'Arsip' ? ` <td class="py-3 px-3 font-mono font-bold whitespace-nowrap">${escapeHtml(d['Keterangan'] || '-')}</td>` : ''}
+      <td class="py-3 px-3 font-bold text-teal-600 truncate whitespace-nowrap">${escapeHtml(d['Judul Dokumen'] || '-')}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(d['Kategori Item'] || '-')}</span></td>
+      <td class="py-3 px-3 text-xs font-semibold whitespace-nowrap">${formatDisplayDate(d['Tanggal Buat'] || '-')}</td>
+      ${subMenuName != 'Arsip' ? `<td class="py-3 px-3 text-xs text-slate-400 whitespace-nowrap">${escapeHtml(d.Keterangan || '-')}</td>` : ''}
+      <td class="py-3 px-3 whitespace-nowrap space-x-1">
         ${d['Link File'] ? `<a href="${escapeHtml(d['Link File'])}" target="_blank" rel="noopener" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : '-'}
         ${deletable ? `<button type="button" title="Hapus Dokumen" onclick="deleteRecord('DB_BMN_Dokumen', ${d._row_num || 0}, '${label} ${escapeHtml(d['Judul Dokumen'] || '').replace(/'/g, '')}') " class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
       </td>

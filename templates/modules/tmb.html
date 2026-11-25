@@ -5,25 +5,34 @@
       <h2 class="text-xl font-extrabold">Jadwal TMB (Teknologi &amp; Media Baru)</h2>
       <p class="text-xs text-slate-400">Jadwal piket teknisi studio, MCR, dan pemancar</p>
     </div>
-    <button id="btnAddTmb" onclick="openAddModal('DB_Jadwal_Operasional')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      + Tambah Jadwal TMB
-    </button>
+    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <div class="flex flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="searchJadwalTmb" oninput="renderJadwalTmb()" placeholder="Cari"
+          class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
+        <button id="btnAddTmb" onclick="openAddModal('DB_Jadwal_Operasional')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-40">
+          <i class="ti ti-plus" aria-hidden="true"></i><span class="hidden sm:inline"> Tambah Jadwal</span>
+        </button>
+      </div>
+    </div>
   </div>
-  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
-      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
-        <tr>
-          <th class="py-3 px-3">ID Jadwal</th>
-          <th class="py-3 px-3">Tanggal</th>
-          <th class="py-3 px-3">Shift</th>
-          <th class="py-3 px-3">Bidang</th>
-          <th class="py-3 px-3">Pegawai</th>
-          <th class="py-3 px-3">Jabatan</th>
-          <th class="py-3 px-3">Status</th>
-        </tr>
-      </thead>
-      <tbody id="tbodyTmb" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-    </table>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 w-full">
+    <div class="flex justify-end mb-3">
+      <div id="tmbDateRange" class="flex justify-end"></div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+          <tr>
+            <th class="py-3 px-3 whitespace-nowrap">Tanggal</th>
+            <th class="py-3 px-3 whitespace-nowrap">Shift</th>
+            <th class="py-3 px-3 whitespace-nowrap">Pegawai</th>
+            <th class="py-3 px-3 whitespace-nowrap">Jabatan</th>
+            <th class="py-3 px-3 whitespace-nowrap">Status</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyTmb" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+      </table>
+    </div>
     <div id="pagTmb" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
   </div>
 </section>
@@ -33,32 +42,62 @@
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <h2 class="text-xl font-extrabold">TMB Working Progress</h2>
-      <p class="text-xs text-slate-400">Log kualitas audio studio, status stream RRI Digital, dan catatan teknis</p>
+      <p class="text-xs text-slate-400">Log produksi, approval workflow, kanban board, dan kalender deadline TMB</p>
     </div>
-    <button id="btnAddMonitoringProd" onclick="openAddModal('DB_TMB_Working_Progress')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      + Tambah Produksi
-    </button>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 p-1 text-xs font-bold">
+        <button type="button" id="btnTmbProgTableMode" onclick="setTmbProgressView('table')" class="px-3 py-1.5 rounded-lg bg-teal-600 text-white shadow-xs transition">Tabel</button>
+        <button type="button" id="btnTmbProgKanbanMode" onclick="setTmbProgressView('kanban')" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition">Kanban &amp; Approval</button>
+        <button type="button" id="btnTmbProgCalMode" onclick="setTmbProgressView('calendar')" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition">Kalender</button>
+      </div>
+      <input type="text" id="searchTmbProgress" oninput="renderMonitoringProduksi()" placeholder="Cari judul, PIC..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-56" />
+      <button id="btnAddMonitoringProd" onclick="openAddModal('DB_TMB_Working_Progress')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Tambah Produksi
+      </button>
+    </div>
   </div>
-  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
-      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
-        <tr>
-          <th class="py-3 px-3 whitespace-nowrap">Judul</th>
-          <th class="py-3 px-3 whitespace-nowrap">Jenis</th>
-          <th class="py-3 px-3 whitespace-nowrap">Tanggal Record</th>
-          <th class="py-3 px-3 whitespace-nowrap">Record</th>
-          <th class="py-3 px-3 whitespace-nowrap">Editing</th>
-          <th class="py-3 px-3 whitespace-nowrap">PIC TMB</th>
-          <th class="py-3 px-3 whitespace-nowrap">PIC Penyiaran</th>
-          <th class="py-3 px-3 whitespace-nowrap">Progress</th>
-          <th class="py-3 px-3 whitespace-nowrap">Deadline</th>
-          <th class="py-3 px-3 whitespace-nowrap">Kendala</th>
-          <th class="py-3 px-3 whitespace-nowrap">Link</th>
-          <th class="py-3 px-3 whitespace-nowrap">Status</th>
-        </tr>
-      </thead>
-      <tbody id="tbodyMonitoringProd" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-    </table>
+  <div id="tmbProgressTableView" class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 w-full">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+          <tr>
+            <th class="py-3 px-3 whitespace-nowrap">Judul</th>
+            <th class="py-3 px-3 whitespace-nowrap">Jenis</th>
+            <th class="py-3 px-3 whitespace-nowrap">Tanggal Record</th>
+            <th class="py-3 px-3 whitespace-nowrap">Record</th>
+            <th class="py-3 px-3 whitespace-nowrap">Editing</th>
+            <th class="py-3 px-3 whitespace-nowrap">PIC TMB</th>
+            <th class="py-3 px-3 whitespace-nowrap">PIC Penyiaran</th>
+            <th class="py-3 px-3 whitespace-nowrap">Progress</th>
+            <th class="py-3 px-3 whitespace-nowrap">Deadline</th>
+            <th class="py-3 px-3 whitespace-nowrap">Kendala</th>
+            <th class="py-3 px-3 whitespace-nowrap">Link</th>
+            <th class="py-3 px-3 whitespace-nowrap">Status</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyMonitoringProd" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+      </table>
+    </div>
     <div id="pagMonitoringProd" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
+  </div>
+  <div id="tmbProgressKanbanView" class="hidden">
+    <div id="tmbProgressKanbanBoard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start"></div>
+  </div>
+  <div id="tmbProgressCalendarView" class="hidden bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-4">
+    <div class="flex items-center justify-between">
+      <button type="button" onclick="changeTmbProgressMonth(-1)" aria-label="Bulan sebelumnya" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold transition">←</button>
+      <h3 id="tmbProgressCalendarMonth" class="text-sm font-extrabold capitalize"></h3>
+      <button type="button" onclick="changeTmbProgressMonth(1)" aria-label="Bulan berikutnya" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold transition">→</button>
+    </div>
+    <div class="overflow-x-auto">
+      <div class="min-w-[700px]">
+        <div class="grid grid-cols-7 text-center text-[10px] font-extrabold uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+          <div class="py-2">Min</div><div class="py-2">Sen</div><div class="py-2">Sel</div>
+          <div class="py-2">Rab</div><div class="py-2">Kam</div><div class="py-2">Jum</div><div class="py-2">Sab</div>
+        </div>
+        <div id="tmbProgressCalendarGrid" class="grid grid-cols-7 border-l border-slate-200 dark:border-slate-700"></div>
+      </div>
+    </div>
   </div>
 </section>

@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.mod-section .overflow-x-auto:has(> table):not(.hidden) {
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mod-section .overflow-x-auto:has(> table) > [id^="pag"] {
+  margin-top: auto;
+}

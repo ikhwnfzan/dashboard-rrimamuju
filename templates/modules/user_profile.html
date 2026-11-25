@@ -3,7 +3,7 @@
     <div class="relative bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xl overflow-hidden">
       <div class="bg-gradient-to-r from-[#0F2942] via-[#134E4A] to-[#0D9488] px-6 py-5 text-white grid grid-cols-3 items-center">
         <div class="flex items-center gap-3">
-          <img src="/static/logo/rri-white.png" alt="RRI" class="h-10 p-1 object-contain" />
+          <img src="{{ static_asset('logo/rri-white.png') }}" alt="RRI" class="h-10 p-1 object-contain" />
         </div>
         <div class="text-center">
           <!-- <p class="text-[10px] font-extrabold uppercase tracking-widest text-teal-200">Kartu Identitas Pegawai</p> -->
@@ -46,6 +46,45 @@
           <span>VERIFIED • LPP RRI</span>
         </div>
       </div>
+    </div>
+
+    <!-- Ubah Password Mandiri -->
+    <div class="mt-6 bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
+          <i aria-hidden="true" class="ti ti-key text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-extrabold">Ubah Password</h3>
+          <p class="text-xs text-slate-400">Perbarui password akun Anda secara berkala (minimal 8 karakter)</p>
+        </div>
+      </div>
+      <form id="changeOwnPasswordForm" onsubmit="submitChangePassword(event)" class="space-y-3 text-xs">
+        <div>
+          <label for="curPwdInput" class="block font-bold mb-1">Password Saat Ini</label>
+          <input id="curPwdInput" type="password" required autocomplete="current-password" placeholder="Masukkan password saat ini"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label for="newPwdInput" class="block font-bold mb-1">Password Baru</label>
+            <input id="newPwdInput" type="password" required minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+          <div>
+            <label for="confirmPwdInput" class="block font-bold mb-1">Konfirmasi Password Baru</label>
+            <input id="confirmPwdInput" type="password" required minlength="8" autocomplete="new-password" placeholder="Ulangi password baru"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+        </div>
+        <div class="pt-1 flex justify-end">
+          <button type="submit" id="btnChangeOwnPassword"
+            class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold transition inline-flex items-center gap-2">
+            <i aria-hidden="true" class="ti ti-shield-lock text-sm"></i>
+            <span>Simpan Password Baru</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </section>

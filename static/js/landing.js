@@ -1,0 +1,279 @@
+let BOARD_DATA = { authenticated: false, user: null, youtube_feed: { videos: [] }, drive_flyers: { items: [] }, timeline: [], dialogs: [], program_siaran: [] };
+let CATEGORY_FILTER = 'ALL';
+let FLYER_IDX = 0;
+let PUBLIC_TIMELINE_VIEW = 'timeline';
+let PUBLIC_CAL_MONTH = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+function setPublicTimelineView(mode) {
+  PUBLIC_TIMELINE_VIEW = mode;
+  document.getElementById('publicTimelineView')?.classList.toggle('hidden', mode !== 'timeline');
+  document.getElementById('publicCalendarView')?.classList.toggle('hidden', mode !== 'calendar');
+  const btnTl = document.getElementById('btnPublicTimelineMode');
+  const btnCal = document.getElementById('btnPublicCalendarMode');
+  if (btnTl && btnCal) {
+    btnTl.className = `px-3 py-1.5 rounded-md transition ${mode === 'timeline' ? 'bg-white text-[#0F2942] shadow-xs' : 'text-slate-600 hover:text-slate-900'}`;
+    btnCal.className = `px-3 py-1.5 rounded-md transition ${mode === 'calendar' ? 'bg-white text-[#0F2942] shadow-xs' : 'text-slate-600 hover:text-slate-900'}`;
+  }
+  renderHorizontalTimeline();
+}
+
+function changePublicCalendarMonth(delta) {
+  if (delta === 0) {
+    PUBLIC_CAL_MONTH = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  } else {
+    PUBLIC_CAL_MONTH = new Date(PUBLIC_CAL_MONTH.getFullYear(), PUBLIC_CAL_MONTH.getMonth() + delta, 1);
+  }
+  renderHorizontalTimeline();
+}
+
+function renderPublicTimelineCalendar(items) {
+  const year = PUBLIC_CAL_MONTH.getFullYear();
+  const month = PUBLIC_CAL_MONTH.getMonth();
+  const titleEl = document.getElementById('publicCalendarMonth');
+  if (titleEl) {
+    titleEl.textContent = PUBLIC_CAL_MONTH.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  }
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  let cells = '';
+  for (let i = 0; i < firstDay; i++) {
+    cells += '<div class="min-h-[84px] p-1.5 border-r border-t border-slate-200 bg-slate-50/60"></div>';
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dayItems = (items || []).filter(ev => {
+      const start = String(ev['Tanggal Mulai'] || ev['Start Date'] || ev.Tanggal || '').slice(0, 10);
+      const end = String(ev['Tanggal Selesai'] || ev['End Date'] || start).slice(0, 10);
+      return start && (iso >= start && iso <= (end || start));
+    });
+    const isToday = iso === todayIso;
+    cells += `
+      <div class="min-h-[84px] p-1.5 border-r border-t border-slate-200 space-y-1 ${isToday ? 'bg-teal-50/40' : 'bg-white'}">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-extrabold ${isToday ? 'px-1.5 py-0.5 rounded-full bg-teal-600 text-white' : 'text-slate-500'}">${d}</span>
+        </div>
+        ${dayItems.slice(0, 3).map(ev => `
+          <div class="px-1.5 py-0.5 rounded bg-sky-50 border border-sky-200 text-[#0F2942] text-[10px] font-bold truncate"
+               title="${(ev.Kegiatan || '').replace(/"/g, '&quot;')} — ${(ev.Tahapan || '').replace(/"/g, '&quot;')}">
+            ${ev.Kegiatan || '-'}
+          </div>
+        `).join('')}
+        ${dayItems.length > 3 ? `<div class="text-[10px] font-bold text-slate-400">+${dayItems.length - 3} lainnya</div>` : ''}
+      </div>`;
+  }
+  const grid = document.getElementById('publicCalendarGrid');
+  if (grid) grid.innerHTML = cells;
+}
+
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = `pointer-events-auto flex items-start gap-3 p-3.5 rounded-2xl shadow-xl border text-xs font-semibold transition-all duration-300 ${
+    type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-white border-slate-200 text-slate-800'
+  }`;
+  toast.innerHTML = `<div class="flex-1 leading-snug">${message}</div><button onclick="this.parentElement.remove()" class="text-slate-400">✕</button>`;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+async function loadBoard() {
+  const syncEl = document.getElementById('syncStatusText');
+  if (syncEl) syncEl.textContent = 'Memuat sinkronisasi data...';
+  try {
+    const res = await fetch('/api/public/landing');
+    BOARD_DATA = await res.json();
+    document.getElementById('liveDot').className = `w-2 h-2 rounded-full ${BOARD_DATA.connected ? 'bg-emerald-400' : 'bg-amber-400'}`;
+    if (syncEl) syncEl.textContent = `${BOARD_DATA.status_msg} • ${BOARD_DATA.server_time}`;
+    buildCategoryChips();
+    renderAllSections();
+  } catch (e) {
+    if (syncEl) syncEl.textContent = 'Gagal memuat data server.';
+    document.getElementById('flyerSkeleton')?.classList.add('hidden');
+  }
+}
+
+function buildCategoryChips() {
+  const cats = ['ALL', ...new Set((BOARD_DATA.timeline || []).map(i => (i.Kegiatan || '').trim()).filter(Boolean))];
+  document.getElementById('categoryChips').innerHTML = cats.map(c => `
+    <button onclick="setCategoryFilter('${c.replace(/'/g, "\\'")}')"
+      class="filter-pill ${CATEGORY_FILTER === c ? 'active' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'} border text-xs font-bold px-3 py-1.5 rounded-lg transition">
+      ${c === 'ALL' ? 'Semua Kegiatan' : c}
+    </button>
+  `).join('');
+}
+function setCategoryFilter(cat) { CATEGORY_FILTER = cat; buildCategoryChips(); renderHorizontalTimeline(); }
+function matchesQuery(obj, q) { return !q || Object.values(obj).some(v => String(v).toLowerCase().includes(q)); }
+
+function statusPill(status) {
+  const s = String(status || '').toLowerCase();
+  if (!s || s === '-') return '<span class="text-xs text-slate-400">-</span>';
+  if (s.includes('terlaksana') || s.includes('hadir') || s.includes('selesai') || s.includes('aktif')) {
+    return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">${status}</span>`;
+  }
+  return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">${status}</span>`;
+}
+
+function renderAllSections() {
+  const activeYear = String(BOARD_DATA.app_config?.active_year || new Date().getFullYear());
+  const hasActiveYear = row => {
+    const values = [row['Tanggal Mulai'], row['Start Date'], row.Tanggal, row['Tanggal Selesai'], row['End Date']];
+    const year = values.map(value => String(value || '').match(/(?:19|20)\d{2}/)?.[0]).find(Boolean);
+    return year === activeYear;
+  };
+  const timeline = BOARD_DATA.timeline;
+  const dialogs = BOARD_DATA.dialogs;
+  try {
+    BOARD_DATA.timeline = (timeline || []).filter(hasActiveYear);
+    BOARD_DATA.dialogs = (dialogs || []).filter(hasActiveYear);
+    const title = document.querySelector('#hero-timeline h1');
+    if (title) title.textContent = `Timeline RRI Mamuju ${activeYear}`;
+    buildCategoryChips();
+    renderHorizontalTimeline();
+    renderDialogTable();
+    renderProgramSiaranPublic();
+    renderMediaShowcase();
+  } finally {
+    BOARD_DATA.timeline = timeline;
+    BOARD_DATA.dialogs = dialogs;
+  }
+}
+
+function renderMediaShowcase() {
+  const videos = (BOARD_DATA.youtube_feed || {}).videos || [];
+  const iframe = document.getElementById('ytShowcaseIframe');
+  if (iframe && videos.length && iframe.src !== videos[0].embed_url) iframe.src = videos[0].embed_url;
+  const items = ((BOARD_DATA.drive_flyers || {}).items || []).slice(0, 10);
+  if (!items.length) {
+    document.getElementById('flyerSkeleton')?.classList.add('hidden');
+    return;
+  }
+  if (FLYER_IDX >= items.length) FLYER_IDX = 0;
+  const cur = items[FLYER_IDX];
+  document.getElementById('flyerActiveImg').src = cur.image_url;
+  document.getElementById('flyerDots').innerHTML = items.map((_, i) => `
+    <button onclick="FLYER_IDX=${i}; renderMediaShowcase()" class="w-2 h-2 rounded-full ${i === FLYER_IDX ? 'bg-slate-800 scale-110' : 'bg-slate-300'}"></button>
+  `).join('');
+}
+
+function renderHorizontalTimeline() {
+  const q = (document.getElementById('timelineSearch')?.value || '').trim().toLowerCase();
+  const items = (BOARD_DATA.timeline || []).filter(ev => (CATEGORY_FILTER === 'ALL' || (ev.Kegiatan || '').trim() === CATEGORY_FILTER) && matchesQuery(ev, q));
+  if (PUBLIC_TIMELINE_VIEW === 'calendar') {
+    renderPublicTimelineCalendar(items);
+    return;
+  }
+  const track = document.getElementById('horizontalTimelineTrack');
+  const scroller = document.getElementById('horizontalTimelineScroll');
+  if (!items.length) {
+    track.innerHTML = `<div class="w-full text-center py-12 text-xs text-slate-400">Tidak ada tahapan kegiatan ditemukan.</div>`;
+    if (scroller) scroller.scrollLeft = scroller.scrollWidth;
+    return;
+  }
+  track.innerHTML = items.map((ev, idx) => {
+    const isBottom = idx % 2 === 0;
+    const cardHtml = `<div class="htl-card"><div class="text-xs font-extrabold text-teal-700">${ev.Kegiatan || ''}</div><div class="text-[11px] text-slate-600 mt-1">${ev.Tahapan || ''}</div></div>`;
+    return `
+      <div class="relative flex flex-col items-center w-[235px] shrink-0 select-none">
+        <div class="h-[105px] flex flex-col items-center justify-end w-full">${!isBottom ? `${cardHtml}<div class="w-[2px] h-5 bg-sky-300"></div>` : ''}</div>
+        <div class="relative w-full flex items-center justify-center h-6"><div class="w-full h-[3px] bg-slate-300"></div><div class="absolute w-5 h-5 rounded-full bg-white border-[3px] border-slate-500 z-10"></div></div>
+        <div class="mt-1.5 text-xs font-extrabold text-slate-700">${ev.Tanggal || ev['Tanggal Mulai'] || ''}</div>
+        <div class="h-[105px] flex flex-col items-center justify-start w-full">${isBottom ? `<div class="w-[2px] h-5 bg-sky-300 mt-1"></div>${cardHtml}` : ''}</div>
+      </div>
+    `;
+  }).join('');
+
+  if (scroller) requestAnimationFrame(() => {
+    scroller.scrollLeft = scroller.scrollWidth;
+  });
+}
+
+function renderDialogTable() {
+  document.getElementById('dialogTableBody').innerHTML = (BOARD_DATA.dialogs || []).map(d => `
+    <tr class="hover:bg-slate-200/50 align-top transition">
+      <td class="px-4 py-3.5 whitespace-nowrap"><div class="font-bold text-slate-900">${d.Tanggal || '-'}</div></td>
+      <td class="px-4 py-3.5 whitespace-nowrap"><span class="px-2.5 py-1 rounded-md bg-sky-50 text-sky-800 font-bold text-xs">${d.Program || '-'}</span></td>
+      <td class="px-4 py-3.5 max-w-xs font-semibold text-slate-800">${d.Topik || '-'}</td>
+      <td class="px-4 py-3.5"><div class="font-bold text-slate-900">${d.Narasumber || '-'}</div><div class="text-xs text-slate-500">${d.Jabatan || ''}</div></td>
+      <td class="px-4 py-3.5 whitespace-nowrap">${statusPill(d.Kehadiran)}</td>
+      <td class="px-4 py-3.5 whitespace-nowrap">${statusPill(d.Keterlaksanaan)}</td>
+      <td class="px-4 py-3.5 whitespace-nowrap">${(d.Flyer || '').startsWith('http') ? `<a href="${d.Flyer}" target="_blank" class="text-xs font-bold text-sky-700 hover:underline">Flyer ↗</a>` : '-'}</td>
+      <td class="px-4 py-3.5 whitespace-nowrap">${(d.Bestcut || '').startsWith('http') ? `<a href="${d.Bestcut}" target="_blank" class="text-xs font-bold text-teal-700 hover:underline">Bestcut ↗</a>` : '-'}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="8" class="p-8 text-center text-xs text-slate-400">Belum ada data Dialog.</td></tr>`;
+}
+
+function renderProgramSiaranPublic() {
+  document.getElementById('programGrid').innerHTML = (BOARD_DATA.program_siaran || []).map(p => `
+    <div class="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between space-y-3 shadow-xs">
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between text-xs">
+          <span class="px-2.5 py-0.5 rounded-md bg-teal-50 text-teal-800 font-bold">${p.Programa || 'RRI Mamuju'}</span>
+          <span class="text-slate-500 font-semibold">${p.Hari || ''} • ${p.Jam || ''}</span>
+        </div>
+        <h3 class="font-extrabold text-sm text-slate-900">${p['Nama Program'] || '-'}</h3>
+        <p class="text-xs text-slate-500">${p.Format || ''}</p>
+      </div>
+      <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+        <span>Produser: ${p.Produser || '-'}</span>
+        ${statusPill(p.Status || 'Aktif')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function changeStation() {
+  const audio = document.getElementById('pro1Audio');
+  const station = document.getElementById('stationSelect').value;
+  const wasPlaying = !audio.paused;
+  audio.pause(); audio.src = audio.dataset[station]; audio.load();
+  if (wasPlaying) audio.play();
+}
+function handleAudioButton() {
+  if (document.body.dataset.authenticated === 'true') toggleAudio();
+  else openLoginModal();
+}
+async function toggleAudio() {
+  const audio = document.getElementById('pro1Audio');
+  const icon = document.getElementById('audioIcon');
+  if (audio.paused) {
+    const station = document.getElementById('stationSelect').value;
+    audio.src = audio.dataset[station];
+    await audio.play();
+    icon.innerHTML = '<i aria-hidden="true" class="ti ti-player-pause w-3.5 h-3.5 text-red-700 text-sm leading-none"></i>';
+  } else { 
+    audio.pause();
+    icon.innerHTML = '<i aria-hidden="true" class="ti ti-player-play w-3.5 h-3.5 text-teal-700 text-sm leading-none"></i>'; 
+  }
+}
+function getCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+}
+const _origFetch = window.fetch;
+window.fetch = function(input, init = {}) {
+  const method = (init.method || 'GET').toUpperCase();
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const headers = new Headers(init.headers || {});
+    const token = getCsrfToken();
+    if (token && !headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token);
+    init = { ...init, headers };
+  }
+  return _origFetch.call(this, input, init);
+};
+function openLoginModal() { const m = document.getElementById('loginModal'); m.classList.remove('hidden'); m.classList.add('flex'); }
+function closeLoginModal() { const m = document.getElementById('loginModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+async function submitLogin() {
+  const employee_id = document.getElementById('loginEmpId').value;
+  const password = document.getElementById('loginPassword').value;
+  const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employee_id, password }) });
+  const data = await res.json();
+  if (data.ok) window.location.href = data.redirect || '/dashboard';
+  else { const errEl = document.getElementById('loginError'); errEl.textContent = data.message; errEl.classList.remove('hidden'); }
+}
+async function logoutUser() { await fetch('/api/logout', { method: 'POST' }); window.location.reload(); }
+async function refreshBoard() { await fetch('/api/refresh', { method: 'POST' }); await loadBoard(); showToast('Data berhasil disinkronkan.'); }
+
+if (document.getElementById('timelineSearch')) document.getElementById('timelineSearch').value = '';
+loadBoard();

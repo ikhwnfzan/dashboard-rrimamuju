@@ -4,20 +4,26 @@
       <h2 class="text-xl font-extrabold">Manage User</h2>
       <p class="text-xs text-slate-400">Kelola akun login pada tab <code>CFG_Users</code> (NIP, Password, Role)</p>
     </div>
-    <button onclick="openUserModal()" class="text-xs font-bold px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      + Tambah / Edit Akun User
-    </button>
+    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <div class="flex flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="searchUsers" oninput="renderManageUsers()" placeholder="Cari"
+          class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
+        <button type="button" onclick="openUserModal()" class="text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-44">
+          <i class="ti ti-plus" aria-hidden="true"></i><span class="hidden sm:inline"> Tambah User</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
+    <table class="w-full text-left text-xs">
       <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
         <tr>
-          <th class="py-3 px-3">NIP</th>
-          <th class="py-3 px-3">Nama Pegawai</th>
-          <th class="py-3 px-3">Posisi</th>
-          <th class="py-3 px-3">Assigned Roles</th>
-          <th class="py-3 px-3 text-right">Aksi</th>
+          <th class="py-3 px-3 whitespace-nowrap">NIP</th>
+          <th class="py-3 px-3 whitespace-nowrap">Nama Pegawai</th>
+          <th class="py-3 px-3 whitespace-nowrap">Posisi</th>
+          <th class="py-3 px-3 whitespace-nowrap">Assigned Roles</th>
+          <th class="py-3 px-3 text-right whitespace-nowrap">Aksi</th>
         </tr>
       </thead>
       <tbody id="tbodyUsers" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>

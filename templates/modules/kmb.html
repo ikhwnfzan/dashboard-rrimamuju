@@ -3,13 +3,42 @@
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <h2 class="text-xl font-extrabold">Content Planner (KMB)</h2>
-      <p class="text-xs text-slate-400">Perencanaan produksi konten media sosial &amp; digital</p>
+      <p class="text-xs text-slate-400">Perencanaan, approval workflow, kanban board, dan kalender konten</p>
     </div>
-    <button id="btnAddKonten" onclick="openAddModal('DB_Konten')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      + Tambah Rencana Konten
-    </button>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="inline-flex rounded-xl border border-slate-200/70 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 p-1 text-xs font-bold">
+        <button type="button" id="btnKontenGridMode" onclick="setKontenView('grid')" class="px-3 py-1.5 rounded-lg bg-teal-600 text-white shadow-xs transition">Grid</button>
+        <button type="button" id="btnKontenKanbanMode" onclick="setKontenView('kanban')" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 transition">Kanban &amp; Approval</button>
+        <button type="button" id="btnKontenCalMode" onclick="setKontenView('calendar')" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 transition">Kalender</button>
+      </div>
+      <input type="text" id="searchKonten" oninput="renderKonten()" placeholder="Cari konten, PIC..."
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-52" />
+      <button id="btnAddKonten" onclick="openAddModal('DB_Konten')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
+        + Tambah Rencana Konten
+      </button>
+    </div>
   </div>
-  <div id="gridKonten" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  <div id="kontenGridView" class="space-y-4">
+    <div id="gridKonten" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    <div id="pagKonten" class="pt-2"></div>
+  </div>
+  <div id="kontenKanbanView" class="hidden">
+    <div id="kontenKanbanBoard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start"></div>
+  </div>
+  <div id="kontenCalendarView" class="hidden bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <h3 id="kontenCalendarMonth" class="text-sm font-extrabold"></h3>
+      <div class="flex items-center gap-1.5">
+        <button type="button" onclick="changeKontenMonth(-1)" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition">← Prev</button>
+        <button type="button" onclick="changeKontenMonth(0)" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition">Bulan Ini</button>
+        <button type="button" onclick="changeKontenMonth(1)" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition">Next →</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-2">
+      <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+    </div>
+    <div id="kontenCalendarGrid" class="grid grid-cols-7 border-l border-t border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden"></div>
+  </div>
 </section>
 
 <!-- KMB: BESTCUT MONITORING -->
@@ -19,12 +48,16 @@
       <h2 class="text-xl font-extrabold">Bestcut Monitoring</h2>
       <p class="text-xs text-slate-400">Monitoring tautan potongan video/audio Bestcut dari jadwal dialog</p>
     </div>
-    <select id="filterBestcutStatus" onchange="renderBestcutMonitoring()"
-      class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold">
-      <option value="all">Semua Dialog</option>
-      <option value="ready">Sudah Ada Bestcut</option>
-      <option value="missing">Belum Upload Bestcut</option>
-    </select>
+    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <select id="filterBestcutStatus" onchange="renderBestcutMonitoring()"
+        class="text-xs px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold w-full sm:w-48">
+        <option value="all">Semua Dialog</option>
+        <option value="ready">Sudah Ada Bestcut</option>
+        <option value="missing">Belum Upload Bestcut</option>
+      </select>
+      <input type="text" id="searchBestcut" oninput="renderBestcutMonitoring()" placeholder="Cari"
+        class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
+    </div>
   </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -42,21 +75,22 @@
     </div>
   </div>
 
-  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
-      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
-        <tr>
-          <th class="py-3 px-3">Tanggal</th>
-          <th class="py-3 px-3">Program</th>
-          <th class="py-3 px-3">Topik</th>
-          <th class="py-3 px-3">Narasumber</th>
-          <th class="py-3 px-3">Status Bestcut</th>
-          <th class="py-3 px-3">Tautan</th>
-          <th class="py-3 px-3 text-right">Aksi</th>
-        </tr>
-      </thead>
-      <tbody id="tbodyBestcut" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-    </table>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 w-full">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+          <tr>
+            <th class="py-3 px-3 whitespace-nowrap">Tanggal</th>
+            <th class="py-3 px-3 whitespace-nowrap">Program</th>
+            <th class="py-3 px-3 whitespace-nowrap">Topik</th>
+            <th class="py-3 px-3 whitespace-nowrap">Narasumber</th>
+            <th class="py-3 px-3 whitespace-nowrap">Status Bestcut</th>
+            <th class="py-3 px-3 whitespace-nowrap">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyBestcut" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+      </table>
+    </div>
     <div id="pagBestcut" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
   </div>
 </section>
@@ -68,27 +102,35 @@
       <h2 class="text-xl font-extrabold">Social Media Analytics</h2>
       <p class="text-xs text-slate-400">Performa kanal digital LPP RRI Mamuju (Instagram, YouTube, TikTok, Facebook)</p>
     </div>
-    <button id="btnAddSocmed" onclick="openAddModal('DB_Socmed_Analytics')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition">
-      + Input Laporan Analitik
-    </button>
+    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <div class="flex flex-nowrap sm:w-auto w-full text-right gap-2 items-center">
+        <input type="text" id="searchSocmed" oninput="renderSocmedAnalytics()" placeholder="Cari"
+          class="text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 sm:w-64 w-full" />
+        <button id="btnAddSocmed" onclick="openAddModal('DB_Socmed_Analytics')" class="hidden text-xs font-bold px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition w-auto sm:w-44">
+          <i class="ti ti-plus" aria-hidden="true"></i><span class="hidden sm:inline"> Input Analitik</span>
+        </button>
+      </div>
+    </div>
   </div>
   <div id="socmedCardsGrid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
-  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 overflow-x-auto">
-    <table class="w-full text-left text-xs sm:text-sm">
-      <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
-        <tr>
-          <th class="py-3 px-3">Periode</th>
-          <th class="py-3 px-3">Platform</th>
-          <th class="py-3 px-3">Akun</th>
-          <th class="py-3 px-3 text-right">Followers</th>
-          <th class="py-3 px-3 text-right">Reach</th>
-          <th class="py-3 px-3 text-right">Engagement</th>
-          <th class="py-3 px-3">Top Konten</th>
-          <th class="py-3 px-3">Catatan</th>
-        </tr>
-      </thead>
-      <tbody id="tbodySocmed" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-    </table>
+  <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 w-full">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="text-slate-400 font-semibold border-b border-slate-100 dark:border-slate-800">
+          <tr>
+            <th class="py-3 px-3 whitespace-nowrap">Periode</th>
+            <th class="py-3 px-3 whitespace-nowrap">Platform</th>
+            <th class="py-3 px-3 whitespace-nowrap">Akun</th>
+            <th class="py-3 px-3 text-right whitespace-nowrap">Followers</th>
+            <th class="py-3 px-3 text-right whitespace-nowrap">Reach</th>
+            <th class="py-3 px-3 text-right whitespace-nowrap">Engagement</th>
+            <th class="py-3 px-3 whitespace-nowrap">Top Konten</th>
+            <th class="py-3 px-3 whitespace-nowrap">Catatan</th>
+          </tr>
+        </thead>
+        <tbody id="tbodySocmed" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+      </table>
+    </div>
     <div id="pagSocmed" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800"></div>
   </div>
 </section>

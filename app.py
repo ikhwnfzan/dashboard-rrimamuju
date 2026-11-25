@@ -1,9 +1,16 @@
 import os
+import re
+import html
+import hmac
+import hashlib
+import secrets
 import base64
 import copy
 import json
 from datetime import datetime, timedelta, timezone
-from flask import Flask, abort, render_template, request, jsonify, session, send_from_directory, redirect, url_for
+from functools import wraps
+from urllib.parse import quote, urlsplit
+from flask import Flask, abort, render_template, request, jsonify, session, send_from_directory, redirect, url_for, g
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from sheets_service import (
@@ -23,35 +30,228 @@ if not app.secret_key:
     raise RuntimeError("FLASK_SECRET_KEY belum diatur di environment.")
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 
+STATIC_CDN_URL = os.getenv("STATIC_CDN_URL", "").strip().rstrip("/")
+if STATIC_CDN_URL:
+    cdn_url_parts = urlsplit(STATIC_CDN_URL)
+    if cdn_url_parts.scheme not in {"http", "https"} or not cdn_url_parts.netloc:
+        raise RuntimeError("STATIC_CDN_URL harus berupa URL absolut HTTP atau HTTPS.")
+
+
+def static_asset_url(filename):
+    """Return a static asset URL from the CDN when configured, otherwise Flask."""
+    if STATIC_CDN_URL:
+        return f"{STATIC_CDN_URL}/{quote(filename.lstrip('/'), safe='/')}"
+    return url_for("static", filename=filename)
+
+# ---------------------------------------------------------------------------
+# ENVIRONMENT / PRODUCTION FLAG
+# ---------------------------------------------------------------------------
+IS_PRODUCTION = os.getenv("FLASK_ENV", "development").lower() == "production"
+
 # ---------------------------------------------------------------------------
 # SESSION SECURITY CONFIGURATION
 # ---------------------------------------------------------------------------
-# Session timeout: idle timeout (minutes). Override with SESSION_TIMEOUT_MINUTES env var.
 SESSION_TIMEOUT_MINUTES = int(os.getenv("SESSION_TIMEOUT_MINUTES", "60"))
-# Absolute session max age: 8 hours regardless of activity.
-SESSION_MAX_AGE_HOURS = int(os.getenv("SESSION_MAX_AGE_HOURS", "8"))
+SESSION_MAX_AGE_HOURS   = int(os.getenv("SESSION_MAX_AGE_HOURS", "8"))
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-# Set Secure flag only when not running locally (detected via env flag)
-app.config["SESSION_COOKIE_SECURE"] = os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true"
+app.config["SESSION_COOKIE_SECURE"]   = os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true"
+
+# ---------------------------------------------------------------------------
+# SECURITY HEADERS
+# ---------------------------------------------------------------------------
+@app.after_request
+def apply_security_headers(response):
+    """Attach security headers to every response."""
+    response.headers["X-Content-Type-Options"]  = "nosniff"
+    response.headers["X-Frame-Options"]          = "DENY"
+    response.headers["X-XSS-Protection"]         = "1; mode=block"
+    response.headers["Referrer-Policy"]           = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"]        = (
+        "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
+    )
+    if IS_PRODUCTION:
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains; preload"
+        )
+    # Remove server fingerprint header
+    response.headers.pop("Server", None)
+    return response
 
 
+# ---------------------------------------------------------------------------
+# CSRF PROTECTION
+# ---------------------------------------------------------------------------
+CSRF_TOKEN_BYTES = 32
+CSRF_HEADER      = "X-CSRF-Token"
+CSRF_FIELD       = "csrf_token"
+
+_CSRF_EXEMPT = set()
+
+
+def _generate_csrf_token():
+    """Generate and persist a per-session CSRF token."""
+    if "_csrf_token" not in session:
+        session["_csrf_token"] = secrets.token_hex(CSRF_TOKEN_BYTES)
+    return session["_csrf_token"]
+
+
+def _validate_csrf():
+    """
+    Validate the CSRF token for mutating requests.
+    Accepts the token from the X-CSRF-Token header OR a form/JSON field.
+    """
+    if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
+        return True
+    if request.path in _CSRF_EXEMPT:
+        return True
+
+    expected = session.get("_csrf_token")
+    if not expected:
+        return False
+
+    # 1) Check custom header (JSON/fetch API)
+    token = request.headers.get(CSRF_HEADER)
+    # 2) Fallback: check JSON body field
+    if not token and request.is_json:
+        token = (request.get_json(silent=True) or {}).get(CSRF_FIELD)
+    # 3) Fallback: form field
+    if not token:
+        token = request.form.get(CSRF_FIELD)
+
+    return bool(token) and hmac.compare_digest(str(expected), str(token))
+
+
+@app.before_request
+def csrf_protect():
+    """Block any state-changing request that fails CSRF validation and enforce session timeout."""
+    if not _validate_csrf():
+        return jsonify({"ok": False, "message": "CSRF token tidak valid atau hilang."}), 403
+    if session.get("user") and not _check_session_valid():
+        if request.path.startswith("/api/") and request.path not in ("/api/login", "/api/user"):
+            return jsonify({
+                "ok": False,
+                "message": "Sesi telah berakhir. Silakan login kembali.",
+                "session_expired": True,
+            }), 401
+
+
+@app.context_processor
+def inject_csrf_token():
+    """Make csrf_token() available in every Jinja template."""
+    return {"csrf_token": _generate_csrf_token, "static_asset": static_asset_url}
+
+
+# ---------------------------------------------------------------------------
+# XSS INPUT SANITIZATION
+# ---------------------------------------------------------------------------
+_ALLOWED_STR_MAX = 4000       # max chars for any single string field
+_URL_PATTERN     = re.compile(r'^https?://', re.IGNORECASE)
+
+
+def sanitize_str(value, *, max_len=_ALLOWED_STR_MAX, allow_url=False):
+    """
+    HTML-escape a string, strip null bytes, enforce max length.
+    Optionally validate it looks like a URL.
+    """
+    if value is None:
+        return ""
+    s = str(value).replace("\x00", "").strip()
+    s = s[:max_len]
+    if allow_url:
+        if s and not _URL_PATTERN.match(s):
+            return ""   # reject non-http(s) URLs silently
+    return html.escape(s, quote=True)
+
+
+def sanitize_dict(d, *, str_keys=None, url_keys=None, int_keys=None, max_len=_ALLOWED_STR_MAX):
+    """
+    Recursively sanitize a flat dict of user-supplied data.
+    - str_keys  : list of keys to treat as plain strings (HTML-escaped)
+    - url_keys  : list of keys to treat as URLs (must start with http/https)
+    - int_keys  : list of keys to coerce to int (non-numeric → 0)
+    Keys not listed get plain string sanitization.
+    """
+    out = {}
+    for key, value in (d or {}).items():
+        clean_key = sanitize_str(key, max_len=64)
+        if int_keys and key in int_keys:
+            try:
+                out[clean_key] = int(value)
+            except (TypeError, ValueError):
+                out[clean_key] = 0
+        elif url_keys and key in url_keys:
+            out[clean_key] = sanitize_str(value, allow_url=True, max_len=max_len)
+        else:
+            out[clean_key] = sanitize_str(value, max_len=max_len)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# API KEY ROTATION MECHANISM
+# ---------------------------------------------------------------------------
+# The app supports up to 2 simultaneous active API keys so rotation is
+# seamless: generate a new key, give clients time to adopt it, then revoke
+# the old one.  Keys are stored hashed in environment variables.
+#
+# Env vars:
+#   API_KEY_1=<hex string>   — primary key (most recent)
+#   API_KEY_2=<hex string>   — secondary key (previous, kept during transition)
+#
+# Requests that need API key auth pass:  X-API-Key: <raw hex key>
+
+_API_KEY_HASH_ALGO = "sha256"
+
+
+def _load_api_key_hashes():
+    """Return the set of valid SHA-256 hashes of configured API keys."""
+    hashes = set()
+    for env_var in ("API_KEY_1", "API_KEY_2"):
+        raw = os.getenv(env_var, "").strip()
+        if raw:
+            hashes.add(hashlib.sha256(raw.encode()).hexdigest())
+    return hashes
+
+
+def _verify_api_key(provided_key):
+    """Constant-time check: is the provided key one of the configured keys?"""
+    if not provided_key:
+        return False
+    provided_hash = hashlib.sha256(provided_key.encode()).hexdigest()
+    valid_hashes  = _load_api_key_hashes()
+    return any(hmac.compare_digest(provided_hash, h) for h in valid_hashes)
+
+
+def require_api_key(f):
+    """
+    Decorator: protect an endpoint with API key auth (for machine-to-machine).
+    Usage:  @require_api_key on any route.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        key = request.headers.get("X-API-Key", "").strip()
+        if not _verify_api_key(key):
+            return jsonify({"ok": False, "message": "API key tidak valid atau tidak ada."}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
+# ---------------------------------------------------------------------------
+# SESSION HELPERS
+# ---------------------------------------------------------------------------
 def _check_session_valid():
     """
     Returns True if the session is still valid (not timed out).
     Enforces both idle timeout and absolute max-age.
-    Call this before trusting session['user'].
     """
     now_ts = datetime.now(timezone.utc).timestamp()
 
-    # Absolute max-age check
     created_at = session.get("_created_at")
     if created_at and (now_ts - created_at) > (SESSION_MAX_AGE_HOURS * 3600):
         session.clear()
         return False
 
-    # Idle timeout check
     last_active = session.get("_last_active")
     if last_active and (now_ts - last_active) > (SESSION_TIMEOUT_MINUTES * 60):
         session.clear()
@@ -515,6 +715,33 @@ def api_logout():
     return jsonify({"ok": True})
 
 
+@app.route("/api/user/change-password", methods=["POST"])
+def api_change_own_password():
+    user = session.get("user")
+    if not user:
+        return jsonify({"ok": False, "message": "Restricted access!"}), 401
+    _touch_session()
+
+    data = request.get_json(silent=True) or {}
+    current_password = str(data.get("current_password", "")).strip()
+    new_password = str(data.get("new_password", "")).strip()
+    confirm_password = str(data.get("confirm_password", "")).strip()
+
+    if not current_password or not new_password or not confirm_password:
+        return jsonify({"ok": False, "message": "Semua kolom password wajib diisi."}), 400
+    if len(new_password) < 8:
+        return jsonify({"ok": False, "message": "Password baru minimal 8 karakter."}), 400
+    if new_password != confirm_password:
+        return jsonify({"ok": False, "message": "Konfirmasi password baru tidak cocok."}), 400
+    if new_password == current_password:
+        return jsonify({"ok": False, "message": "Password baru harus berbeda dari password saat ini."}), 400
+
+    nip = user.get("nip_clean") or user.get("nip") or ""
+    ok, msg = db.change_own_password(nip, current_password, new_password)
+    status_code = 200 if ok else 400
+    return jsonify({"ok": ok, "message": msg}), status_code
+
+
 @app.route("/api/refresh", methods=["POST"])
 def api_refresh():
     db.clear_cache()
@@ -529,9 +756,11 @@ def api_admin_save_user():
         return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
     data = request.get_json(silent=True) or {}
-    nip = data.get("nip", "")
-    password = data.get("password", "")
-    roles = data.get("roles", [])
+    nip      = sanitize_str(data.get("nip", ""),      max_len=50)
+    password = str(data.get("password", "")).strip()   # passwords must NOT be html-escaped
+    roles    = [sanitize_str(r, max_len=64) for r in (data.get("roles") or []) if r]
+    if not nip:
+        return jsonify({"ok": False, "message": "NIP wajib diisi."}), 400
     ok, msg = db.save_user_account(nip, password, roles)
     return jsonify({"ok": ok, "message": msg})
 
@@ -591,6 +820,16 @@ def api_bast_generate():
     if missing:
         return jsonify({"ok": False, "message": "Data BAST belum lengkap."}), 400
 
+    # Validate single item code and clean comma-separated NUPs
+    nomor_barang = str(payload.get("nomor_barang", "")).strip()
+    if "," in nomor_barang:
+        return jsonify({"ok": False, "message": "Hanya satu Kode Barang yang diperbolehkan dalam satu BAST."}), 400
+    raw_nup = str(payload.get("nup", "")).strip()
+    nup_parts = [part.strip() for part in raw_nup.split(",") if part.strip()]
+    if not nup_parts:
+        return jsonify({"ok": False, "message": "NUP wajib diisi."}), 400
+    payload["nup"] = ", ".join(nup_parts)
+
     template_doc_id = os.getenv("BAST_TEMPLATE_DOC_ID", "").strip()
     ok, result = db.generate_bast_document(payload, template_doc_id=template_doc_id)
     return jsonify({"ok": ok, **result})
@@ -624,9 +863,11 @@ def api_admin_update_role_module():
         return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
     data = request.get_json(silent=True) or {}
-    role_name = data.get("role", "")
-    module_key = data.get("module_key", "")
-    level = data.get("level", "none")
+    role_name  = sanitize_str(data.get("role", ""),       max_len=64)
+    module_key = sanitize_str(data.get("module_key", ""), max_len=64)
+    level      = sanitize_str(data.get("level", "none"),  max_len=16)
+    if level not in {"none", "view", "update", "full"}:
+        return jsonify({"ok": False, "message": "Level akses tidak valid."}), 400
     ok, msg = db.update_role_module_permission(role_name, module_key, level)
     return jsonify({"ok": ok, "message": msg})
 
@@ -637,12 +878,13 @@ def api_update_employee():
     if not _has_perm(user, "data_pegawai", "update"):
         return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
-    data = request.get_json(silent=True) or {}
+    data    = request.get_json(silent=True) or {}
     row_num = data.get("row_num")
     updates = data.get("updates") or {}
     if not row_num:
         return jsonify({"ok": False, "message": "Invalid row number!"}), 400
 
+    updates = sanitize_dict(updates)
     ok, msg = db.update_employee_row(row_num, updates)
     return jsonify({"ok": ok, "message": msg})
 
@@ -653,12 +895,13 @@ def api_update_dialog():
     if not _has_perm(user, "dialog", "update"):
         return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
-    data = request.get_json(silent=True) or {}
+    data    = request.get_json(silent=True) or {}
     row_num = data.get("row_num")
     updates = data.get("updates") or {}
     if not row_num:
         return jsonify({"ok": False, "message": "Invalid row number!"}), 400
 
+    updates = sanitize_dict(updates, url_keys={"Link Live", "Flyer"})
     ok, msg = db.update_dialog_row(row_num, updates)
     return jsonify({"ok": ok, "message": msg})
 
@@ -669,7 +912,7 @@ def api_update_asset():
     if not _has_perm(user, "master_barang", "update"):
         return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
-    data = request.get_json(silent=True) or {}
+    data    = request.get_json(silent=True) or {}
     row_num = data.get("row_num")
     updates = data.get("updates") or {}
     if not row_num or not isinstance(updates, dict):
@@ -679,7 +922,7 @@ def api_update_asset():
     if not set(updates).issubset(allowed_fields):
         return jsonify({"ok": False, "message": "Kode Barang tidak dapat diubah."}), 400
 
-    updates = {key: str(value or "").strip() for key, value in updates.items()}
+    updates = sanitize_dict({k: v for k, v in updates.items() if k in allowed_fields})
     ok, msg = db.update_asset_row(row_num, updates)
     return jsonify({"ok": ok, "message": msg})
 
@@ -690,7 +933,7 @@ def api_update_room():
     if not _has_perm(user, "master_ruangan", "update"):
         return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
-    data = request.get_json(silent=True) or {}
+    data    = request.get_json(silent=True) or {}
     row_num = data.get("row_num")
     updates = data.get("updates") or {}
     if not row_num or not isinstance(updates, dict):
@@ -700,7 +943,7 @@ def api_update_room():
     if not set(updates).issubset(allowed_fields):
         return jsonify({"ok": False, "message": "Nomor Ruangan tidak dapat diubah."}), 400
 
-    updates = {key: str(value or "").strip() for key, value in updates.items()}
+    updates = sanitize_dict({k: v for k, v in updates.items() if k in allowed_fields})
     ok, msg = db.update_room_row(row_num, updates)
     return jsonify({"ok": ok, "message": msg})
 
@@ -726,7 +969,7 @@ def api_update_timeline():
     if validation_error:
         return jsonify({"ok": False, "message": validation_error}), 400
 
-    updates = {key: str(value or "").strip() for key, value in updates.items()}
+    updates = sanitize_dict({k: v for k, v in updates.items() if k in allowed_fields})
     updates["Tanggal"] = updates.get("Tanggal Mulai", "")
     ok, msg = db.update_timeline_row(row_num, updates)
     return jsonify({"ok": ok, "message": msg})
@@ -738,13 +981,56 @@ def api_update_stok_detail():
     if not _has_perm(user, "master_persediaan", "update"):
         return jsonify({"ok": False, "message": "Restricted access!"}), 403
 
-    data = request.get_json(silent=True) or {}
+    data    = request.get_json(silent=True) or {}
     row_num = data.get("row_num")
     updates = data.get("updates") or {}
     if not row_num:
         return jsonify({"ok": False, "message": "Invalid row number!"}), 400
 
+    updates = sanitize_dict(updates)
     ok, msg = db.update_stok_detail_row(row_num, updates)
+    return jsonify({"ok": ok, "message": msg})
+
+
+@app.route("/api/konten/update", methods=["POST"])
+def api_update_konten():
+    user = session.get("user")
+    if not _has_perm(user, "konten", "update"):
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
+
+    data = request.get_json(silent=True) or {}
+    row_num = data.get("row_num")
+    updates = data.get("updates") or {}
+    if not row_num or not isinstance(updates, dict):
+        return jsonify({"ok": False, "message": "Invalid row number or content data!"}), 400
+
+    allowed_fields = {"Status", "Catatan", "Judul Konten", "Tanggal Tayang", "PIC", "Link Asset"}
+    if not updates or not set(updates).issubset(allowed_fields):
+        return jsonify({"ok": False, "message": "Kolom konten tidak valid."}), 400
+
+    updates = sanitize_dict(updates, url_keys={"Link Asset"})
+    ok, msg = db.update_tab_row("DB_Konten", row_num, updates)
+    return jsonify({"ok": ok, "message": msg})
+
+
+@app.route("/api/tmb-progress/update", methods=["POST"])
+def api_update_tmb_progress():
+    user = session.get("user")
+    if not _has_perm(user, "tmb_working_progresss", "update"):
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
+
+    data = request.get_json(silent=True) or {}
+    row_num = data.get("row_num")
+    updates = data.get("updates") or {}
+    if not row_num or not isinstance(updates, dict):
+        return jsonify({"ok": False, "message": "Invalid row number or TMB progress data!"}), 400
+
+    allowed_fields = {"Status", "Progress", "Catatan", "Deadline", "Tanggal Tayang", "Link File", "Record", "Editing"}
+    if not updates or not set(updates).issubset(allowed_fields):
+        return jsonify({"ok": False, "message": "Kolom TMB progress tidak valid."}), 400
+
+    updates = sanitize_dict(updates, url_keys={"Link File"})
+    ok, msg = db.update_tab_row("DB_TMB_Working_Progress", row_num, updates)
     return jsonify({"ok": ok, "message": msg})
 
 
@@ -1026,8 +1312,12 @@ def api_add_record(target_key):
         if validation_error:
             return jsonify({"ok": False, "message": validation_error}), 400
         allowed_fields = {"Kegiatan", "Tahapan", "Tanggal Mulai", "Tanggal Selesai", "Keterangan"}
-        row_data = {key: str(value or "").strip() for key, value in row_data.items() if key in allowed_fields}
-        row_data["Tanggal"] = row_data["Tanggal Mulai"]
+        row_data = sanitize_dict({key: value for key, value in row_data.items() if key in allowed_fields})
+        row_data["Tanggal"] = row_data.get("Tanggal Mulai", "")
+    else:
+        if isinstance(row_data, dict):
+            url_fields = {"Link Live", "Flyer", "Link", "Link File", "Link Flyer", "Link Asset", "Link PDF"}
+            row_data = sanitize_dict(row_data, url_keys=url_fields)
     ok, msg = db.append_record(target_key, row_data)
     return jsonify({"ok": ok, "message": msg})
 

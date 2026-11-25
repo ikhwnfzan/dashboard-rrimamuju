@@ -573,6 +573,33 @@ class SheetsDB:
         except Exception as e:
             return False, f"Gagal memperbarui timeline: {e}"
 
+    def update_tab_row(self, tab_name, row_num, updates_dict):
+        """Generic row update helper for a named Google Sheet tab."""
+        try:
+            target_row = int(row_num)
+            if target_row < 2:
+                return False, "Nomor baris tidak valid."
+        except (TypeError, ValueError):
+            return False, "Nomor baris tidak valid."
+
+        ws = self._find_ws([tab_name])
+        if not ws:
+            return False, f"Tab {tab_name} tidak ditemukan."
+        try:
+            all_values = self._get_values_from_snapshot([tab_name]) or ws.get_all_values()
+            headers = [h.strip() for h in all_values[0]] if all_values else []
+            updated = 0
+            for col_name, new_val in (updates_dict or {}).items():
+                if col_name in headers:
+                    ws.update_cell(target_row, headers.index(col_name) + 1, str(new_val))
+                    updated += 1
+            if not updated:
+                return False, "Kolom yang akan diperbarui tidak ditemukan."
+            self._sync_snapshot(force=True)
+            return True, "Data berhasil diperbarui."
+        except Exception as e:
+            return False, f"Gagal memperbarui data: {e}"
+
     def _employee_lookups(self):
         employees = self.get_employees()
         by_no = {}
@@ -1220,7 +1247,7 @@ class SheetsDB:
             headers.append("Tanggal Dokumen")
         if sheet_row >= 2:
             row_values = {
-                "Status": "DONE",
+                "Status": "Done",
                 "Link PDF": pdf_url,
                 "Tanggal Dokumen": document_date,
             }
@@ -1245,7 +1272,7 @@ class SheetsDB:
                 "Nilai": str(payload.get("nilai", "")).strip(),
                 "Jumlah": str(payload.get("jumlah", "")).strip(),
                 "Letak": str(asset_match.get("Kode Ruang") or payload.get("letak", "")).strip(),
-                "Status": "DONE",
+                "Status": "Done",
                 "Link PDF": pdf_url,
             }
             new_row = [row_map.get(h, "") for h in headers]
@@ -1268,7 +1295,7 @@ class SheetsDB:
             "Judul Dokumen": judul_dokumen,
             "Tanggal Buat": document_date,
             "Link File": pdf_url,
-            "Keterangan": "DONE",
+            "Keterangan": "Done",
         }
         dokumen_ws.append_row(
             [row_map.get(header, "") for header in dokumen_headers],
@@ -1539,6 +1566,56 @@ class SheetsDB:
 
         self._sync_snapshot(force=True)
         return True, f"Akun user ({nip_clean}) dengan role [{role_str}] berhasil disimpan."
+
+    def change_own_password(self, nip_input, current_password, new_password):
+        """Verify current password and update the user's password hash in CFG_Users."""
+        clean_id = "".join(ch for ch in str(nip_input or "") if ch.isdigit()) or _normalize_nip(nip_input)
+        cur_pwd = str(current_password or "").strip()
+        new_pwd = str(new_password or "").strip()
+        if not clean_id or not cur_pwd or not new_pwd:
+            return False, "Semua kolom password wajib diisi."
+        if len(new_pwd) < 8:
+            return False, "Password baru minimal 8 karakter."
+
+        ws_usr = self._find_ws(["CFG_Users"])
+        if not ws_usr:
+            return False, "Tabel Users tidak ditemukan."
+
+        try:
+            all_vals = ws_usr.get_all_values()
+            if not all_vals:
+                return False, "Data user kosong."
+            headers = [h.strip() for h in all_vals[0]]
+            nip_idx = headers.index("NIP") if "NIP" in headers else 0
+            pwd_col_name = "Password_Hash" if "Password_Hash" in headers else ("Password" if "Password" in headers else None)
+            if pwd_col_name is None:
+                return False, "Kolom Password tidak ditemukan di CFG_Users."
+            pwd_idx = headers.index(pwd_col_name)
+
+            found_row = None
+            stored_hash = ""
+            for r_i, row in enumerate(all_vals[1:], start=2):
+                if len(row) > nip_idx and self._nip_matches(row[nip_idx], clean_id):
+                    found_row = r_i
+                    stored_hash = str(row[pwd_idx]).strip() if len(row) > pwd_idx else ""
+                    break
+
+            if not found_row or not stored_hash:
+                return False, "Akun user tidak ditemukan."
+
+            if stored_hash.startswith("pbkdf2:") or stored_hash.startswith("scrypt:"):
+                valid = check_password_hash(stored_hash, cur_pwd)
+            else:
+                valid = (stored_hash == cur_pwd)
+
+            if not valid:
+                return False, "Password saat ini salah."
+
+            ws_usr.update_cell(found_row, pwd_idx + 1, generate_password_hash(new_pwd))
+            self._sync_snapshot(force=True)
+            return True, "Password berhasil diubah. Gunakan password baru pada login berikutnya."
+        except Exception as e:
+            return False, f"Gagal mengubah password: {e}"
 
     # ---------------------------------------------------------
     # GENERIC APPEND & DELETE

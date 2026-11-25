@@ -3,16 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('favicon') }}" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
+  <link rel="icon" type="image/svg+xml" href="{{ static_asset('favicon.svg') }}" />
   <title>Dashboard Pegawai — RRI Mamuju</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ static_asset('css/app.css') }}" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] } } }
-    }
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -27,6 +22,7 @@
     .dashed-kpi { border-style: dashed; }
     .nav-pill.active { background-color: #E2E8F0; color: #0F172A; font-weight: 700; }
     .dark .nav-pill.active { background-color: #1E293B; color: #F8FAFC; }
+    .mod-section .overflow-x-auto { min-height: 580px; }
     @media (max-width: 639px) {
       #breadcrumbNav button,
       #breadcrumbNav span { display: none; }
@@ -39,7 +35,7 @@
       <div class="p-5 space-y-5 overflow-y-auto">
         <div class="flex items-center justify-between">
           <a href="/" class="flex items-center gap-2.5">
-            <img src="{{ url_for('favicon') }}" alt="RRI" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 object-cover" />
+            <img src="{{ static_asset('favicon.svg') }}" alt="RRI" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 object-cover" />
             <div>
               <span class="font-extrabold text-base tracking-tight block">BEACON</span>
               <span class="text-[11px] text-slate-400 block">Workspace Portal</span>
@@ -116,6 +112,11 @@
       </header>
 
       <main class="max-w-[100rem] w-full mx-auto px-4 sm:px-8 py-6 space-y-6 flex-1">
+        <div id="moduleLoadingBanner" role="status" aria-live="polite"
+          class="hidden items-center gap-3 rounded-2xl bg-white dark:bg-[#111827] border border-teal-200 dark:border-teal-800/70 px-4 py-3 shadow-xs text-xs font-bold text-teal-700 dark:text-teal-300">
+          <span aria-hidden="true" class="h-4 w-4 animate-spin rounded-full border-2 border-teal-200 dark:border-teal-800 border-t-teal-600 dark:border-t-teal-400"></span>
+          <span id="moduleLoadingText">Memuat data modul...</span>
+        </div>
         {% include 'modules/overview.html' %}
         {% include 'modules/user_profile.html' %}
         {% include 'modules/info_board.html' %}
@@ -145,6 +146,20 @@
   <script>
     const USER = JSON.parse(document.getElementById('user-data').textContent);
     const APP_CONFIG = JSON.parse(document.getElementById('app-config').textContent);
+    function getCsrfToken() {
+      return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    }
+    const _origFetch = window.fetch;
+    window.fetch = function(input, init = {}) {
+      const method = (init.method || 'GET').toUpperCase();
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        const headers = new Headers(init.headers || {});
+        const token = getCsrfToken();
+        if (token && !headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token);
+        init = { ...init, headers };
+      }
+      return _origFetch.call(this, input, init);
+    };
     function toggleUserMenu() {
       document.getElementById('userMenu').classList.toggle('hidden');
     }
@@ -154,6 +169,6 @@
       if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) menu.classList.add('hidden');
     });
   </script>
-  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  <script src="{{ static_asset('js/dashboard.js') }}"></script>
 </body>
 </html>
