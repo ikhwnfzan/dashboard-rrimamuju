@@ -417,14 +417,14 @@ MODULE_DATA_DEPENDENCIES = {
     "arsip_sdm": {"arsip_sdm"},
     "dialog": {"dialogs", "timeline"},
     "jadwal_siaran": {"siaran"},
-    "produksi_paket": {"produksi_paket"},
+    "produksi_paket": {"produksi_paket", "employees"},
     "program_siaran": {"program_siaran"},
     "arsip_program": {"arsip_program"},
     "konten": {"content_planner"},
     "bestcut_monitoring": {"dialogs"},
     "socmed_analytics": {"socmed_analytics"},
     "jadwal_tmb": {"jadwal_tmb"},
-    "tmb_working_progresss": {"tmb_working_progresss"},
+    "tmb_working_progresss": {"tmb_working_progresss", "employees"},
     "master_barang": {"assets", "rooms", "employees"},
     "master_ruangan": {"rooms", "employees", "assets"},
     "bast_otomatis": {"rooms", "assets", "employees"},
@@ -498,7 +498,10 @@ def _get_module_payload(user, module_key):
     if "arsip_sdm" in dependencies:
         payload["arsip_sdm"] = db.get_arsip_sdm()
     if "employees" in dependencies:
-        if can_fetch("data_pegawai") or module_key in {"master_barang", "master_ruangan", "bast_otomatis", "user_profile"}:
+        if can_fetch("data_pegawai") or module_key in {
+            "master_barang", "master_ruangan", "bast_otomatis", "user_profile",
+            "produksi_paket", "tmb_working_progresss",
+        }:
             payload["employees"] = db.get_employees()
         else:
             payload["employees"] = []
@@ -948,6 +951,26 @@ def api_update_room():
     return jsonify({"ok": ok, "message": msg})
 
 
+@app.route("/api/program-siaran/update", methods=["POST"])
+def api_update_program_siaran():
+    user = session.get("user")
+    if not _has_perm(user, "program_siaran", "update"):
+        return jsonify({"ok": False, "message": "Restricted access!"}), 403
+
+    data = request.get_json(silent=True) or {}
+    row_num = data.get("row_num")
+    updates = data.get("updates") or {}
+    if not row_num or not isinstance(updates, dict):
+        return jsonify({"ok": False, "message": "Invalid row number or program data!"}), 400
+
+    allowed_fields = {"Programa", "Nama Program", "Hari", "Jam", "Kategori", "Status"}
+    updates = sanitize_dict({k: v for k, v in updates.items() if k in allowed_fields})
+    if not updates:
+        return jsonify({"ok": False, "message": "Tidak ada kolom program yang diperbarui."}), 400
+    ok, msg = db.update_tab_row("DB_Program", row_num, updates)
+    return jsonify({"ok": ok, "message": msg})
+
+
 @app.route("/api/timeline/update", methods=["POST"])
 def api_update_timeline():
     user = session.get("user")
@@ -1025,13 +1048,99 @@ def api_update_tmb_progress():
     if not row_num or not isinstance(updates, dict):
         return jsonify({"ok": False, "message": "Invalid row number or TMB progress data!"}), 400
 
-    allowed_fields = {"Status", "Progress", "Catatan", "Deadline", "Tanggal Tayang", "Link File", "Record", "Editing"}
+    allowed_fields = {"Status", "Progress", "Catatan", "Deadline", "Tanggal Tayang", "Link File", "Link", "Kendala", "Record", "Editing"}
     if not updates or not set(updates).issubset(allowed_fields):
         return jsonify({"ok": False, "message": "Kolom TMB progress tidak valid."}), 400
 
-    updates = sanitize_dict(updates, url_keys={"Link File"})
+    updates = sanitize_dict(updates, url_keys={"Link File", "Link"})
     ok, msg = db.update_tab_row("DB_TMB_Working_Progress", row_num, updates)
     return jsonify({"ok": ok, "message": msg})
+
+
+def _upload_file_to_drive_bridge(uploaded, output_name, group_name, subfolder_name):
+    """Validate an uploaded file and send it to the configured Google Drive bridge."""
+    if not uploaded or not uploaded.filename:
+        return False, {"ok": False, "message": "Pilih file yang akan diunggah."}, 400
+
+    allowed_extensions = {
+        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+        "jpg", "jpeg", "png", "zip",
+    }
+    original_name = secure_filename(os.path.basename(uploaded.filename).strip())
+    if not original_name:
+        return False, {"ok": False, "message": "Nama file tidak valid."}, 400
+    extension = original_name.rsplit(".", 1)[-1].lower() if "." in original_name else ""
+    if extension not in allowed_extensions:
+        return False, {"ok": False, "message": "Format file tidak didukung."}, 400
+    drive_file_name = output_name.replace("\\", "-").replace("/", "-").strip()
+    if not drive_file_name:
+        return False, {"ok": False, "message": "Nama dokumen tidak valid."}, 400
+    if not drive_file_name.lower().endswith(f".{extension}"):
+        drive_file_name = f"{drive_file_name}.{extension}"
+
+    bridge_url = os.getenv("DRIVE_BRIDGE_URL", "").strip()
+    root_folder_id = os.getenv("DRIVE_ROOT_FOLDER_ID", "").strip()
+    bridge_secret = os.getenv("DRIVE_BRIDGE_SECRET", "").strip()
+    if not bridge_url or not root_folder_id:
+        return False, {
+            "ok": False,
+            "message": "Google Drive belum dikonfigurasi. Isi Folder ID Utama dan URL Apps Script di App Setting.",
+        }, 503
+
+    try:
+        import requests
+        file_bytes = uploaded.read()
+        if not file_bytes:
+            return False, {"ok": False, "message": "File yang dipilih kosong."}, 400
+        bridge_response = requests.post(
+            bridge_url,
+            json={
+                "secret": bridge_secret,
+                "action": "upload_file",
+                "root_folder_id": root_folder_id,
+                "group_name": group_name,
+                "subfolder_name": subfolder_name,
+                "drive_file_name": drive_file_name,
+                "mime_type": uploaded.mimetype or "application/octet-stream",
+                "file_base64": base64.b64encode(file_bytes).decode("ascii"),
+            },
+            timeout=120,
+            allow_redirects=True,
+        )
+        drive_result = bridge_response.json()
+    except Exception as exc:
+        app.logger.exception("File upload to Drive failed")
+        return False, {"ok": False, "message": f"Gagal mengunggah file ke Google Drive: {exc}"}, 502
+
+    if (
+        not bridge_response.ok
+        or not isinstance(drive_result, dict)
+        or not drive_result.get("ok")
+    ):
+        return False, {
+            "ok": False,
+            "message": (
+                drive_result.get("message")
+                if isinstance(drive_result, dict)
+                else None
+            ) or "Google Drive gagal menyimpan file.",
+        }, 502
+
+    drive_file_id = str(drive_result.get("file_id", "")).strip()
+    drive_file_url = str(drive_result.get("file_url", "")).strip()
+    saved_file_name = str(drive_result.get("file_name", "")).strip()
+    if not drive_file_id or not drive_file_url or saved_file_name != drive_file_name:
+        return False, {
+            "ok": False,
+            "message": "Google Drive belum mengonfirmasi file tersimpan dengan nama yang diminta.",
+        }, 502
+
+    return True, {
+        "drive_file_id": drive_file_id,
+        "drive_file_url": drive_file_url,
+        "drive_file_name": drive_file_name,
+        "folder": drive_result.get("folder_path", ""),
+    }, 200
 
 
 @app.route("/api/upload/bmn", methods=["POST"])
@@ -1060,99 +1169,29 @@ def api_upload_bmn_document():
     if not _has_perm(user, module_key, "full"):
         return jsonify({"ok": False, "message": "Anda tidak memiliki hak upload dokumen."}), 403
 
-    uploaded = request.files.get("file")
-    if not uploaded or not uploaded.filename:
-        return jsonify({"ok": False, "message": "Pilih file yang akan diunggah."}), 400
+    tanggal_buat = request.form.get("Tanggal Buat", "").strip()
+    if not output_name or not tanggal_buat:
+        return jsonify({"ok": False, "message": "Judul dan tanggal dokumen wajib diisi."}), 400
 
-    allowed_extensions = {
-        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
-        "jpg", "jpeg", "png", "zip",
-    }
-    original_name = secure_filename(os.path.basename(uploaded.filename).strip())
-    if not original_name:
-        return jsonify({"ok": False, "message": "Nama file tidak valid."}), 400
-    extension = original_name.rsplit(".", 1)[-1].lower() if "." in original_name else ""
-    if extension not in allowed_extensions:
-        return jsonify({"ok": False, "message": "Format file tidak didukung."}), 400
-    drive_file_name = output_name.replace("\\", "-").replace("/", "-").strip()
-    if not drive_file_name:
-        return jsonify({"ok": False, "message": "Nama dokumen tidak valid."}), 400
-    if not drive_file_name.lower().endswith(f".{extension}"):
-        drive_file_name = f"{drive_file_name}.{extension}"
+    ok_upload, upload_res, status_code = _upload_file_to_drive_bridge(
+        request.files.get("file"), output_name, group_name, sub_menu
+    )
+    if not ok_upload:
+        return jsonify(upload_res), status_code
 
     row_data = {
         "Group": group_name,
         "Sub Menu": sub_menu,
         "Periode": request.form.get("Periode", "").strip(),
         "Kategori Item": request.form.get("Kategori Item", "").strip(),
-        "Judul Dokumen": drive_file_name,
-        "Tanggal Buat": request.form.get("Tanggal Buat", "").strip(),
+        "Judul Dokumen": upload_res["drive_file_name"],
+        "Tanggal Buat": tanggal_buat,
         "Keterangan": request.form.get("Keterangan", "").strip(),
+        "Link File": upload_res["drive_file_url"],
     }
-    if not row_data["Judul Dokumen"] or not row_data["Tanggal Buat"]:
-        return jsonify({"ok": False, "message": "Judul dan tanggal dokumen wajib diisi."}), 400
-
-    bridge_url = os.getenv("DRIVE_BRIDGE_URL", "").strip()
-    root_folder_id = os.getenv("DRIVE_ROOT_FOLDER_ID", "").strip()
-    bridge_secret = os.getenv("DRIVE_BRIDGE_SECRET", "").strip()
-    if not bridge_url or not root_folder_id:
-        return jsonify({
-            "ok": False,
-            "message": "Google Drive belum dikonfigurasi. Isi Folder ID Utama dan URL Apps Script di App Setting.",
-        }), 503
-
-    try:
-        import requests
-        file_bytes = uploaded.read()
-        if not file_bytes:
-            return jsonify({"ok": False, "message": "File yang dipilih kosong."}), 400
-        bridge_response = requests.post(
-            bridge_url,
-            json={
-                "secret": bridge_secret,
-                "action": "upload_file",
-                "root_folder_id": root_folder_id,
-                "group_name": group_name,
-                "subfolder_name": sub_menu,
-                "drive_file_name": drive_file_name,
-                "mime_type": uploaded.mimetype or "application/octet-stream",
-                "file_base64": base64.b64encode(file_bytes).decode("ascii"),
-            },
-            timeout=120,
-            allow_redirects=True,
-        )
-        drive_result = bridge_response.json()
-    except Exception as exc:
-        app.logger.exception("BMN file upload to Drive failed")
-        return jsonify({"ok": False, "message": f"Gagal mengunggah file ke Google Drive: {exc}"}), 502
-
-    if (
-        not bridge_response.ok
-        or not isinstance(drive_result, dict)
-        or not drive_result.get("ok")
-    ):
-        return jsonify({
-            "ok": False,
-            "message": (
-                drive_result.get("message")
-                if isinstance(drive_result, dict)
-                else None
-            ) or "Google Drive gagal menyimpan file.",
-        }), 502
-
-    drive_file_id = str(drive_result.get("file_id", "")).strip()
-    drive_file_url = str(drive_result.get("file_url", "")).strip()
-    saved_file_name = str(drive_result.get("file_name", "")).strip()
-    if not drive_file_id or not drive_file_url or saved_file_name != drive_file_name:
-        return jsonify({
-            "ok": False,
-            "message": "Google Drive belum mengonfirmasi file tersimpan dengan nama yang diminta.",
-        }), 502
-
-    row_data["Link File"] = drive_file_url
     ok, message = db.append_record("DB_BMN_Dokumen", row_data)
     if not ok:
-        app.logger.error("Uploaded BMN file %s but failed to save its record: %s", drive_file_id, message)
+        app.logger.error("Uploaded BMN file %s but failed to save its record: %s", upload_res["drive_file_id"], message)
         return jsonify({
             "ok": False,
             "message": f"File sudah tersimpan di Google Drive, tetapi data dokumen gagal disimpan: {message}",
@@ -1161,8 +1200,72 @@ def api_upload_bmn_document():
         "ok": True,
         "message": "Dokumen dan file berhasil disimpan ke Google Drive.",
         "url": row_data["Link File"],
-        "filename": drive_file_name,
-        "folder": drive_result.get("folder_path", ""),
+        "filename": upload_res["drive_file_name"],
+        "folder": upload_res["folder"],
+    })
+
+
+@app.route("/api/upload/arsip", methods=["POST"])
+def api_upload_arsip_document():
+    user = session.get("user")
+    if not user:
+        return jsonify({"ok": False, "message": "Restricted access!"}), 401
+
+    target_key = request.form.get("target_key", "").strip()
+    if target_key == "DB_SDM_Arsip":
+        module_key, group_name, subfolder_name = "arsip_sdm", "SDM", "Arsip SDM"
+        date_field = "Tanggal"
+    elif target_key == "DB_Arsip_Program":
+        module_key, group_name, subfolder_name = "arsip_program", "Perencanaan", "Arsip Program"
+        date_field = "Tanggal Upload"
+    else:
+        return jsonify({"ok": False, "message": "Target arsip tidak valid."}), 400
+
+    if not _has_perm(user, module_key, "full"):
+        return jsonify({"ok": False, "message": "Anda tidak memiliki hak upload dokumen."}), 403
+
+    output_name = request.form.get("Nama Dokumen", "").strip()
+    tanggal_val = request.form.get(date_field, "").strip()
+    if not output_name or not tanggal_val:
+        return jsonify({"ok": False, "message": "Nama dan tanggal dokumen wajib diisi."}), 400
+
+    ok_upload, upload_res, status_code = _upload_file_to_drive_bridge(
+        request.files.get("file"), output_name, group_name, subfolder_name
+    )
+    if not ok_upload:
+        return jsonify(upload_res), status_code
+
+    if target_key == "DB_SDM_Arsip":
+        row_data = {
+            "Nomor Dokumen": request.form.get("Nomor Dokumen", "").strip(),
+            "Nama Dokumen": upload_res["drive_file_name"],
+            "Tanggal": tanggal_val,
+            "Jenis": request.form.get("Jenis", "").strip(),
+            "Link": upload_res["drive_file_url"],
+        }
+    else:
+        row_data = {
+            "Keterangan": request.form.get("Keterangan", "").strip(),
+            "Nama Dokumen": upload_res["drive_file_name"],
+            "Tanggal Upload": tanggal_val,
+            "Jenis": request.form.get("Jenis", "").strip(),
+            "Kategori": request.form.get("Kategori", "").strip(),
+            "Link": upload_res["drive_file_url"],
+        }
+
+    ok, message = db.append_record(target_key, row_data)
+    if not ok:
+        app.logger.error("Uploaded arsip file %s but failed to save its record: %s", upload_res["drive_file_id"], message)
+        return jsonify({
+            "ok": False,
+            "message": f"File sudah tersimpan di Google Drive, tetapi data dokumen gagal disimpan: {message}",
+        }), 500
+    return jsonify({
+        "ok": True,
+        "message": "Dokumen dan file berhasil disimpan ke Google Drive.",
+        "url": row_data["Link"],
+        "filename": upload_res["drive_file_name"],
+        "folder": upload_res["folder"],
     })
 
 

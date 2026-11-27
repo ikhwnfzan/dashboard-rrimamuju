@@ -1667,18 +1667,31 @@ function renderProgramSiaran() {
   const filtered = (DATA.program_siaran || []).filter(p =>
     !q || Object.values(p).some(v => String(v ?? '').toLowerCase().includes(q))
   );
+  
+  const editable = canUpdate('program_siaran');
+  const deletable = canFull('program_siaran');
   const rows = paginateArray('program_siaran', filtered, 'pagProgramSiaran', 'renderProgramSiaran');
-  document.getElementById('tbodyProgramSiaran').innerHTML = rows.map(p => `
-    <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
-      <td class="py-3 px-3 font-mono font-bold whitespace-nowrap">${escapeHtml(p['Kode Program'] || '-')}</td>
-      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(p.Programa || '-')}</td>
-      <td class="py-3 px-3 font-bold text-teal-600 truncate whitespace-nowrap">${escapeHtml(p['Nama Program'] || '-')}</td>
-      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p.Hari || '-')}</td>
-      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(p.Jam || '-')}</td>
-      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(p.Kategori || p.Format || '-')}</span></td>
-      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 text-xs font-bold whitespace-nowrap">${escapeHtml(p.Status || 'Aktif')}</span></td>
-    </tr>
-  `).join('') || '<tr><td colspan="7" class="py-8 text-center text-xs text-slate-400">Belum ada program siaran.</td></tr>';
+  document.getElementById('tbodyProgramSiaran').innerHTML = rows.map(p => {
+    const safeProg = encodeURIComponent(JSON.stringify(p));
+    const statusText = String(p.Status || 'Aktif');
+    const isInactive = statusText.toLowerCase().includes('not') || statusText.toLowerCase().includes('tidak');
+    return `
+      <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
+        <td class="py-3 px-3 font-mono font-bold whitespace-nowrap">${escapeHtml(p['Kode Program'] || '-')}</td>
+        <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(p.Programa || '-')}</td>
+        <td class="py-3 px-3 font-bold text-teal-600 truncate whitespace-nowrap">${escapeHtml(p['Nama Program'] || '-')}</td>
+        <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p.Hari || '-')}</td>
+        <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(p.Jam || '-')}</td>
+        <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(p.Kategori || p.Format || '-')}</span></td>
+        <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md text-xs font-bold whitespace-nowrap ${isInactive ? 'bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-300' : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300'}">${escapeHtml(statusText)}</span></td>
+        <td class="py-3 px-3 text-right whitespace-nowrap space-x-1">
+          ${editable && p._row_num ? `<button type="button" title="Edit Program" aria-label="Edit Program" onclick="openProgramSiaranModal(JSON.parse(decodeURIComponent('${safeProg}')))" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : ''}
+          ${deletable && p._row_num ? `<button type="button" title="Hapus Program" aria-label="Hapus Program" onclick="deleteRecord('DB_Program', ${Number(p._row_num)}, 'Program ${escapeHtml(p['Kode Program'] || p['Nama Program'] || '').replace(/'/g, '')}')" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/70 text-rose-600 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-800 transition">${icon('delete')}</button>` : ''}
+          ${(!editable && !deletable) || !p._row_num ? '-' : ''}
+        </td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="8" class="py-8 text-center text-xs text-slate-400">Belum ada program siaran.</td></tr>';
 }
 
 function renderArsipProgram() {
@@ -2550,7 +2563,283 @@ function openAssetModal(asset = null) {
   modal.classList.add('flex');
 }
 
+function generateNextProgramCode(programa = 'Pro 1') {
+  const isPro2 = String(programa || '').toLowerCase().includes('2');
+  const targetPrefix = `PRG-${isPro2 ? 'P2' : 'P1'}`;
+  const list = DATA.program_siaran || [];
+  let maxNum = 0;
+  let sep = '-';
+  let padLen = 3;
+  // const codePattern = new RegExp(`^${targetPrefix}([-_]?)(\\d+)$`, 'i');
+  list.forEach(item => {
+    const code = String(item['Kode Program'] || '').trim().slice(-2);
+    if (code) {
+      const num = parseInt(code, 10);
+      if (num > maxNum) {
+        maxNum = num;
+        padLen = Math.max(3, code.length);
+      }
+    }
+  });
+  return `${targetPrefix}${sep}${String(maxNum + 1).padStart(padLen, '0')}`;
+}
+
+function syncProgramSiaranCode() {
+  const form = document.getElementById('genericAddForm');
+  if (!form || form.dataset.editRowNum) return;
+  const programa = form.querySelector('select[name="Programa"]')?.value || 'Pro 1';
+  const codeInput = form.querySelector('input[name="Kode Program"]');
+  if (codeInput) codeInput.value = generateNextProgramCode(programa);
+}
+
+function syncProgramJamValue() {
+  const hour = document.getElementById('programJamHour')?.value || '00';
+  const minute = document.getElementById('programJamMinute')?.value || '00';
+  const hidden = document.getElementById('programJamValue');
+  if (hidden) hidden.value = `${hour}:${minute}`;
+}
+
+function openProgramSiaranModal(program = null) {
+  const form = document.getElementById('genericAddForm');
+  if (!form) return;
+  const editing = Boolean(program?._row_num);
+  const tz = APP_CONFIG?.timezone || 'WITA';
+  const currentPrograma = String(program?.Programa || 'Pro 1').trim();
+  const nextCode = editing ? String(program['Kode Program'] || '') : generateNextProgramCode(currentPrograma);
+  const jamMatch = String(program?.Jam || '').match(/(\d{1,2}):(\d{2})/);
+  const initHour = jamMatch ? jamMatch[1].padStart(2, '0') : '00';
+  const initMinute = jamMatch ? jamMatch[2].padStart(2, '0') : '00';
+  const rawStatus = String(program?.Status || 'Aktif').trim().toLowerCase();
+  const initStatus = rawStatus.includes('not') || rawStatus.includes('tidak') ? 'Tidak Aktif' : 'Aktif';
+
+  const hourOptions = Array.from({ length: 24 }, (_, i) => {
+    const v = String(i).padStart(2, '0');
+    return `<option value="${v}"${v === initHour ? ' selected' : ''}>${v}</option>`;
+  }).join('');
+  const minuteOptions = Array.from({ length: 60 }, (_, i) => {
+    const v = String(i).padStart(2, '0');
+    return `<option value="${v}"${v === initMinute ? ' selected' : ''}>${v}</option>`;
+  }).join('');
+  form.dataset.targetKey = 'DB_Program';
+  form.dataset.editRowNum = editing ? String(program._row_num) : '';
+  document.getElementById('genericModalTitle').textContent = editing ? 'Edit Program Siaran' : SCHEMAS.DB_Program.title;
+  form.innerHTML = `
+    <div>
+      <label class="block font-bold mb-1">Kode Program</label>
+      <input type="text" name="Kode Program" value="${escapeHtml(nextCode)}" readonly required
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono font-bold opacity-80 pointer-events-none" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Programa</label>
+      <select name="Programa" onchange="syncProgramSiaranCode()" required class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <option value="Pro 1"${currentPrograma === 'Pro 1' ? ' selected' : ''}>Pro 1</option>
+        <option value="Pro 2"${currentPrograma === 'Pro 2' ? ' selected' : ''}>Pro 2</option>
+      </select>
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Nama Program</label>
+      <input type="text" name="Nama Program" value="${escapeHtml(program?.['Nama Program'] || '')}" required placeholder="Nama Program"
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Hari</label>
+      <input type="text" name="Hari" value="${escapeHtml(program?.Hari || '')}" required placeholder="Contoh: Senin - Jumat"
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Jam <span class="text-teal-600 font-normal">(hh:mm • ${escapeHtml(tz)})</span></label>
+      <input type="hidden" id="programJamValue" name="Jam" value="${escapeHtml(`${initHour}:${initMinute}`)}" />
+      <div class="flex items-center gap-2">
+        <select id="programJamHour" onchange="syncProgramJamValue()" aria-label="Jam (00-23)"
+          class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">
+          ${hourOptions}
+        </select>
+        <span class="font-extrabold text-slate-400">:</span>
+        <select id="programJamMinute" onchange="syncProgramJamValue()" aria-label="Menit (00-59)"
+          class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">
+          ${minuteOptions}
+        </select>
+        <span class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-300 shrink-0">${escapeHtml(tz)}</span>
+      </div>
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Kategori</label>
+      <input type="text" name="Kategori" value="${escapeHtml(program?.Kategori || program?.Format || '')}" placeholder="Contoh: Astacita, Lokal, Pusat"
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Status</label>
+      <select name="Status" required class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <option value="Aktif"${initStatus === 'Aktif' ? ' selected' : ''}>Aktif</option>
+        <option value="Tidak Aktif"${initStatus === 'Tidak Aktif' ? ' selected' : ''}>Tidak Aktif</option>
+      </select>
+    </div>
+    <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">${editing ? 'Simpan Perubahan' : 'Simpan'}</button>
+  `;
+  const m = document.getElementById('genericAddModal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+}
+
+function openTmbProgressModal(item = null) {
+  const form = document.getElementById('genericAddForm');
+  if (!form) return;
+  const updating = Boolean(item?._row_num);
+  form.dataset.targetKey = 'DB_TMB_Working_Progress';
+  form.dataset.editRowNum = updating ? String(item._row_num) : '';
+  document.getElementById('genericModalTitle').textContent = updating
+    ? 'Update Working Progress'
+    : SCHEMAS.DB_TMB_Working_Progress.title;
+
+  if (updating) {
+    const statusVal = normalizeTmbProgressStage(item.Status || 'Record');
+    const statusOpts = ['Record', 'Editing', 'Review', 'Approved', 'Done']
+      .map(s => `<option value="${escapeHtml(s)}"${s === statusVal ? ' selected' : ''}>${escapeHtml(s)}</option>`)
+      .join('');
+    const initProgress = item.Progress !== undefined && String(item.Progress).trim() !== ''
+      ? item.Progress
+      : (TMB_PROGRESS_STAGE_META[statusVal]?.progress ?? 0);
+    form.innerHTML = `
+      <div>
+        <label class="block font-bold mb-1">Judul</label>
+        <input type="text" value="${escapeHtml(item.Judul || '')}" readonly
+          class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-75 pointer-events-none" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-bold mb-1">Progress (%)</label>
+          <input type="number" id="tmbUpdateProgressInput" name="Progress" min="0" max="100" step="1" value="${escapeHtml(String(initProgress))}" required
+            class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+        <div>
+          <label class="block font-bold mb-1">Status</label>
+          <select name="Status" onchange="syncTmbProgressFromStatus(this.value)" required class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            ${statusOpts}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Link</label>
+        <input type="url" name="Link" value="${escapeHtml(item.Link || '')}" placeholder="https://..."
+          class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Kendala</label>
+        <input type="text" name="Catatan" value="${escapeHtml(item.Catatan || item.Kendala || '')}" placeholder="Opsional"
+          class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">Simpan Progress</button>
+    `;
+  } else {
+    const today = new Date().toISOString().slice(0, 10);
+    const employeeOption = emp => {
+      const nip = String(emp.NIP || emp.nip_clean || '').trim();
+      const name = String(emp['Nama Pegawai'] || '').trim();
+      if (!nip && !name) return '';
+      const label = nip && name ? `${nip} - ${name}` : name || nip;
+      return `<option value="${escapeHtml(name || nip)}">${escapeHtml(label)}</option>`;
+    };
+    const empTMBOptions = (DATA.employees || []).filter(e => String(e.Posisi) === 'Staf TMB').map(employeeOption).join('');
+    const empSiaranOptions = (DATA.employees || []).filter(e => String(e.Jabatan).toLowerCase().includes('pranata')).map(employeeOption).join('');
+    form.innerHTML = `
+      <div>
+        <label class="block font-bold mb-1">Judul</label>
+        <input type="text" name="Judul" required placeholder="Judul produksi / paket"
+          class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div>
+        <label class="block font-bold mb-1">Jenis</label>
+        <select name="Jenis" required class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <option value="Video">Video</option>
+          <option value="Audio">Audio</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div>
+          <label class="block font-bold mb-1">Tanggal Record</label>
+          <input type="date" name="Tanggal Record" value="${today}" required
+            class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+        <div>
+          <label class="block font-bold mb-1">Deadline</label>
+          <input type="date" name="Deadline" required
+            class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+        <div>
+          <label class="block font-bold mb-1">Tanggal Tayang</label>
+          <input type="date" name="Tanggal Tayang"
+            class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div>
+          <label class="block font-bold mb-1">Record</label>
+          <select name="Record" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <option value="">Pilih Operator</option>${empTMBOptions}
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold mb-1">Editing</label>
+          <select name="Editing" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <option value="">Pilih Operator</option>${empTMBOptions}
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold mb-1">PIC TMB</label>
+          <select name="PIC TMB" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <option value="">Pilih Operator</option>${empTMBOptions}
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold mb-1">PIC Penyiaran</label>
+          <select name="PIC Penyiaran" class="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <option value="">Pilih Penyiar</option>${empSiaranOptions}
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5 hidden">
+        <div>
+          <label class="block font-bold mb-1">Progress</label>
+          <input type="number" name="Progress" value="0" readonly
+            class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-75 pointer-events-none" />
+        </div>
+        <div>
+          <label class="block font-bold mb-1">Status</label>
+          <input type="text" name="Status" value="Record" readonly
+            class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 opacity-75 pointer-events-none" />
+        </div>
+      </div>
+      <input type="hidden" name="Link" value="" />
+      <div>
+        <label class="block font-bold mb-1">Keterangan</label>
+        <input type="text" name="Keterangan" placeholder="Opsional"
+          class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+      <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">Simpan Produksi</button>
+    `;
+  }
+
+  const modalPanel = document.querySelector('#genericAddModal > div');
+  if (modalPanel && !updating) modalPanel.classList.replace('max-w-md', 'max-w-lg');
+  const m = document.getElementById('genericAddModal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+}
+
 function openAddModal(key) {
+  if (key === 'DB_SDM_Arsip' || key === 'DB_Arsip_Program') {
+    openArsipDokModal(key);
+    return;
+  }
+  if (key === 'DB_Program') {
+    openProgramSiaranModal();
+    return;
+  }
+  if (key === 'DB_TMB_Working_Progress') {
+    openTmbProgressModal();
+    return;
+  }
   const s = SCHEMAS[key];
   if (!s) return;
   document.getElementById('genericModalTitle').textContent = s.title;
@@ -2585,11 +2874,14 @@ function closeGenericModal() {
   if (modalPanel) modalPanel.classList.replace('max-w-lg', 'max-w-md');
 }
 
-async function submitBmnDocument(event) {
+async function submitDocumentUploadForm(event, targetKey) {
   const form = event.target;
   const payload = Object.fromEntries(new FormData(form).entries());
   const source = payload.BmnSource || 'upload';
   delete payload.BmnSource;
+  const isBmn = targetKey === 'DB_BMN_Dokumen';
+  const uploadEndpoint = isBmn ? '/api/upload/bmn' : '/api/upload/arsip';
+  const linkField = isBmn ? 'Link File' : 'Link';
 
   let linkFile = '';
   if (source === 'upload') {
@@ -2598,10 +2890,11 @@ async function submitBmnDocument(event) {
       return;
     }
     const uploadData = new FormData();
+    if (!isBmn) uploadData.append('target_key', targetKey);
     Object.entries(payload).forEach(([key, value]) => uploadData.append(key, String(value)));
     uploadData.append('file', selectedBmnFile);
     const uploadOut = await processWithLoading(async () => {
-      const res = await fetch('/api/upload/bmn', { method: 'POST', body: uploadData });
+      const res = await fetch(uploadEndpoint, { method: 'POST', body: uploadData });
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || 'Gagal mengunggah dokumen.');
       if (result.ok) {
@@ -2624,9 +2917,9 @@ async function submitBmnDocument(event) {
     }
   }
 
-  payload['Link File'] = linkFile;
+  payload[linkField] = linkFile;
   const out = await processWithLoading(async () => {
-    const res = await fetch('/api/add/DB_BMN_Dokumen', {
+    const res = await fetch(`/api/add/${targetKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -2644,21 +2937,32 @@ async function submitBmnDocument(event) {
 async function submitGenericRecord(e) {
   e.preventDefault();
   const key = e.target.dataset.targetKey;
-  if (key === 'DB_BMN_Dokumen') {
-    await submitBmnDocument(e);
+  if (key === 'DB_BMN_Dokumen' || key === 'DB_SDM_Arsip' || key === 'DB_Arsip_Program') {
+    await submitDocumentUploadForm(e, key);
     return;
   }
   const payload = Object.fromEntries(new FormData(e.target).entries());
+  if (key === 'DB_Program' && payload.Jam) {
+    const tz = APP_CONFIG?.timezone || 'WITA';
+    if (!/\b(WIB|WITA|WIT|UTC)$/i.test(String(payload.Jam).trim())) {
+      payload.Jam = `${String(payload.Jam).trim()} ${tz}`;
+    }
+  }
   const editRowNum = e.target.dataset.editRowNum;
   if (key === 'DB_Aset' && editRowNum) delete payload['Kode Barang'];
   if (key === 'DB_Ruangan' && editRowNum) delete payload['Nomor Ruangan'];
+  if (key === 'DB_Program' && editRowNum) delete payload['Kode Program'];
   const out = await processWithLoading(async () => {
     const url = key === 'DB_Aset' && editRowNum
       ? '/api/assets/update'
       : key === 'DB_Ruangan' && editRowNum
         ? '/api/rooms/update'
-        : `/api/add/${key}`;
-    const body = (key === 'DB_Aset' || key === 'DB_Ruangan') && editRowNum
+        : key === 'DB_Program' && editRowNum
+          ? '/api/program-siaran/update'
+          : key === 'DB_TMB_Working_Progress' && editRowNum
+            ? '/api/tmb-progress/update'
+            : `/api/add/${key}`;
+    const body = (key === 'DB_Aset' || key === 'DB_Ruangan' || key === 'DB_Program' || key === 'DB_TMB_Working_Progress') && editRowNum
       ? { row_num: Number(editRowNum), updates: payload }
       : payload;
     const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -2752,9 +3056,12 @@ function renderProduksiPaket() {
       <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(p['Tanggal Record'] || '-'))}</td>
       <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(p.Deadline || '-'))}</td>
       <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-300 whitespace-nowrap">${escapeHtml(formatDisplayDate(p['Tanggal Tayang'] || '-'))}</td>
-      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md font-bold whitespace-nowrap ${escapeHtml(p.Status) === 'Done' ?
-           'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 
-           escapeHtml(p.Status) === 'Editing' ? 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300' : 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300'}">${escapeHtml(p.Status)}</span></td>
+       <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md font-bold whitespace-nowrap ${String(p.Status || '').trim().toLowerCase() === 'done' ?
+         'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' :
+         String(p.Status || '').trim().toLowerCase() === 'editing' ? 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300' :
+         String(p.Status || '').trim().toLowerCase() === 'approved' ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300' :
+         String(p.Status || '').trim().toLowerCase() === 'review' ? 'bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300' :
+         'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300'}">${escapeHtml(p.Status || '-')}</span></td>
       <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p['PIC Penyiaran'] || '-')}</td>
       <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p['Editing'] || '-')}</td>
       <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p['Catatan'] || '-')}</td>
@@ -2834,19 +3141,44 @@ function renderSocmedAnalytics() {
 
 let TMB_PROGRESS_VIEW = 'table';
 let TMB_PROGRESS_CAL_MONTH = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+const TMB_PROGRESS_STAGE_META = {
+  Record: { progress: 0, badge: 'bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300' },
+  Editing: { progress: 25, badge: 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300' },
+  Review: { progress: 50, badge: 'bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300' },
+  Approved: { progress: 80, badge: 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300' },
+  Done: { progress: 100, badge: 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' },
+};
+
 const TMB_PROGRESS_STAGES = [
-  { key: 'In Progress', label: 'In Progress / Editing', badge: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-  { key: 'Review', label: 'Menunggu Approval', badge: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
-  { key: 'Approved', label: 'Approved', badge: 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300' },
-  { key: 'Done', label: 'Selesai / Done', badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+  { key: 'Record', label: 'Record (0%)', badge: TMB_PROGRESS_STAGE_META.Record.badge },
+  { key: 'Editing', label: 'Editing (25%)', badge: TMB_PROGRESS_STAGE_META.Editing.badge },
+  { key: 'Review', label: 'Review (50%)', badge: TMB_PROGRESS_STAGE_META.Review.badge },
+  { key: 'Approved', label: 'Approved (80%)', badge: TMB_PROGRESS_STAGE_META.Approved.badge },
+  { key: 'Done', label: 'Done (100%)', badge: TMB_PROGRESS_STAGE_META.Done.badge },
 ];
+
+function syncTmbProgressFromStatus(status) {
+  const input = document.getElementById('tmbUpdateProgressInput');
+  const meta = TMB_PROGRESS_STAGE_META[status];
+  if (input && meta) input.value = String(meta.progress);
+}
+
+function getTmbProgressBadgeClass(progressVal) {
+  const n = Number(progressVal || 0);
+  if (n >= 100) return TMB_PROGRESS_STAGE_META.Done.badge;
+  if (n >= 80) return TMB_PROGRESS_STAGE_META.Approved.badge;
+  if (n >= 50) return TMB_PROGRESS_STAGE_META.Review.badge;
+  if (n >= 25) return TMB_PROGRESS_STAGE_META.Editing.badge;
+  return TMB_PROGRESS_STAGE_META.Record.badge;
+}
 
 function normalizeTmbProgressStage(status) {
   const s = String(status || '').trim().toLowerCase();
   if (s === 'done' || s.includes('selesai') || s.includes('tayang')) return 'Done';
   if (s.includes('approv') || s.includes('setuju')) return 'Approved';
   if (s.includes('review') || s.includes('approval') || s.includes('ajukan')) return 'Review';
-  return 'In Progress';
+  if (s.includes('edit') || s.includes('in progress')) return 'Editing';
+  return 'Record';
 }
 
 function setTmbProgressView(mode) {
@@ -2871,11 +3203,13 @@ function changeTmbProgressMonth(delta) {
 
 async function updateTmbProgressStatus(rowNum, newStatus) {
   if (!rowNum) return;
+  const meta = TMB_PROGRESS_STAGE_META[newStatus];
+  const updates = meta ? { Status: newStatus, Progress: meta.progress } : { Status: newStatus };
   const out = await processWithLoading(async () => {
     const res = await fetch('/api/tmb-progress/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ row_num: Number(rowNum), updates: { Status: newStatus } })
+      body: JSON.stringify({ row_num: Number(rowNum), updates })
     });
     return res.json();
   }, 'Gagal memperbarui status TMB');
@@ -2917,9 +3251,10 @@ function renderMonitoringProduksi() {
                 <p class="text-[11px] text-slate-400">PIC TMB: ${escapeHtml(m['PIC TMB'] || '-')} • Progress: ${escapeHtml(m.Progress || '0')}%</p>
                 ${editable && m._row_num ? `
                   <div class="flex flex-wrap gap-1 pt-1 border-t border-slate-100 dark:border-slate-800">
-                    ${stage.key === 'In Progress' ? `<button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Review')" class="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[10px] font-bold hover:opacity-80">Ajukan Review →</button>` : ''}
-                    ${stage.key === 'Review' ? `<button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Approved')" class="px-2 py-1 rounded-lg bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-[10px] font-bold hover:opacity-80">✓ Approve</button><button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'In Progress')" class="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 text-[10px] font-bold hover:opacity-80">↩ Revisi</button>` : ''}
-                    ${stage.key === 'Approved' ? `<button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Done')" class="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold hover:opacity-80">Selesai →</button>` : ''}
+                    ${stage.key === 'Record' ? `<button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Editing')" class="px-2 py-1 rounded-lg ${TMB_PROGRESS_STAGE_META.Editing.badge} text-[10px] font-bold hover:opacity-80">Editing →</button>` : ''}
+                    ${stage.key === 'Editing' ? `<button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Review')" class="px-2 py-1 rounded-lg ${TMB_PROGRESS_STAGE_META.Review.badge} text-[10px] font-bold hover:opacity-80">Ajukan Review →</button>` : ''}
+                    ${stage.key === 'Review' ? `<button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Approved')" class="px-2 py-1 rounded-lg ${TMB_PROGRESS_STAGE_META.Approved.badge} text-[10px] font-bold hover:opacity-80">✓ Approve</button><button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Editing')" class="px-2 py-1 rounded-lg ${TMB_PROGRESS_STAGE_META.Record.badge} text-[10px] font-bold hover:opacity-80">↩ Revisi</button>` : ''}
+                    ${stage.key === 'Approved' ? `<button type="button" onclick="updateTmbProgressStatus(${m._row_num}, 'Done')" class="px-2 py-1 rounded-lg ${TMB_PROGRESS_STAGE_META.Done.badge} text-[10px] font-bold hover:opacity-80">Selesai →</button>` : ''}
                   </div>
                 ` : ''}
               </div>
@@ -2961,33 +3296,28 @@ function renderMonitoringProduksi() {
   if (!tbody) return;
   tbody.innerHTML = rows.map(m => {
     const hasLink = String(m.Link || '').trim().startsWith('http');
-    const progVal = Number(m.Progress || 0);
-    const progClass = progVal >= 100
-      ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-      : progVal >= 50
-        ? 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
-        : 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300';
-    const statusLower = String(m.Status || '').trim().toLowerCase();
-    const statusClass = statusLower === 'done' || statusLower.includes('selesai')
-      ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-      : statusLower === 'editing' || statusLower.includes('review')
-        ? 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
-        : 'bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300';
+    const safeItem = encodeURIComponent(JSON.stringify(m));
+    const stageKey = normalizeTmbProgressStage(m.Status);
+    const statusClass = TMB_PROGRESS_STAGE_META[stageKey]?.badge || TMB_PROGRESS_STAGE_META.Record.badge;
+    const progClass = getTmbProgressBadgeClass(m.Progress ?? TMB_PROGRESS_STAGE_META[stageKey]?.progress ?? 0);
     return `<tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
       <td class="py-3 px-3 font-bold text-teal-600 truncate max-w-xs whitespace-nowrap">${escapeHtml(m.Judul || '-')}</td>
       <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(m.Jenis || '-')}</span></td>
       <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(m['Tanggal Record'] || '-'))}</td>
-      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(m.Record || '-')}</td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(m.Record || '-')}</td>
       <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(m.Editing || '-')}</td>
       <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(m['PIC TMB'] || '-')}</td>
-      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(m['PIC Penyiaran'] || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(m['PIC Penyiaran'] || '-')}</td>
       <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md text-xs font-bold whitespace-nowrap ${progClass}">${escapeHtml(String(m.Progress ?? 0))}</span></td>
       <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(m.Deadline || '-'))}</td>
-      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(m.Kendala || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(m.Catatan || m.Kendala || '-')}</td>
       <td class="py-3 px-3 whitespace-nowrap">${hasLink ? `<a href="${escapeHtml(m.Link)}" target="_blank" rel="noopener" title="Buka File" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : '-'}</td>
       <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md text-xs font-bold whitespace-nowrap ${statusClass}">${escapeHtml(m.Status || '-')}</span></td>
+      <td class="py-3 px-3 whitespace-nowrap space-x-1">
+        ${editable && m._row_num ? `<button type="button" title="Update Progress" aria-label="Update Progress" onclick="openTmbProgressModal(JSON.parse(decodeURIComponent('${safeItem}')))" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-teal-700 transition">${icon('edit')}</button>` : '-'}
+      </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="12" class="py-8 text-center text-xs text-slate-400">Belum ada data produksi TMB.</td></tr>';
+  }).join('') || '<tr><td colspan="13" class="py-8 text-center text-xs text-slate-400">Belum ada data produksi TMB.</td></tr>';
 }
 
 let BAST_RECORDS = [];
@@ -3412,6 +3742,120 @@ function renderPemeliharaanAset() {
   }
 }
 
+function renderDocumentSourceFieldsHtml() {
+  return `
+    <fieldset>
+      <legend class="block font-bold mb-2">Sumber File</legend>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="cursor-pointer">
+          <input type="radio" name="BmnSource" value="upload" checked class="peer sr-only" onchange="toggleBmnFileSource(this.value)" />
+          <span class="block text-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-teal-600 peer-checked:bg-teal-50 peer-checked:text-teal-700 dark:peer-checked:bg-teal-900/30 dark:peer-checked:text-teal-300">Upload File</span>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="BmnSource" value="drive" class="peer sr-only" onchange="toggleBmnFileSource(this.value)" />
+          <span class="block text-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-teal-600 peer-checked:bg-teal-50 peer-checked:text-teal-700 dark:peer-checked:bg-teal-900/30 dark:peer-checked:text-teal-300">Link Google Drive</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <div id="bmnUploadSource">
+      <label id="bmnDropZone" for="bmnFileInput"
+        class="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-4 py-5 text-center hover:border-teal-500 transition">
+        <i class="ti ti-cloud-upload text-2xl text-teal-600"></i>
+        <span class="mt-1 font-bold">Seret file ke sini</span>
+        <span class="text-slate-400">atau klik Browse</span>
+        <span id="bmnFileName" class="mt-2 hidden font-bold text-teal-600"></span>
+      </label>
+      <input id="bmnFileInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.zip" class="hidden"
+        onchange="handleBmnFileSelection(this.files?.[0])" />
+    </div>
+    <div id="bmnDriveSource" class="hidden">
+      <label class="block font-bold mb-1">Link Google Drive</label>
+      <input type="url" id="bmnDriveLink" placeholder="https://drive.google.com/file/d/..."
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+  `;
+}
+
+function wireBmnDropZone() {
+  const modalPanel = document.querySelector('#genericAddModal > div');
+  if (modalPanel) modalPanel.classList.replace('max-w-md', 'max-w-lg');
+  const dropZone = document.getElementById('bmnDropZone');
+  if (dropZone) {
+    ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, event => {
+      event.preventDefault();
+      dropZone.classList.add('border-teal-500', 'bg-teal-50', 'dark:bg-teal-900/20');
+    }));
+    ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, event => {
+      event.preventDefault();
+      dropZone.classList.remove('border-teal-500', 'bg-teal-50', 'dark:bg-teal-900/20');
+    }));
+    dropZone.addEventListener('drop', event => {
+      event.preventDefault();
+      const file = event.dataTransfer?.files?.[0];
+      if (file) handleBmnFileSelection(file);
+    });
+  }
+}
+
+function openArsipDokModal(targetKey) {
+  const form = document.getElementById('genericAddForm');
+  if (!form) return;
+  selectedBmnFile = null;
+  form.dataset.targetKey = targetKey;
+  form.dataset.editRowNum = '';
+
+  const isSdm = targetKey === 'DB_SDM_Arsip';
+  const jenisOptions = (isSdm
+    ? ['Surat', 'SK', 'Nodin', 'Dokumen Lainnya']
+    : ['Surat', 'Nodin', 'Notulensi', 'Surat Tugas', 'Laporan', 'Dokumen Lainnya']
+  ).map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('');
+  const dateField = isSdm ? 'Tanggal' : 'Tanggal Upload';
+
+  form.innerHTML = `
+    <div>
+      <label class="block font-bold mb-1">Nomor Dokumen</label>
+      <input type="text" name="${isSdm ? 'Nomor Dokumen' : 'Keterangan'}" required placeholder="Nomor dokumen"
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Jenis Dokumen</label>
+      <select name="Jenis" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        ${jenisOptions}
+      </select>
+    </div>
+    ${isSdm ? '' : `
+      <div>
+        <label class="block font-bold mb-1">Kategori</label>
+        <input type="text" name="Kategori" placeholder="Contoh: Rapat, Program Siaran, Evaluasi"
+          class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+      </div>
+    `}
+    <div>
+      <label class="block font-bold mb-1">Nama Dokumen</label>
+      <input type="text" name="Nama Dokumen" required placeholder="Nama dokumen"
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    <div>
+      <label class="block font-bold mb-1">Tanggal</label>
+      <input type="date" name="${dateField}" required
+        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+    </div>
+    ${renderDocumentSourceFieldsHtml()}
+    <input type="hidden" name="Link" value="" />
+    <button type="submit" class="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold">Simpan Dokumen</button>
+  `;
+
+  const dateInput = form.querySelector(`input[name="${dateField}"]`);
+  if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+
+  wireBmnDropZone();
+  document.getElementById('genericModalTitle').textContent = isSdm ? 'Upload Dokumen Arsip SDM' : 'Upload Dokumen Arsip Program';
+  const modal = document.getElementById('genericAddModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
 function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
   const form = document.getElementById('genericAddForm');
   if (!form) return;
@@ -3462,36 +3906,7 @@ function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
         class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
     </div>
 
-    <fieldset>
-      <legend class="block font-bold mb-2">Sumber File</legend>
-      <div class="grid grid-cols-2 gap-2">
-        <label class="cursor-pointer">
-          <input type="radio" name="BmnSource" value="upload" checked class="peer sr-only" onchange="toggleBmnFileSource(this.value)" />
-          <span class="block text-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-teal-600 peer-checked:bg-teal-50 peer-checked:text-teal-700 dark:peer-checked:bg-teal-900/30 dark:peer-checked:text-teal-300">Upload File</span>
-        </label>
-        <label class="cursor-pointer">
-          <input type="radio" name="BmnSource" value="drive" class="peer sr-only" onchange="toggleBmnFileSource(this.value)" />
-          <span class="block text-center px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 peer-checked:border-teal-600 peer-checked:bg-teal-50 peer-checked:text-teal-700 dark:peer-checked:bg-teal-900/30 dark:peer-checked:text-teal-300">Link Google Drive</span>
-        </label>
-      </div>
-    </fieldset>
-
-    <div id="bmnUploadSource">
-      <label id="bmnDropZone" for="bmnFileInput"
-        class="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-4 py-5 text-center hover:border-teal-500 transition">
-        <i class="ti ti-cloud-upload text-2xl text-teal-600"></i>
-        <span class="mt-1 font-bold">Seret file ke sini</span>
-        <span class="text-slate-400">atau klik Browse</span>
-        <span id="bmnFileName" class="mt-2 hidden font-bold text-teal-600"></span>
-      </label>
-      <input id="bmnFileInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.zip" class="hidden"
-        onchange="handleBmnFileSelection(this.files?.[0])" />
-    </div>
-    <div id="bmnDriveSource" class="hidden">
-      <label class="block font-bold mb-1">Link Google Drive</label>
-      <input type="url" id="bmnDriveLink" placeholder="https://drive.google.com/file/d/..."
-        class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
-    </div>
+    ${renderDocumentSourceFieldsHtml()}
     ${ isArsip ? '' : `
       <div>
         <label class="block font-bold mb-1">Keterangan</label>
@@ -3506,24 +3921,7 @@ function openBmnDokModal(groupName, subMenuName = '', categoryOptions = []) {
   const dateInput = form.querySelector('input[name="Tanggal Buat"]');
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
 
-  const modalPanel = document.querySelector('#genericAddModal > div');
-  if (modalPanel) modalPanel.classList.replace('max-w-md', 'max-w-lg');
-  const dropZone = document.getElementById('bmnDropZone');
-  if (dropZone) {
-    ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, event => {
-      event.preventDefault();
-      dropZone.classList.add('border-teal-500', 'bg-teal-50', 'dark:bg-teal-900/20');
-    }));
-    ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, event => {
-      event.preventDefault();
-      dropZone.classList.remove('border-teal-500', 'bg-teal-50', 'dark:bg-teal-900/20');
-    }));
-    dropZone.addEventListener('drop', event => {
-      event.preventDefault();
-      const file = event.dataTransfer?.files?.[0];
-      if (file) handleBmnFileSelection(file);
-    });
-  }
+  wireBmnDropZone();
 
   document.getElementById('genericModalTitle').textContent = `Upload Dokumen ${subMenuName || groupName}`;
   const modal = document.getElementById('genericAddModal');
@@ -3546,7 +3944,7 @@ function handleBmnFileSelection(file) {
     nameElement.textContent = file.name;
     nameElement.classList.remove('hidden');
   }
-  const titleInput = document.querySelector('#genericAddForm input[name="Judul Dokumen"]');
+  const titleInput = document.querySelector('#genericAddForm input[name="Judul Dokumen"], #genericAddForm input[name="Nama Dokumen"]');
   if (titleInput && !titleInput.value.trim()) {
     titleInput.value = file.name.replace(/\.[^/.]+$/, '');
   }

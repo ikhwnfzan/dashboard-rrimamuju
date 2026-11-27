@@ -214,19 +214,17 @@ DB_SCHEMAS = {
 
 AUTO_ID_FIELDS = {
     "DB_Pegawai": ("No", ""),
-    "DB_Timeline": ("ID Kegiatan", ""),
-    "DB_Jadwal_Operasional": ("ID Jadwal", ""),
-    "DB_Dialog": ("ID Dialog", ""),
-    "DB_Program": ("Kode Program", "PRG-"),
+    "DB_Timeline": ("ID Kegiatan", "RRI-TL-"),
+    "DB_Dialog": ("ID Dialog", "RRI-DS"),
     "DB_Konten": ("ID Konten", "CNT-"),
-    "DB_Pemeliharaan_Header": ("Kode Jadwal", "MNT-"),
-    "DB_Pemeliharaan_Detail": ("Kode Detail Pemeliharaan", "DMP-"),
-    "DB_BMN_Dokumen": ("ID Dokumen", "DOK-"),
-    "DB_Stok_Detail": ("ID Transaksi", "TRX-"),
+    "DB_Pemeliharaan_Header": ("Kode Jadwal", "BMN-PML-"),
+    "DB_Pemeliharaan_Detail": ("Kode Detail Pemeliharaan", "PML-DT-"),
+    "DB_BMN_Dokumen": ("ID Dokumen", "DOK-BMN-"),
+    "DB_Stok_Master": ("Kode Barang", "STK-"),
+    # "DB_Stok_Detail": ("ID Transaksi", "STK-DT-"),
     "DB_Socmed_Analytics": ("ID Socmed", "SOC-"),
-    "DB_TMB_Working_Progress": ("ID Produksi", "RRI-"),
-    "DB_Flyer": ("ID File", ""),
-    "DB_Arsip_Program": ("ID Dokumen", "PRC-"),
+    "DB_Flyer": ("ID File", "FLY-"),
+    "DB_Arsip_Program": ("ID Dokumen", "DOK-PRC-"),
 }
 AUTO_ID_LOCK = threading.Lock()
 
