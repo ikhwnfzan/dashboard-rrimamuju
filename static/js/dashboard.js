@@ -389,21 +389,24 @@ function syncCustomDropdown(select) {
         </button>`;
     }).join('') || '<div class="px-3 py-2 text-[11px] text-slate-400">Tidak ada pilihan</div>';
 
-  listEl.querySelectorAll('button[data-val]').forEach(btn => {
-    btn.addEventListener('click', () => {
+  if (listEl && !listEl.dataset.wired) {
+    listEl.dataset.wired = '1';
+    listEl.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-val]');
+      if (!btn) return;
       select.value = btn.dataset.val;
       select.dispatchEvent(new Event('change', { bubbles: true }));
       wrap.querySelector('.custom-dd-menu')?.classList.add('hidden');
       syncCustomDropdown(select);
     });
-  });
+  }
 }
 
-function enhanceCustomDropdowns(root = document) {
+function enhanceCustomDropdowns(root = document, syncExisting = true) {
   root.querySelectorAll('select').forEach(select => {
     if (select.dataset.native === '1' || select.id === 'stationSelect') return;
     if (select.dataset.customDropdown === '1') {
-      syncCustomDropdown(select);
+      if (syncExisting) syncCustomDropdown(select);
       return;
     }
     select.dataset.customDropdown = '1';
@@ -445,18 +448,22 @@ function enhanceCustomDropdowns(root = document) {
     select.addEventListener('change', () => syncCustomDropdown(select));
 
     const observer = new MutationObserver(() => syncCustomDropdown(select));
-    observer.observe(select, { childList: true, subtree: true, attributes: true });
+    observer.observe(select, { childList: true, subtree: true });
     syncCustomDropdown(select);
   });
 }
 
 let _ddObserverQueued = false;
-const _ddBodyObserver = new MutationObserver(() => {
-  if (_ddObserverQueued) return;
+const _ddBodyObserver = new MutationObserver(mutations => {
+  const hasNewSelectCandidates = mutations.some(m =>
+    !m.target.closest?.('.custom-dd') &&
+    Array.from(m.addedNodes).some(n => n.nodeType === 1 && (n.tagName === 'SELECT' || n.querySelector?.('select')))
+  );
+  if (!hasNewSelectCandidates || _ddObserverQueued) return;
   _ddObserverQueued = true;
   requestAnimationFrame(() => {
     _ddObserverQueued = false;
-    enhanceCustomDropdowns(document);
+    enhanceCustomDropdowns(document, false);
   });
 });
 if (document.body) _ddBodyObserver.observe(document.body, { childList: true, subtree: true });
@@ -3007,6 +3014,7 @@ function initBastSelects(selectedNip = '', selectedAssetCode = '', selectedNup =
   syncBastEmployee();
   syncBastAsset();
   if (selectedNup) document.getElementById('bastNup').value = selectedNup;
+  syncBastJumlahFromNup();
 }
 
 function syncBastEmployee() {
@@ -3021,14 +3029,31 @@ function syncBastEmployee() {
   if (document.getElementById('bastJabatan')) document.getElementById('bastJabatan').value = emp?.Jabatan || emp?.Posisi || '';
 }
 
-function syncBastAsset() {
+function getSelectedBastAsset() {
   const refVal = String(document.getElementById('bastNomorBarang')?.value || '').trim();
-  const asset = (DATA.assets || []).find(item =>
+  if (!refVal) return null;
+  return (DATA.assets || []).find(item =>
     String(item['ID Barang'] || '').trim() === refVal ||
     String(item['Kode Barang'] || '').trim() === refVal
-  );
-  if (!asset) return;
+  ) || null;
+}
+
+function syncBastJumlahFromNup() {
+  const nupVal = String(document.getElementById('bastNup')?.value || '').trim();
+  const count = nupVal ? nupVal.split(',').map(s => s.trim()).filter(Boolean).length : 0;
+  const jumlahEl = document.getElementById('bastJumlah');
+  if (jumlahEl) jumlahEl.value = count > 0 ? String(count) : '';
+}
+
+function syncBastAsset() {
+  const asset = getSelectedBastAsset();
+  if (!asset) {
+    if (document.getElementById('bastNup')) document.getElementById('bastNup').value = '';
+    syncBastJumlahFromNup();
+    return;
+  }
   document.getElementById('bastNup').value = asset.NUP || '';
+  syncBastJumlahFromNup();
   document.getElementById('bastBarang').value = asset['Nama Barang'] || '';
   document.getElementById('bastMerk').value = asset['Merk Model'] || '';
   document.getElementById('bastTipe').value = asset.Tipe || '';
@@ -3040,7 +3065,25 @@ function syncBastAsset() {
 let BAST_MULTI_SELECTED = [];
 
 function openBastMultiItemModal() {
-  BAST_MULTI_SELECTED = [];
+  const selectedAsset = getSelectedBastAsset();
+  if (!selectedAsset) {
+    showToast('Pilih Nomor Barang terlebih dahulu.', 'error');
+    return;
+  }
+  const code = String(selectedAsset['Kode Barang'] || '').trim();
+  const existingNups = String(document.getElementById('bastNup')?.value || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+  BAST_MULTI_SELECTED = [selectedAsset];
+  existingNups.forEach(nup => {
+    const match = (DATA.assets || []).find(a =>
+      String(a['Kode Barang'] || '').trim() === code &&
+      String(a.NUP || '').trim() === nup
+    );
+    if (match && !BAST_MULTI_SELECTED.includes(match)) BAST_MULTI_SELECTED.push(match);
+  });
+
   const search = document.getElementById('bastMultiSearch');
   if (search) search.value = '';
   renderBastMultiItemList();
@@ -3060,14 +3103,22 @@ function clearBastMultiSelection() {
   renderBastMultiItemList();
 }
 
+function getSelectedBastNomorBarang() {
+  const asset = getSelectedBastAsset();
+  const refVal = String(document.getElementById('bastNomorBarang')?.value || '').trim();
+  return String(asset?.['Kode Barang'] || refVal).trim();
+}
+
 function renderBastMultiItemList() {
   const q = (document.getElementById('bastMultiSearch')?.value || '').trim().toLowerCase();
   const assets = DATA.assets || [];
-  const lockedCode = BAST_MULTI_SELECTED.length ? String(BAST_MULTI_SELECTED[0]['Kode Barang'] || '').trim() : '';
+  const selectedAsset = getSelectedBastAsset();
+  const activeNomorBarang = getSelectedBastNomorBarang();
+  const lockedCode = activeNomorBarang || (BAST_MULTI_SELECTED.length ? String(BAST_MULTI_SELECTED[0]['Kode Barang'] || '').trim() : '');
   const lockBadge = document.getElementById('bastMultiLockBadge');
   if (lockBadge) {
     lockBadge.textContent = lockedCode
-      ? `Kode Barang terkunci: ${lockedCode} (${BAST_MULTI_SELECTED.length} item)`
+      ? `Kode Barang: ${lockedCode} (${BAST_MULTI_SELECTED.length} item)`
       : 'Belum ada item dipilih';
   }
   const nupPreview = document.getElementById('bastMultiNupPreview');
@@ -3080,7 +3131,11 @@ function renderBastMultiItemList() {
   if (!tbody) return;
   const filtered = assets
     .map((a, idx) => ({ asset: a, idx }))
-    .filter(({ asset }) => !q || Object.values(asset).some(v => String(v).toLowerCase().includes(q)));
+    .filter(({ asset }) => {
+      if (activeNomorBarang && String(asset['Kode Barang'] || '').trim() !== activeNomorBarang) return false;
+      return !q || Object.values(asset).some(v => String(v).toLowerCase().includes(q));
+    })
+    .sort((a, b) => (a.asset === selectedAsset ? -1 : b.asset === selectedAsset ? 1 : 0));
 
   tbody.innerHTML = filtered.map(({ asset, idx }) => {
     const code = String(asset['Kode Barang'] || '').trim();
@@ -3147,8 +3202,9 @@ function applyBastMultiItems() {
   syncBastAsset();
   const nupEl = document.getElementById('bastNup');
   if (nupEl) nupEl.value = nups.join(', ');
+  syncBastJumlahFromNup();
   const jumlahEl = document.getElementById('bastJumlah');
-  if (jumlahEl) jumlahEl.value = String(BAST_MULTI_SELECTED.length);
+  if (jumlahEl && !jumlahEl.value) jumlahEl.value = String(BAST_MULTI_SELECTED.length);
   closeBastMultiItemModal();
   showToast(`${BAST_MULTI_SELECTED.length} item (${sharedCode}) diterapkan ke form BAST.`, 'success');
 }
@@ -3221,6 +3277,7 @@ function fillBastForm(row, sheetRowIndex, editMode = false) {
   document.getElementById('bastNup').value = row.NUP || document.getElementById('bastNup').value;
   document.getElementById('bastNilai').value = row.Nilai || '';
   document.getElementById('bastJumlah').value = row.Jumlah || '';
+  if (!row.Jumlah) syncBastJumlahFromNup();
   const submitButton = document.querySelector('#bastGenerateForm button[type="submit"]');
   if (submitButton) submitButton.textContent = editMode ? 'Simpan Perubahan BAST' : 'Generate Dokumen & PDF';
   document.querySelector('#bastGenerateModal h3').textContent = editMode ? 'Edit Data BAST' : 'Input / Generate BAST';
