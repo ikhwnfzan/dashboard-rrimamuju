@@ -386,7 +386,7 @@ TARGET_PERMISSION_MAP = {
     "DB_Timeline": ("dialog", "full"),
     "DB_Dialog": ("dialog", "full"),
     "DB_Flyer": ("dialog", "full"),
-    "DB_Produksi_Paket": ("produksi_paket", "full"),
+    "DB_TMB_Working_Progress": ("produksi_paket", "full"),
     "DB_Konten": ("konten", "full"),
     "DB_Socmed_Analytics": ("socmed_analytics", "full"),
     "DB_Jadwal_Operasional": ("jadwal_siaran", "full"),

@@ -170,7 +170,28 @@ function escapeHtml(value) {
   })[char]);
 }
 
-const TABLE_SORT_STATE = {};
+const DEFAULT_TABLE_SORT_STATE = {
+  arsip_sdm: { colIdx: 2, fieldSpec: 'Tanggal', dir: 'desc' },
+  arsip_program: { colIdx: 2, fieldSpec: ['Tanggal Upload', 'Tanggal'], dir: 'desc' },
+  dialog: { colIdx: 0, fieldSpec: ['Tanggal Dialog', 'Tanggal'], dir: 'desc' },
+  siaran: { colIdx: 0, fieldSpec: 'Tanggal', dir: 'desc' },
+  jadwal_tmb: { colIdx: 0, fieldSpec: 'Tanggal', dir: 'desc' },
+  produksi_paket: { colIdx: 2, fieldSpec: ['Tanggal Record', 'Tanggal'], dir: 'desc' },
+  mon_prod: { colIdx: 2, fieldSpec: 'Tanggal Record', dir: 'desc' },
+  bast: { colIdx: 1, fieldSpec: 'Tanggal Dokumen', dir: 'desc' },
+};
+
+const TABLE_SORT_STATE = Object.fromEntries(
+  Object.entries(DEFAULT_TABLE_SORT_STATE).map(([k, v]) => [k, { ...v }])
+);
+
+function resetTableSortState() {
+  Object.keys(TABLE_SORT_STATE).forEach(k => delete TABLE_SORT_STATE[k]);
+  Object.entries(DEFAULT_TABLE_SORT_STATE).forEach(([k, v]) => {
+    TABLE_SORT_STATE[k] = { ...v };
+  });
+  if (typeof updateSortIndicators === 'function') updateSortIndicators();
+}
 
 // Maps tbody ID -> { tableKey, rerender, cols: { colIndex: fieldNameOrArray } }
 const SORTABLE_TABLE_MAP = {
@@ -179,16 +200,16 @@ const SORTABLE_TABLE_MAP = {
   tbodyDialog: { tableKey: 'dialog', rerender: () => renderDialogModule(), cols: { 0: ['Tanggal Dialog', 'Tanggal'], 1: 'Program', 2: 'Topik', 3: 'Narasumber', 4: 'Kehadiran', 5: 'Status' } },
   tbodySiaran: { tableKey: 'siaran', rerender: () => renderJadwalSiaran(), cols: { 0: 'Tanggal', 1: 'Shift', 2: 'Pegawai', 3: 'Status' } },
   tbodyProgramSiaran: { tableKey: 'program_siaran', rerender: () => renderProgramSiaran(), cols: { 0: 'Kode Program', 1: 'Programa', 2: 'Nama Program', 3: 'Hari', 4: 'Jam', 5: 'Kategori', 6: 'Status' } },
-  tbodyArsipProgram: { tableKey: 'arsip_program', rerender: () => renderArsipProgram(), cols: { 0: 'ID Dokumen', 1: 'Kategori', 2: 'Jenis', 3: 'Tanggal Upload', 4: 'Nama Dokumen' } },
+  tbodyArsipProgram: { tableKey: 'arsip_program', rerender: () => renderArsipProgram(), cols: { 0: 'Keterangan', 1: 'Nama Dokumen', 2: ['Tanggal Upload', 'Tanggal'], 3: 'Jenis', 4: 'Kategori' } },
   tbodyTmb: { tableKey: 'jadwal_tmb', rerender: () => renderJadwalTmb(), cols: { 0: 'Tanggal', 1: 'Shift', 2: 'Pegawai', 3: 'Status' } },
   tbodyBarang: { tableKey: 'barang', rerender: () => renderMasterBarang(), cols: { 0: 'Kode Barang', 1: 'Kode Ruang', 2: 'Nama Barang', 3: 'Merk Model', 4: 'Tipe', 5: 'Tahun', 6: 'NUP', 7: 'Kondisi' } },
   tbodyPersediaan: { tableKey: 'persediaan', rerender: () => renderMasterPersediaan(), cols: { 0: 'Kode Barang', 1: 'Nama Barang', 2: 'Unit', 3: 'Stok Awal', 4: 'Masuk', 5: 'Keluar', 6: 'Stok Akhir' } },
   tbodyRuangan: { tableKey: 'ruangan', rerender: () => renderMasterRuangan(), cols: { 0: 'Nomor Ruangan', 1: 'Nama Ruangan', 2: 'Lokasi', 3: 'NIP Penanggung Jawab' } },
   tbodyUsers: { tableKey: 'users', rerender: () => renderManageUsers(), cols: { 0: 'Nama', 1: 'NIP', 2: 'Pangkat', 3: 'Jabatan', 4: 'Role' } },
-  tbodyProduksiPaket: { tableKey: 'produksi_paket', rerender: () => renderProduksiPaket(), cols: { 0: 'ID Produksi', 1: 'Judul', 2: 'Jenis', 3: 'Tanggal Record', 4: 'PIC TMB', 5: 'Progress', 6: 'Status' } },
+  tbodyProduksiPaket: { tableKey: 'produksi_paket', rerender: () => renderProduksiPaket(), cols: { 0: 'Judul Paket', 1: 'Jenis', 2: ['Tanggal Record', 'Tanggal'], 3: 'Program', 4: 'Produser', 5: 'Status' } },
   tbodyBestcut: { tableKey: 'bestcut', rerender: () => renderBestcutMonitoring(), cols: { 0: ['Tanggal Dialog', 'Tanggal'], 1: 'Program', 2: 'Topik', 3: 'Narasumber', 4: 'Bestcut' } },
   tbodySocmed: { tableKey: 'socmed', rerender: () => renderSocmedAnalytics(), cols: { 0: 'Periode', 1: 'Platform', 2: 'Akun', 3: 'Followers', 4: 'Reach', 5: 'Engagement' } },
-  tbodyMonitoringProd: { tableKey: 'mon_prod', rerender: () => renderMonitoringProduksi(), cols: { 0: 'ID Produksi', 1: 'Judul', 2: 'Jenis', 3: 'Deadline', 4: 'Progress', 5: 'Status' } },
+  tbodyMonitoringProd: { tableKey: 'mon_prod', rerender: () => renderMonitoringProduksi(), cols: { 0: 'Judul', 1: 'Jenis', 2: 'Tanggal Record', 3: 'Record', 4: 'Editing', 5: 'PIC TMB', 6: 'PIC Penyiaran', 7: 'Progress', 8: 'Deadline', 9: 'Kendala', 11: 'Status' } },
   tbodyBast: { tableKey: 'bast', rerender: () => renderBastTable(), cols: { 0: 'Nomor BAST', 1: 'Tanggal Dokumen', 2: 'NIP', 3: 'Nama', 4: 'Pangkat', 5: 'Jabatan', 6: 'Nomor Barang', 7: 'NUP', 8: 'Barang', 9: 'Letak', 10: 'Status' } },
   tbodyPemeliharaanHeader: { tableKey: 'pemeliharaan_header', rerender: () => renderPemeliharaanAset(), cols: { 0: 'Kode Jadwal', 1: 'Tanggal', 2: 'Judul Pemeliharaan', 3: 'Lokasi', 4: 'Teknisi Vendor', 5: 'Status' } },
   tbodyPemeliharaanDetail: { tableKey: 'pemeliharaan_detail', rerender: () => renderPemeliharaanAset(), cols: { 0: 'Kode Detail Pemeliharaan', 1: 'Kode Jadwal', 2: 'Nomor Kode Barang', 3: 'Nama Barang', 4: 'NUP', 5: 'Kondisi Sebelum', 6: 'Tindakan', 7: 'Kondisi Sesudah', 8: 'Biaya' } },
@@ -718,7 +739,13 @@ function paginateArray(tableKey, rows, pagContainerId, rerenderFnName) {
     workingRows = [...rows].sort((a, b) => {
       const av = getSortableFieldValue(a, sortCfg.fieldSpec);
       const bv = getSortableFieldValue(b, sortCfg.fieldSpec);
-      const cmp = av.localeCompare(bv, 'id', { numeric: true, sensitivity: 'base' });
+      const da = dateValueForInput(av.slice(0, 10));
+      const db = dateValueForInput(bv.slice(0, 10));
+      const cmp = (da && db)
+        ? da.localeCompare(db)
+        : (da || db)
+          ? (da ? 1 : -1)
+          : av.localeCompare(bv, 'id', { numeric: true, sensitivity: 'base' });
       return sortCfg.dir === 'asc' ? cmp : -cmp;
     });
   }
@@ -1049,6 +1076,7 @@ async function switchModule(modKey, updateHistory = true) {
       if (!res.ok) throw new Error(payload.message || 'Gagal memuat modul.');
       DATA = { ...DATA, ...payload };
       clearModuleFilters(modKey);
+      resetTableSortState();
       renderAllModules();
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
@@ -1058,6 +1086,7 @@ async function switchModule(modKey, updateHistory = true) {
     }
   } else {
     clearModuleFilters(modKey);
+    resetTableSortState();
     renderAllModules();
   }
 }
@@ -2720,10 +2749,15 @@ function renderProduksiPaket() {
     <tr class="hover:bg-slate-200/60 dark:hover:bg-slate-800/50 transition">
       <td class="py-3 px-3 font-bold text-teal-600 truncate max-w-xs whitespace-nowrap">${escapeHtml(p['Judul Paket'] || p.Judul || '-')}</td>
       <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-bold whitespace-nowrap">${escapeHtml(p['Jenis Paket'] || p.Jenis || '-')}</span></td>
-      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(p.Tanggal || '-'))}</td>
-      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">${escapeHtml(p.Program || '-')}</td>
-      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p.Produser || '-')}</td>
-      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 text-xs font-bold whitespace-nowrap">${escapeHtml(p.Status || '-')}</span></td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(p['Tanggal Record'] || '-'))}</td>
+      <td class="py-3 px-3 font-semibold whitespace-nowrap">${escapeHtml(formatDisplayDate(p.Deadline || '-'))}</td>
+      <td class="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-300 whitespace-nowrap">${escapeHtml(formatDisplayDate(p['Tanggal Tayang'] || '-'))}</td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md font-bold whitespace-nowrap ${escapeHtml(p.Status) === 'Done' ?
+           'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300' : 
+           escapeHtml(p.Status) === 'Editing' ? 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300' : 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300'}">${escapeHtml(p.Status)}</span></td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p['PIC Penyiaran'] || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p['Editing'] || '-')}</td>
+      <td class="py-3 px-3 text-slate-400 font-semibold whitespace-nowrap">${escapeHtml(p['Catatan'] || '-')}</td>
       <td class="py-3 px-3 whitespace-nowrap">${p['Link File'] ? `<a href="${escapeHtml(p['Link File'])}" target="_blank" rel="noopener" title="Buka File" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-700 text-slate-700 dark:text-slate-100 hover:bg-amber-200 dark:hover:bg-amber-600 transition">${icon('link')}</a>` : '-'}</td>
     </tr>
   `).join('') || '<tr><td colspan="8" class="py-8 text-center text-xs text-slate-400">Belum ada data produksi paket.</td></tr>';
@@ -3580,6 +3614,13 @@ function renderBmnDokumenView(groupName, subMenuName, filterInputId, tbodyId, pa
   });
 
   const pagKey = `${groupName}_${subMenuName}`.replace(/[^a-zA-Z0-9]/g, '_');
+  if (!TABLE_SORT_STATE[pagKey]) {
+    TABLE_SORT_STATE[pagKey] = {
+      colIdx: groupName === 'Persediaan' || subMenuName.toLowerCase() === 'arsip' ? 3 : 2,
+      fieldSpec: ['Tanggal Buat', 'Tanggal'],
+      dir: 'desc'
+    };
+  }
   const rerenderFn = `() => renderBmnDokumenView('${groupName}', '${subMenuName}', '${filterInputId}', '${tbodyId}', '${pagId}', '${periodSelectId}')`;
   const rows = paginateArray(pagKey, list, pagId, rerenderFn);
   const tbody = document.getElementById(tbodyId);
